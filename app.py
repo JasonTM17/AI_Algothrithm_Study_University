@@ -118,6 +118,10 @@ if st.session_state.image_active and not st.session_state.get("image_tiles"):
     default_img = list(SAMPLE_IMAGES.keys())[0]
     st.session_state.image_tiles = generate_sample_tiles(default_img)
 
+def on_sample_image_change():
+    st.session_state.image_tiles = generate_sample_tiles(st.session_state.sample_select)
+    st.session_state.image_active = True
+
 st.sidebar.markdown("---")
 st.sidebar.subheader("Sample Image")
 sample_choice = st.sidebar.selectbox(
@@ -125,6 +129,7 @@ sample_choice = st.sidebar.selectbox(
     list(SAMPLE_IMAGES.keys()),
     key="sample_select",
     index=0,
+    on_change=on_sample_image_change,
 )
 if st.sidebar.button("Load Sample Image", key="btn_load_sample"):
     st.session_state.image_tiles = generate_sample_tiles(sample_choice)
@@ -242,9 +247,208 @@ if tab == "Play":
     if st.session_state.play_state == GOAL_STATE:
         st.balloons()
         st.success(f"You solved it in {st.session_state.play_moves} moves!")
-    if st.button("Reset Play Board"):
-        st.session_state.play_state = st.session_state.start_state
-        st.session_state.play_moves = 0
+
+    col_reset1, col_reset2 = st.columns(2)
+    with col_reset1:
+        if st.button("Reset Play Board"):
+            st.session_state.play_state = st.session_state.start_state
+            st.session_state.play_moves = 0
+            st.session_state.play_solution_path = None
+            st.session_state.play_solution_actions = None
+            st.session_state.play_solution_idx = 0
+            st.session_state.play_auto_run = False
+            st.rerun()
+
+    # ── AI Auto-Solver ──────────────────────────────────────
+    st.markdown("---")
+    st.subheader("🤖 AI Auto-Solver (Giải Tự Động)")
+    st.markdown("Sử dụng thuật toán **A* Search** kết hợp Heuristic **Manhattan Distance** để tìm lời giải tối ưu.")
+
+    if "play_solution_path" not in st.session_state:
+        st.session_state.play_solution_path = None
+    if "play_solution_actions" not in st.session_state:
+        st.session_state.play_solution_actions = None
+    if "play_solution_idx" not in st.session_state:
+        st.session_state.play_solution_idx = 0
+    if "play_auto_run" not in st.session_state:
+        st.session_state.play_auto_run = False
+
+    col_solve1, col_solve2 = st.columns(2)
+    with col_solve1:
+        if st.button("Tìm lời giải bằng AI (A* Manhattan)", key="btn_ai_solve"):
+            if st.session_state.play_state == GOAL_STATE:
+                st.info("Bảng đã ở trạng thái đích (Goal State) rồi!")
+            elif not is_solvable(st.session_state.play_state):
+                st.error("Bảng ở trạng thái không thể giải được!")
+            else:
+                with st.spinner("AI đang tính toán lời giải tối ưu..."):
+                    res = a_star(
+                        start=st.session_state.play_state,
+                        goal=GOAL_STATE,
+                        heuristic="Manhattan Distance",
+                        timeout=30.0,
+                    )
+                    if res.success:
+                        st.session_state.play_solution_path = res.path
+                        st.session_state.play_solution_actions = res.actions
+                        st.session_state.play_solution_idx = 0
+                        st.session_state.play_solution_res = res
+                        st.success(f"Đã tìm thấy lời giải tối ưu gồm {len(res.actions)} bước!")
+                    else:
+                        st.error(f"Lỗi tìm lời giải: {res.message}")
+    with col_solve2:
+        if st.session_state.play_solution_path:
+            if st.button("Hủy lời giải AI 🗑️", key="btn_ai_clear"):
+                st.session_state.play_solution_path = None
+                st.session_state.play_solution_actions = None
+                st.session_state.play_solution_idx = 0
+                st.session_state.play_auto_run = False
+                st.rerun()
+
+    if st.session_state.play_solution_path:
+        res = st.session_state.play_solution_res
+        st.info(f"Lời giải tối ưu A*: **{len(res.actions)} bước** | Thời gian tính: **{res.runtime:.4f}s** | Số nút mở rộng: **{res.nodes_expanded}** | Max Frontier: **{res.max_frontier_size}**")
+        
+        idx = st.session_state.play_solution_idx
+        
+        col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
+        
+        with col_ctrl1:
+            if st.button("◀ Bước trước", key="btn_play_prev", disabled=(idx == 0)):
+                st.session_state.play_solution_idx -= 1
+                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
+                st.session_state.play_moves = st.session_state.play_solution_idx
+                st.rerun()
+                
+        with col_ctrl2:
+            if st.button("Bước tiếp ▶", key="btn_play_next", disabled=(idx >= len(st.session_state.play_solution_path) - 1)):
+                st.session_state.play_solution_idx += 1
+                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
+                st.session_state.play_moves = st.session_state.play_solution_idx
+                st.rerun()
+                
+        with col_ctrl3:
+            if st.session_state.get("play_auto_run", False):
+                if st.button("Dừng ⏸", key="btn_play_stop"):
+                    st.session_state.play_auto_run = False
+                    st.rerun()
+            else:
+                if st.button("Chạy tự động ⏵", key="btn_play_auto", disabled=(idx >= len(st.session_state.play_solution_path) - 1)):
+                    st.session_state.play_auto_run = True
+                    st.rerun()
+                    
+        slider_val = st.slider("Bước hiện tại", 0, len(res.actions), idx, key="play_slider_val")
+        if slider_val != idx:
+            st.session_state.play_solution_idx = slider_val
+            st.session_state.play_state = st.session_state.play_solution_path[slider_val]
+            st.session_state.play_moves = slider_val
+            st.rerun()
+                
+        if idx > 0 and idx <= len(res.actions):
+            act = res.actions[idx - 1]
+            dir_vn = {
+                "L": "Trái ➔ (Trượt ô số sang PHẢI vào ô trống bên TRÁI)",
+                "R": "Phải ◀ (Trượt ô số sang TRÁI vào ô trống bên PHẢI)",
+                "U": "Lên ▼ (Trượt ô số xuống DƯỚI vào ô trống bên TRÊN)",
+                "D": "Xuống ▲ (Trượt ô số lên TRÊN vào ô trống bên DƯỚI)"
+            }
+            st.markdown(f"Hành động vừa thực hiện (bước {idx}/{len(res.actions)}): **{dir_vn.get(act, act)}**")
+            
+        if st.session_state.get("play_auto_run", False):
+            if idx < len(st.session_state.play_solution_path) - 1:
+                time.sleep(0.4)
+                st.session_state.play_solution_idx += 1
+                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
+                st.session_state.play_moves = st.session_state.play_solution_idx
+                st.rerun()
+            else:
+                st.session_state.play_auto_run = False
+                st.success("Đã hoàn thành giải đố tự động bằng AI!")
+                st.rerun()
+
+    # ── Academic Theory Section ──────────────────────────────
+    st.markdown("---")
+    st.markdown("## 🎓 Bài Toán 15-Puzzle & 6 Nhóm Thuật Toán Tìm Kiếm (Phân Tích Học Thuật)")
+    
+    with st.expander("📚 Xem Phân Tích Lý Thuyết Chi Tiết & Mô Hình Hóa Học Thuật", expanded=False):
+        st.markdown("""
+        ### 1. Mô hình hóa bài toán 15-Puzzle dưới dạng Tìm kiếm không gian trạng thái (State-Space Search)
+        
+        Để giải quyết 15-Puzzle một cách học thuật, bài toán được mô tả bằng bộ ngũ thức định nghĩa không gian trạng thái:
+        
+        *   **Không gian trạng thái ($S$):** Tập hợp tất cả các hoán vị hợp lệ của bảng 4x4 chứa các số từ $0$ đến $15$. Có tổng cộng $16! = 20.922.789.888.000$ cấu hình bảng, nhưng chỉ một nửa trong số đó (tức $16! / 2 \approx 10.46 \times 10^{12}$) là có thể giải được (solvable). Trạng thái đích là:
+            $$S_{goal} = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)$$
+        *   **Trạng thái bắt đầu ($S_0$):** Cấu hình bảng số ban đầu cần giải quyết.
+        *   **Tập hành động ($A(s)$):** Tập các hành động dịch chuyển ô trống hợp lệ từ vị trí hiện tại:
+            $$A(s) \subseteq \{ L (Left), R (Right), U (Up), D (Down) \}$$
+        *   **Hàm chuyển trạng thái ($Result(s, a)$):** Trả về trạng thái mới $s'$ sau khi áp dụng hành động $a \in A(s)$ vào trạng thái $s$.
+        *   **Hàm kiểm tra mục tiêu ($Goal-Test(s)$):** Trả về True nếu $s = S_{goal}$, ngược lại False.
+        *   **Chi phí đường đi ($g(n)$):** Được tính bằng tổng chi phí từng bước. Với 15-puzzle, chi phí mỗi bước di chuyển $c(s, a, s') = 1$, do đó $g(n)$ chính là số bước đi (depth của nút $n$).
+
+        ---
+        
+        ### 2. Cấu trúc học thuật của Đại lý Tìm kiếm (Search Agent)
+        
+        *   **Nút (Node):** Là cấu trúc dữ liệu lưu trữ một trạng thái và thông tin bổ sung:
+            *   `state`: Trạng thái bảng số hiện tại.
+            *   `parent`: Nút cha sinh ra nút này.
+            *   `action`: Hành động dẫn từ nút cha tới nút hiện tại.
+            *   `g`: Chi phí đường đi từ trạng thái bắt đầu.
+            *   `h`: Giá trị heuristic ước lượng chi phí tới đích.
+            *   `f`: Hàm đánh giá tổng thể ($f = g + h$).
+        *   **Biên giới (Frontier):** Tập hợp các nút đã được sinh ra nhưng chưa được mở rộng (expanded). Cách Frontier lưu trữ quyết định chiến lược tìm kiếm (FIFO cho BFS, LIFO cho DFS, Min-Heap cho UCS và A*).
+        *   **Tập đã duyệt (Reached/Closed Set):** Tập hợp các trạng thái đã được mở rộng để ngăn chặn trùng lặp và loại bỏ các chu trình trong đồ thị tìm kiếm.
+
+        ---
+
+        ### 3. Phân tích Chi tiết 6 Nhóm Thuật Toán
+        
+        #### ① Nhóm 1: Tìm kiếm mù (Uninformed Search)
+        *Các thuật toán này không có thông tin về khoảng cách tới đích, chỉ duyệt hệ thống dựa trên cấu trúc đồ thị.*
+        *   **BFS (Breadth-First Search):** Duyệt theo chiều rộng. Đảm bảo tìm thấy lời giải ngắn nhất (tính tối ưu) khi chi phí bước đồng nhất. Tuy nhiên, độ phức tạp bộ nhớ là $O(b^d)$ (với hệ số phân nhánh $b \approx 3$). Với 15-puzzle, bộ nhớ tăng cực nhanh và nhanh chóng tràn RAM.
+        *   **DFS (Depth-First Search):** Duyệt theo chiều sâu. Độ phức tạp bộ nhớ chỉ là $O(bd)$ (tuyến tính), nhưng không đảm bảo tính tối ưu và dễ rơi vào các đường đi vô hạn nếu không quản lý chu trình nghiêm ngặt.
+        *   **UCS (Uniform-Cost Search):** Mở rộng nút có chi phí đường đi $g(n)$ nhỏ nhất. Với chi phí bước đồng nhất bằng 1, UCS hoạt động hoàn toàn giống BFS nhưng có chi phí quản lý hàng đợi ưu tiên lớn hơn.
+        *   **IDS (Iterative Deepening Search):** Kết hợp ưu điểm bộ nhớ của DFS và tính tối ưu của BFS bằng cách lặp lại DFS với giới hạn độ sâu tăng dần. Đây là thuật toán tìm kiếm mù tốt nhất cho 15-puzzle.
+
+        #### ② Nhóm 2: Tìm kiếm có thông tin (Informed / Heuristic Search)
+        *Sử dụng tri thức về bài toán thông qua hàm Heuristic $h(n)$ để hướng dẫn quá trình tìm kiếm.*
+        *   **Hàm Heuristic chấp nhận được (Admissible Heuristic):** Luôn ước lượng thấp hơn hoặc bằng chi phí thực tế tới đích ($h(n) \le h^*(n)$). Đảm bảo tính tối ưu cho thuật toán A*.
+            *   *Khoảng cách Manhattan (Manhattan Distance):* Tổng khoảng cách theo chiều ngang và dọc của từng ô số về vị trí đích. Đây là heuristic chấp nhận được và nhất quán (consistent).
+            *   *Số ô sai vị trí (Misplaced Tiles):* Đếm số ô không nằm đúng vị trí. Yếu hơn Manhattan vì không phản ánh khoảng cách cần di chuyển.
+            *   *Linear Conflict:* Manhattan cộng thêm $2 \times$ số xung đột tuyến tính (các ô cùng dòng/cột đích nhưng ngược thứ tự). Đây là heuristic mạnh nhất được sử dụng.
+        *   **A\* Search:** Mở rộng nút có $f(n) = g(n) + h(n)$ nhỏ nhất. Tìm kiếm tối ưu và đầy đủ nhất nếu dùng Heuristic chấp nhận được.
+        *   **Greedy Best-First Search:** Chỉ ưu tiên $h(n)$ nhỏ nhất. Rất nhanh nhưng đường đi tìm được thường không tối ưu và dễ rơi vào cực trị cục bộ.
+        *   **IDA\* (Iterative Deepening A\*):** Lập lại tìm kiếm sâu với giới hạn $f$-cost thay vì giới hạn độ sâu. Giúp giải quyết bài toán bộ nhớ của A*.
+
+        #### ③ Nhóm 3: Tìm kiếm cục bộ (Local Search)
+        *Thích hợp khi chỉ quan tâm tới trạng thái đích chứ không quan tâm tới đường đi.*
+        *   **Hill Climbing (Steepest Ascent):** Chọn nước đi láng giềng cải thiện hàm đánh giá (giảm heuristic $h(n)$) tốt nhất. Dễ bị kẹt ở **Cực trị cục bộ (Local Minima)** hoặc **Cao nguyên (Plateau)**.
+        *   **Stochastic / Random-Restart HC:** Khắc phục nhược điểm bằng cách chọn láng giềng ngẫu nhiên tốt hơn hoặc khởi chạy lại từ các trạng thái ngẫu nhiên khác nhau.
+        *   **Simulated Annealing (Luyện kim):** Cho phép thực hiện các nước đi làm tăng heuristic (tệ đi) với xác suất $P = e^{-\Delta E / T}$ để nhảy ra khỏi cực trị cục bộ, giảm nhiệt độ $T$ theo thời gian.
+        *   **Local Beam Search:** Lưu trữ $k$ trạng thái thay vì 1. Tại mỗi bước, sinh ra tất cả các trạng thái kế tiếp và chỉ giữ lại $k$ trạng thái tốt nhất.
+
+        #### ④ Nhóm 4: Môi trường phức tạp (Complex Environments Search)
+        *Giải quyết bài toán khi môi trường không xác định (nondeterministic), không quan sát toàn phần (partially observable), hoặc cần tìm kiếm trực tuyến (online).*
+        *   **Tìm kiếm AND-OR:** Sử dụng khi hành động của Agent có thể dẫn tới nhiều kết quả ngẫu nhiên (môi trường không xác định). Tìm kiếm sinh ra cây lời giải (solution tree) thay vì đường đi.
+        *   **Belief State Search (Không quan sát):** Agent bắt đầu bằng việc không biết mình đang ở trạng thái nào (tập tất cả các hoán vị có thể), và phải thực hiện một chuỗi hành động ép trạng thái tin tưởng (belief state) hội tụ về trạng thái đích.
+        *   **LRTA\* (Learning Real-Time A\*):** Thuật toán tìm kiếm trực tuyến. Agent đưa ra quyết định di chuyển ngay lập tức dựa trên thông tin cục bộ và cập nhật giá trị heuristic ước lượng của trạng thái vừa đi qua để tối ưu hóa cho các lần sau.
+
+        #### ⑤ Nhóm 5: Bài toán thỏa mãn ràng buộc (CSP)
+        *Biểu diễn bài toán dưới dạng tập hợp các Biến, Miền giá trị và Ràng buộc.*
+        *   **Biểu diễn:**
+            *   *Biến ($X$):* Trạng thái bảng tại các bước thời gian $t \in \{0, 1, ..., T\}$.
+            *   *Miền giá trị ($D$):* Các hoán vị hợp lệ.
+            *   *Ràng buộc ($C$):* Chuyển trạng thái giữa bước $t$ và $t+1$ phải tuân thủ luật dịch chuyển ô trống.
+        *   **Thuật toán áp dụng:**
+            *   *Constraint Propagation (Lan truyền ràng buộc):* Sử dụng kiểm tra tính nhất quán (Arc Consistency AC-3) để lọc đi các miền giá trị không hợp lệ trước khi tìm kiếm.
+            *   *Backtracking Search:* DFS kết hợp lọc miền giá trị cục bộ (Forward Checking, MRV heuristic).
+            *   *Min-Conflicts:* Thuật toán local search hiệu quả cho CSP, liên tục thay đổi giá trị của biến bị vi phạm ràng buộc để giảm thiểu xung đột.
+
+        #### ⑥ Nhóm 6: Tìm kiếm đối kháng và ngẫu nhiên (Adversarial / Stochastic Search)
+        *Mở rộng bài toán sang môi trường có nhiều đối thủ hoặc có yếu tố may rủi.*
+        *   **Minimax & Alpha-Beta Pruning:** Giả định có 2 người chơi: **MAX** (cố gắng đưa bảng về đích nhanh nhất) và **MIN** (đối thủ cố gắng xáo bảng số, cản trở MAX). Alpha-Beta giúp cắt tỉa các nhánh tìm kiếm không ảnh hưởng tới quyết định cuối cùng, giảm độ phức tạp thời gian từ $O(b^d)$ xuống còn $O(b^{d/2})$.
+        *   **Expectimax:** Được áp dụng khi nước đi của ô trống có xác xuất trượt lỗi (ví dụ: muốn trượt Lên nhưng do ma sát trơn trượt có 10% cơ hội trượt Trái/Phải). Expectimax thay thế các nút MIN bằng nút cơ hội (Chance Node), tính giá trị kỳ vọng (Expected Value) dựa trên phân phối xác suất của các kết quả ngẫu nhiên.
+        """)
 
 
 # â”€â”€ Tab 2: Run Algorithm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
