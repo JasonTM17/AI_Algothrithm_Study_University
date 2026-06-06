@@ -176,7 +176,7 @@ def no_observation_search(
         if best_action is None:
             break
 
-        # Apply action to all states in belief
+        # Apply best_action to all states in belief to get new belief
         new_belief = set()
         for state in belief:
             ns = _move_blank(state, best_action)
@@ -184,28 +184,7 @@ def no_observation_search(
                 new_belief.add(ns)
             else:
                 new_belief.add(state)
-
-        belief = frozenset(new_belief) if isinstance(new_belief, set) else new_belief
-        # Actually belief is a set, let me fix
-        belief_set = set()
-        for state in list(initial_belief) if step == 0 else belief:
-            ns = _move_blank(state, best_action) if best_action else None
-            if ns is not None:
-                belief_set.add(ns)
-            else:
-                belief_set.add(state)
-
-        if step > 0:
-            belief_set = set()
-            for state in belief:
-                ns = _move_blank(state, best_action)
-                if ns is not None:
-                    belief_set.add(ns)
-                else:
-                    belief_set.add(state)
-            belief = belief_set
-        else:
-            belief = set(belief)
+        belief = new_belief
 
         if len(trace) < 200:
             trace.append(TraceStep(step=step + 1, state=start, action=best_action,

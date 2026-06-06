@@ -23,16 +23,20 @@ def _is_adjacent_to_blank(state: tuple, tile_idx: int) -> bool:
 
 
 def _get_slide_direction(state: tuple, tile_idx: int) -> str | None:
-    """Return the action that slides tile_idx into blank position."""
+    """Return the blank-move direction that slides tile_idx into blank.
+
+    _move_blank expects blank-centric actions: 'L' = blank moves left.
+    So tile left of blank → blank moves 'L' (toward the tile).
+    """
     blank_idx = state.index(0)
     if tile_idx == blank_idx - 1 and blank_idx % 4 != 0:
-        return "R"
+        return "L"  # tile is left of blank → blank moves left
     if tile_idx == blank_idx + 1 and tile_idx % 4 != 0:
-        return "L"
+        return "R"  # tile is right of blank → blank moves right
     if tile_idx == blank_idx - 4:
-        return "D"
+        return "U"  # tile is above blank → blank moves up
     if tile_idx == blank_idx + 4:
-        return "U"
+        return "D"  # tile is below blank → blank moves down
     return None
 
 
@@ -50,42 +54,45 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
         highlight_correct: green highlight for tiles in goal position
         on_click_fn: callback function(direction) when a tile is clicked
     """
-    for r in range(4):
-        cols = st.columns(4, gap="small")
-        for c in range(4):
-            idx = r * 4 + c
-            val = state[idx]
-            with cols[c]:
-                if val == 0:
-                    st.markdown(
-                        '<div class="puzzle-tile blank"></div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    cls_list = ["puzzle-tile", f"row-{r}"]
-                    if highlight_correct and val == GOAL_STATE[idx]:
-                        cls_list.append("correct")
-                    cls_str = " ".join(cls_list)
-
-                    if _is_adjacent_to_blank(state, idx) and on_click_fn:
-                        direction = _get_slide_direction(state, idx)
-                        st.button(
-                            str(val), key=f"{key_prefix}_hit_{r}_{c}",
-                            on_click=on_click_fn, args=(direction,),
-                            type="primary",
-                        )
-                    else:
+    with st.container():
+        st.markdown('<div class="interactive-board-container-number"></div>', unsafe_allow_html=True)
+        for r in range(4):
+            cols = st.columns(4, gap="small")
+            for c in range(4):
+                idx = r * 4 + c
+                val = state[idx]
+                with cols[c]:
+                    if val == 0:
                         st.markdown(
-                            f'<div class="{cls_str}">{val}</div>',
+                            '<div class="puzzle-tile blank"></div>',
                             unsafe_allow_html=True,
                         )
+                    else:
+                        cls_list = ["puzzle-tile", f"row-{r}"]
+                        if highlight_correct and val == GOAL_STATE[idx]:
+                            cls_list.append("correct")
+                        cls_str = " ".join(cls_list)
+
+                        if _is_adjacent_to_blank(state, idx) and on_click_fn:
+                            direction = _get_slide_direction(state, idx)
+                            st.button(
+                                str(val), key=f"{key_prefix}_hit_{r}_{c}",
+                                on_click=on_click_fn, args=(direction,),
+                                type="primary", use_container_width=True,
+                            )
+                        else:
+                            st.markdown(
+                                f'<div class="{cls_str}">{val}</div>',
+                                unsafe_allow_html=True,
+                            )
 
 
 def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
-                       highlight_correct: bool = True, on_click_fn=None):
-    """Render interactive 4x4 board with pure image tiles (no number overlay).
+                       highlight_correct: bool = True, on_click_fn=None,
+                       show_numbers: bool = False):
+    """Render interactive 4x4 board with image tiles and optional number overlay.
 
-    Each tile shows ONLY the image piece. Blank tile is empty.
+    Each tile shows the image piece. Blank tile is empty.
     Click behavior same as number board.
 
     Args:
@@ -94,41 +101,69 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
         key_prefix: unique key for Streamlit buttons
         highlight_correct: green border for tiles in goal position
         on_click_fn: callback function(direction) when a tile is clicked
+        show_numbers: overlay a small number indicator on top-left of each tile
     """
-    for r in range(4):
-        cols = st.columns(4, gap="small")
-        for c in range(4):
-            idx = r * 4 + c
-            val = state[idx]
-            with cols[c]:
-                if val == 0:
-                    st.markdown(
-                        '<div style="width:100%;aspect-ratio:1;border:1px dashed '
-                        'rgba(255,255,255,0.08);border-radius:12px;background:transparent;">'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
-                elif val in image_tiles:
-                    is_correct = highlight_correct and val == GOAL_STATE[idx]
-                    border_style = "2px solid #22c55e" if is_correct else "none"
-                    img_html = (
-                        f'<div style="width:100%;aspect-ratio:1;border-radius:12px;'
-                        f'overflow:hidden;border:{border_style};cursor:pointer;">'
-                        f'<img src="{image_tiles[val]}" style="width:100%;height:100%;'
-                        f'object-fit:cover;" alt="tile{val}">'
-                        f'</div>'
-                    )
-                    if _is_adjacent_to_blank(state, idx) and on_click_fn:
-                        direction = _get_slide_direction(state, idx)
-                        st.markdown(img_html, unsafe_allow_html=True)
-                        st.button(f"Move", key=f"{key_prefix}_hit_{val}_{r}_{c}",
-                                  on_click=on_click_fn, args=(direction,),
-                                  type="primary")
+    with st.container():
+        st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
+        for r in range(4):
+            cols = st.columns(4, gap="small")
+            for c in range(4):
+                idx = r * 4 + c
+                val = state[idx]
+                with cols[c]:
+                    if val == 0:
+                        st.markdown(
+                            '<div style="width:100%;aspect-ratio:1;border:1px dashed '
+                            'rgba(255,255,255,0.08);border-radius:12px;background:transparent;">'
+                            '</div>',
+                            unsafe_allow_html=True,
+                        )
+                        st.button(f" ", key=f"{key_prefix}_blank_btn_{r}_{c}",
+                                  disabled=True, use_container_width=True)
+                    elif val in image_tiles:
+                        is_correct = highlight_correct and val == GOAL_STATE[idx]
+                        border_color = "#557c55" if is_correct else "#8b5a2b"
+                        
+                        number_badge = ""
+                        if show_numbers:
+                            number_badge = (
+                                f'<span style="position:absolute;top:6px;left:6px;z-index:9;'
+                                f'background:rgba(26,16,10,0.85);color:#f0e6dc;padding:2px 6px;'
+                                f'border-radius:4px;font-size:11px;font-weight:700;line-height:1;'
+                                f'border:1px solid rgba(200,149,108,0.25);box-shadow:0 1px 3px rgba(0,0,0,0.4);'
+                                f'pointer-events:none;">{val}</span>'
+                            )
+                        
+                        img_html = (
+                            f'<div style="width:100%;aspect-ratio:1;border-radius:8px;'
+                            f'overflow:hidden;border:4px solid {border_color};'
+                            f'box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.2);'
+                            f'cursor:pointer;position:relative;background:#1a100a;">'
+                            f'{number_badge}'
+                            f'<img src="{image_tiles[val]}" style="width:100%;height:100%;'
+                            f'object-fit:cover;" alt="tile{val}">'
+                            f'</div>'
+                        )
+                        if _is_adjacent_to_blank(state, idx) and on_click_fn:
+                            direction = _get_slide_direction(state, idx)
+                            # Translate blank move direction to physical tile slide direction
+                            # Blank 'L' (left) means tile slides Right '➔'
+                            # Blank 'R' (right) means tile slides Left '◀'
+                            # Blank 'U' (up) means tile slides Down '▼'
+                            # Blank 'D' (down) means tile slides Up '▲'
+                            dir_labels = {"L": "Slide ➔", "R": "Slide ◀", "U": "Slide ▼", "D": "Slide ▲"}
+                            label = dir_labels.get(direction, "Slide")
+                            st.markdown(img_html, unsafe_allow_html=True)
+                            st.button(label, key=f"{key_prefix}_hit_{val}_{r}_{c}",
+                                      on_click=on_click_fn, args=(direction,),
+                                      type="primary", use_container_width=True)
+                        else:
+                            st.markdown(img_html, unsafe_allow_html=True)
+                            st.button(f" ", key=f"{key_prefix}_nohit_{val}_{r}_{c}",
+                                      disabled=True, use_container_width=True)
                     else:
-                        st.markdown(img_html, unsafe_allow_html=True)
-                else:
-                    st.button(str(val), key=f"{key_prefix}_{val}_{r}_{c}",
-                              disabled=True, use_container_width=True)
+                        st.button(str(val), key=f"{key_prefix}_{val}_{r}_{c}",
+                                  disabled=True, use_container_width=True)
 
 
 def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str = "normal"):
@@ -282,10 +317,10 @@ def render_trace_table(trace: list, max_rows: int = 100):
 def _state_to_mini_grid(state: tuple) -> str:
     """Return a compact HTML mini-grid for a puzzle state."""
     cells = []
-    for v in state:
+    for i, v in enumerate(state):
         if v == 0:
             cells.append('<span class="mc b">_</span>')
-        elif v == GOAL_STATE[state.index(v)]:
+        elif v == GOAL_STATE[i]:
             cells.append(f'<span class="mc c">{v}</span>')
         else:
             cells.append(f'<span class="mc f">{v}</span>')
@@ -379,7 +414,15 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
     col_play, col_speed, col_step = st.columns([1, 2, 3])
 
     with col_play:
-        auto_play = st.button("Auto Play", key=f"{key}_play_btn")
+        if st.session_state.get(auto_key, False):
+            if st.button("Stop", key=f"{key}_stop_btn", type="secondary"):
+                st.session_state[auto_key] = False
+                st.rerun()
+        else:
+            if st.button("Auto Play", key=f"{key}_play_btn", type="primary"):
+                st.session_state[auto_key] = True
+                st.session_state[f"{key}_auto_step"] = st.session_state.get(f"{key}_slider", 0)
+                st.rerun()
 
     with col_speed:
         speed = st.selectbox(
@@ -414,17 +457,14 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
     with col3:
         if st.button("Reset", key=f"{key}_reset"):
             st.session_state[f"{key}_slider"] = 0
-
-    # Auto-play implementation using session state
-    if auto_play:
-        st.session_state[auto_key] = True
-        st.session_state[f"{key}_auto_step"] = 0
+            st.session_state[auto_key] = False
+            st.session_state[f"{key}_auto_step"] = 0
 
     if st.session_state.get(auto_key, False):
         current_auto = st.session_state.get(f"{key}_auto_step", 0)
         if current_auto < len(path) - 1:
             import time
-            st.session_state[f"{key}_slider"] = current_auto
+            st.session_state[f"{key}_slider"] = current_auto + 1
             st.session_state[f"{key}_auto_step"] = current_auto + 1
             time.sleep(speed)
             st.rerun()
@@ -500,18 +540,18 @@ def render_algorithm_info(algo_name: str, theory: dict):
         st.markdown(f'<span style="background:{color};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;">{label}</span>', unsafe_allow_html=True)
 
     sections = [
-        ("Muc tieu", "goal"),
-        ("Y tuong", "idea"),
-        ("Cau truc du lieu", "data_structure"),
-        ("Cong thuc", "formula"),
-        ("Ap dung 15-Puzzle", "application"),
-        ("Phu hop 15-Puzzle?", "suitable"),
-        ("Uu diem", "pros"),
-        ("Nhuoc diem", "cons"),
-        ("Do phuc tap", "complexity"),
-        ("Vi du chay te", "bad_example"),
-        ("So sanh", "comparison"),
-        ("Diem can nho khi thi", "exam_tips"),
+        ("Mục tiêu", "goal"),
+        ("Ý tưởng", "idea"),
+        ("Cấu trúc dữ liệu", "data_structure"),
+        ("Công thức", "formula"),
+        ("Áp dụng 15-Puzzle", "application"),
+        ("Phù hợp 15-Puzzle?", "suitable"),
+        ("Ưu điểm", "pros"),
+        ("Nhược điểm", "cons"),
+        ("Độ phức tạp", "complexity"),
+        ("Ví dụ chạy tệ", "bad_example"),
+        ("So sánh", "comparison"),
+        ("Điểm cần nhớ khi thi", "exam_tips"),
     ]
 
     for title, key in sections:
@@ -546,7 +586,8 @@ def render_search_tree(trace: list, max_nodes: int = 30):
 
     for i in range(disp_count):
         step = trace[i]
-        indent = "│  " * min(i, 6) + ("├─" if i < disp_count - 1 else "└─")
+        depth = step.g if step.g > 0 else (step.depth if hasattr(step, 'depth') else i)
+        indent = "│  " * min(depth, 6) + ("├─" if i < disp_count - 1 else "└─")
         action_str = step.action or "Start"
         state = step.node_state if (has_detail and step.node_state) else step.state
         grid = " ".join(f"{v:2d}" if v != 0 else "__" for v in state)

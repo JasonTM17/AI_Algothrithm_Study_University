@@ -262,7 +262,7 @@ def expectimax(
 
         return results
 
-    def expectimax_search(state: tuple, depth_left: int, node_type: str = "MAX") -> tuple[float, list]:
+    def expectimax_search(state: tuple, depth_left: int, node_type: str = "MAX", action_taken: Optional[str] = None) -> tuple[float, list]:
         """Returns (expected_utility, tree_nodes)."""
         nodes_expanded[0] += 1
 
@@ -275,8 +275,7 @@ def expectimax(
         if depth_left <= 0:
             util = -h_fn(state)
             h = h_fn(state)
-            prob_map = {"MAX": None, "CHANCE": None}
-            node = (node_type, state, util, h, None)
+            node = (node_type, state, util, h, 1.0)
             return util, [node]
 
         ps = PuzzleState(state)
@@ -284,12 +283,15 @@ def expectimax(
         if node_type == "MAX":
             best_val = float("-inf")
             best_tree = []
+            best_action = None
             neighbors = ps.get_neighbors(action_order)
 
             for ns, action, cost in neighbors:
-                val, tree = expectimax_search(ns, depth_left - 1, "CHANCE")
+                # Call CHANCE node to compute expected utility of this action
+                val, tree = expectimax_search(state, depth_left, "CHANCE", action_taken=action)
                 if val > best_val:
                     best_val = val
+                    best_action = action
                     best_tree = tree
 
                 if len(trace) < 200:
@@ -304,27 +306,31 @@ def expectimax(
             return best_val, [node] + best_tree
 
         elif node_type == "CHANCE":
-            expected_val = 0.0
-            all_tree = []
-            neighbors = ps.get_neighbors(action_order)
+            # CHANCE node: computes expected value over outcomes of action_taken at state
+            outcomes = get_outcomes(state, action_taken)
+            if not outcomes:
+                util = -h_fn(state)
+                node = ("CHANCE", state, util, h_fn(state), 1.0)
+                return util, [node]
 
-            for ns, action, cost in neighbors:
-                outcomes = get_outcomes(state, action)
-                for out_state, out_action, prob in outcomes:
-                    val, tree = expectimax_search(out_state, depth_left - 1, "MAX")
-                    expected_val += prob * val
-                    all_tree.extend(tree)
+            expected_value = 0.0
+            children_trees = []
+            for out_state, out_action, prob in outcomes:
+                # Call MAX recursively on the outcome state
+                val, tree = expectimax_search(out_state, depth_left - 1, "MAX")
+                expected_value += prob * val
+                children_trees.extend(tree)
 
-                    if len(trace) < 200:
-                        trace.append(TraceStep(
-                            step=nodes_expanded[0], state=out_state, action=out_action,
-                            node_type="CHANCE", utility=val, h=h_fn(out_state),
-                            probability=prob,
-                            reason=f"CHANCE: P({out_action})={prob:.2f}, ev={val:.1f}"))
+                if len(trace) < 200:
+                    trace.append(TraceStep(
+                        step=nodes_expanded[0], state=out_state, action=out_action,
+                        node_type="CHANCE", utility=val, h=h_fn(out_state),
+                        probability=prob,
+                        reason=f"CHANCE: P({out_action})={prob:.2f}, ev={val:.1f}"))
 
             h = h_fn(state)
-            node = ("CHANCE", state, expected_val, h, 1.0)
-            return expected_val, [node] + all_tree
+            node = ("CHANCE", state, expected_value, h, 1.0)
+            return expected_value, [node] + children_trees
 
         return 0, []
 
@@ -346,10 +352,45 @@ def expectimax(
     msg += f"  Result differs when success_prob < 1.0\n\n"
     msg += f"Game Tree (truncated):\n{tree_text}"
 
+    # Determine actions based on the path taken in game tree
+    # Since MAX starts at the root, the next node is CHANCE, and then the outcomes are MAX.
+    # The action is stored in the trace or we can reconstruct it from the tree.
+    actions = []
+    # Reconstruct chosen actions path from the game_tree
+    current_idx = 0
+    # Walk the game tree to extract MAX actions
+    while current_idx < len(game_tree):
+        node = game_tree[current_idx]
+        if node[0] == "MAX":
+            # Find the best action taken at this state
+            # In our search, we can check trace steps or transition
+            state_val = node[1]
+            ps = PuzzleState(state_val)
+            # Find next MAX node in the tree and find the transition
+            next_max_node = None
+            for idx in range(current_idx + 1, len(game_tree)):
+                if game_tree[idx][0] == "MAX":
+                    next_max_node = game_tree[idx]
+                    break
+            if next_max_node:
+                next_state = next_max_node[1]
+                # Check how to transition from state_val to next_state
+                for ns, action, cost in ps.get_neighbors(action_order):
+                    # Check if next_state is in the outcomes of this action
+                    outcomes = get_outcomes(state_val, action)
+                    if any(o[0] == next_state for o in outcomes):
+                        actions.append(action)
+                        break
+                current_idx = game_tree.index(next_max_node)
+            else:
+                break
+        else:
+            current_idx += 1
+
     solved = start == goal
     return SearchResult(
         success=solved, algorithm="Expectimax", group="Adversarial/Stochastic",
-        path=[start], actions=[], cost=0, depth=0,
+        path=[start], actions=actions, cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=True, uses_probability=True,

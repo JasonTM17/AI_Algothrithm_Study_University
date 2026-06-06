@@ -255,78 +255,72 @@ def ida_star(
                         is_complete=True, is_optimal=True, uses_heuristic=True)
 
 
-def _ida_dfs(
-    start: tuple, goal: tuple, threshold: float,
-    h_fn: Callable, action_order: str,
-    t0: float, timeout: float,
-    prev_expanded: int, prev_generated: int,
-    prev_max_frontier: int, global_trace: list,
-) -> tuple[SearchResult, float]:
+def _ida_dfs(start, goal, threshold, h_fn, action_order,
+             t0, timeout, prev_expanded, prev_generated,
+             prev_max_frontier, global_trace):
     """DFS with f-limit for IDA*."""
-    root = Node(state=start, g=0, depth=0, h=h_fn(start))
-    stack = [root]
-    next_threshold = float("inf")
-    nodes_expanded = prev_expanded
-    nodes_generated = prev_generated
-    max_frontier = prev_max_frontier
-    path_set = {start}
-    path_list = [root]
+    nodes_expanded = [prev_expanded]
+    nodes_generated = [prev_generated]
+    max_frontier = [prev_max_frontier]
+    next_threshold = [float("inf")]
+    result_holder = [None]
 
-    while stack:
+    def recursive_search(node, path_set):
+        if result_holder[0] is not None:
+            return
         if time.perf_counter() - t0 > timeout:
-            return SearchResult(
-                success=False, message="Timeout",
-                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                max_frontier_size=max_frontier, trace=global_trace,
-            ), next_threshold
-
-        node = stack.pop()
+            return
 
         if node.f > threshold:
-            next_threshold = min(next_threshold, node.f)
-            continue
+            next_threshold[0] = min(next_threshold[0], node.f)
+            return
 
         if node.state == goal:
             path = reconstruct_path(node)
             actions = reconstruct_actions(node)
-            return SearchResult(
+            result_holder[0] = SearchResult(
                 success=True, path=path, actions=actions,
                 cost=node.g, depth=node.depth,
-                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                max_frontier_size=max_frontier, trace=global_trace,
+                nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+                max_frontier_size=max_frontier[0], trace=global_trace,
                 message=f"Found with threshold={threshold}",
-            ), next_threshold
+            )
+            return
 
-        nodes_expanded += 1
+        nodes_expanded[0] += 1
         ps = PuzzleState(node.state)
 
-        for ns, action, cost in reversed(ps.get_neighbors(action_order)):
+        for ns, action, cost in ps.get_neighbors(action_order):
+            if ns in path_set:
+                continue
             h = h_fn(ns)
             child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1, h=h)
-            nodes_generated += 1
+            nodes_generated[0] += 1
 
-            if ns not in path_set:
-                path_set.add(ns)
-                path_list.append(child)
-                stack.append(child)
-                max_frontier = max(max_frontier, len(stack))
+            if len(global_trace) < 200:
+                global_trace.append(TraceStep(
+                    step=nodes_expanded[0], state=ns, action=action,
+                    g=child.g, h=h, f=child.f,
+                    threshold=threshold,
+                    frontier_size=0, reached_size=len(path_set),
+                    reason=f"IDA*: threshold={threshold}, f={child.f:.1f}",
+                ))
 
-                if len(global_trace) < 200:
-                    global_trace.append(TraceStep(
-                        step=nodes_expanded, state=ns, action=action,
-                        g=child.g, h=h, f=child.f,
-                        threshold=threshold,
-                        frontier_size=len(stack), reached_size=len(path_set),
-                        reason=f"IDA*: threshold={threshold}, f={child.f:.1f}",
-                    ))
-            elif child.f <= threshold:
-                stack.append(child)
-                nodes_generated += 1
+            path_set.add(ns)
+            recursive_search(child, path_set)
+            path_set.discard(ns)  # Correct backtracking in recursion
+            if result_holder[0] is not None:
+                return
 
-        path_set.discard(node.state)
+    root = Node(state=start, g=0, depth=0, h=h_fn(start))
+    path_set = {start}
+    recursive_search(root, path_set)
+
+    if result_holder[0] is not None:
+        return result_holder[0], next_threshold[0]
 
     return SearchResult(
         success=False, message=f"cutoff at threshold {threshold}",
-        nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-        max_frontier_size=max_frontier, trace=global_trace,
-    ), next_threshold
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+        max_frontier_size=max_frontier[0], trace=global_trace,
+    ), next_threshold[0]

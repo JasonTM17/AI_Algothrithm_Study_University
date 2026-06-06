@@ -286,86 +286,84 @@ def ids(
     )
 
 
-def _dls(
-    start: tuple, goal: tuple, depth_limit: int, action_order: str,
-    t0_global: float, timeout: float,
-    prev_expanded: int, prev_generated: int, prev_max_frontier: int,
-    global_trace: list,
-) -> SearchResult:
+def _dls(start, goal, depth_limit, action_order, t0_global, timeout,
+         prev_expanded, prev_generated, prev_max_frontier, global_trace):
     """Depth-Limited Search (helper for IDS)."""
-    root = Node(state=start, g=0, depth=0)
-    stack = [root]
-    visited_in_path = set()
-    nodes_expanded = prev_expanded
-    nodes_generated = prev_generated
-    max_frontier = prev_max_frontier
-    found_cutoff = False
+    nodes_expanded = [prev_expanded]
+    nodes_generated = [prev_generated]
+    max_frontier = [prev_max_frontier]
+    found_cutoff = [False]
+    result_holder = [None]  # Will hold SearchResult if goal found
 
-    while stack:
+    def recursive_dls(node, limit, path_set):
+        if result_holder[0] is not None:
+            return
         if time.perf_counter() - t0_global > timeout:
-            return SearchResult(
-                success=False, message="Timeout",
-                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                max_frontier_size=max_frontier, trace=global_trace,
-            )
-
-        node = stack.pop()
+            return
 
         if node.state == goal:
             path = reconstruct_path(node)
             actions = reconstruct_actions(node)
             if len(global_trace) < 200:
                 global_trace.append(TraceStep(
-                    step=nodes_expanded, state=node.state, action=node.action,
+                    step=nodes_expanded[0], state=node.state, action=node.action,
                     g=node.g, h=0, f=node.g, depth_limit=depth_limit,
-                    frontier_size=len(stack), reached_size=0,
-                    node_state=node.state, frontier_states=[n.state for n in stack], reached_states=[],
+                    frontier_size=0, reached_size=0,
+                    node_state=node.state, frontier_states=[], reached_states=[],
                     reason=f"Goal found at depth {node.depth}",
                 ))
-            return SearchResult(
+            result_holder[0] = SearchResult(
                 success=True, path=path, actions=actions,
                 cost=node.g, depth=node.depth,
-                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                max_frontier_size=max_frontier, trace=global_trace,
+                nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+                max_frontier_size=max_frontier[0], trace=global_trace,
                 message=f"Found at depth {node.depth}, limit={depth_limit}",
             )
+            return
 
-        if node.depth >= depth_limit:
-            found_cutoff = True
-            continue
+        if node.depth >= limit:
+            found_cutoff[0] = True
+            return
 
-        if node.state in visited_in_path:
-            continue
-        visited_in_path.add(node.state)
-        nodes_expanded += 1
-
+        nodes_expanded[0] += 1
         ps = PuzzleState(node.state)
-        neighbors = list(reversed(ps.get_neighbors(action_order)))
-        for ns, action, cost in neighbors:
-            child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1)
-            stack.append(child)
-            nodes_generated += 1
-            max_frontier = max(max_frontier, len(stack))
-
-        visited_in_path.discard(node.state)
+        neighbors = ps.get_neighbors(action_order)
 
         if len(global_trace) < 200:
             global_trace.append(TraceStep(
-                step=nodes_expanded, state=node.state, action=node.action,
+                step=nodes_expanded[0], state=node.state, action=node.action,
                 g=node.g, h=0, f=node.g, depth_limit=depth_limit,
-                frontier_size=len(stack), reached_size=0,
-                node_state=node.state, frontier_states=[n.state for n in stack], reached_states=[],
+                frontier_size=0, reached_size=0,
+                node_state=node.state, frontier_states=[], reached_states=[],
                 reason=f"IDS depth_limit={depth_limit}",
             ))
 
-    if found_cutoff:
+        for ns, action, cost in neighbors:
+            if ns in path_set:
+                continue
+            child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1)
+            nodes_generated[0] += 1
+            path_set.add(ns)
+            recursive_dls(child, limit, path_set)
+            path_set.discard(ns)  # Backtrack — this is correct in recursion!
+            if result_holder[0] is not None:
+                return
+
+    root = Node(state=start, g=0, depth=0)
+    path_set = {start}
+    recursive_dls(root, depth_limit, path_set)
+
+    if result_holder[0] is not None:
+        return result_holder[0]
+
+    if found_cutoff[0]:
         return SearchResult(
             success=False, message=f"cutoff at depth {depth_limit}",
-            nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-            max_frontier_size=max_frontier, trace=global_trace,
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+            max_frontier_size=max_frontier[0], trace=global_trace,
         )
     return SearchResult(
         success=False, message="No solution at this depth",
-        nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-        max_frontier_size=max_frontier, trace=global_trace,
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+        max_frontier_size=max_frontier[0], trace=global_trace,
     )

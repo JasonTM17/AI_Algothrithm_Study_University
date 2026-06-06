@@ -110,7 +110,57 @@ def geometric_mandala():
     return _img_to_tiles(img, grid, px)
 
 
+def load_real_image(filename):
+    """Load a real image from assets, fallback to sunset gradient if fails."""
+    import os
+    from PIL import Image
+    # Try multiple possible relative/absolute paths
+    base_paths = [
+        os.path.join("ui", "assets", filename),
+        os.path.join("assets", filename),
+        filename
+    ]
+    img_path = None
+    for p in base_paths:
+        if os.path.exists(p):
+            img_path = p
+            break
+            
+    if img_path:
+        try:
+            img = Image.open(img_path)
+            img = img.convert("RGBA")
+            # crop to square from center
+            w, h = img.size
+            size = min(w, h)
+            left = (w - size) // 2
+            top = (h - size) // 2
+            img = img.crop((left, top, left + size, top + size))
+            return _img_to_tiles(img, grid_size=4, tile_px=100)
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to load image {filename}: {e}")
+            
+    # Fallback if image not found or fails to load
+    return sunset_gradient()
+
+
+def cyberpunk_city():
+    return load_real_image("cyberpunk_city.png")
+
+
+def cosmic_cat():
+    return load_real_image("cosmic_cat.png")
+
+
+def magic_castle():
+    return load_real_image("magic_castle.png")
+
+
 SAMPLE_IMAGES = {
+    "🏙️ Cyberpunk City": cyberpunk_city,
+    "🐱 Cosmic Astronaut Cat": cosmic_cat,
+    "🏰 Floating Magic Castle": magic_castle,
     "Sunset Gradient": sunset_gradient,
     "Ocean Blues": ocean_blues,
     "Forest Green": forest_green,

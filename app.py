@@ -1,7 +1,8 @@
-﻿"""15-Puzzle AI â€” Streamlit application for comparing search algorithms."""
+"""15-Puzzle AI â€” Streamlit application for comparing search algorithms."""
 
 import streamlit as st
 import time
+import pandas as pd
 from core.puzzle import PuzzleState, GOAL_STATE, is_solvable, scramble, parse_state, validate_path
 from core.heuristics import HEURISTICS, HEURISTIC_DESCRIPTIONS
 from core.metrics import SearchResult
@@ -30,7 +31,7 @@ from ui.sample_images import SAMPLE_IMAGES, generate_sample_tiles
 
 st.set_page_config(
     page_title="15-Puzzle AI",
-    page_icon="",
+    page_icon="🧩",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -109,13 +110,12 @@ if solvable:
 else:
     st.sidebar.error("Not solvable! Swap two tiles to make solvable.")
 
-# Auto-load default sample image on first run
-if "image_tiles_loaded" not in st.session_state:
-    st.session_state.image_tiles_loaded = False
-if not st.session_state.image_tiles_loaded or not st.session_state.get("image_tiles"):
+# Auto-load default sample image on first run only
+if "image_active" not in st.session_state:
+    st.session_state.image_active = True
+if st.session_state.image_active and not st.session_state.get("image_tiles"):
     default_img = list(SAMPLE_IMAGES.keys())[0]
     st.session_state.image_tiles = generate_sample_tiles(default_img)
-    st.session_state.image_tiles_loaded = True
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Sample Image")
@@ -127,7 +127,15 @@ sample_choice = st.sidebar.selectbox(
 )
 if st.sidebar.button("Load Sample Image", key="btn_load_sample"):
     st.session_state.image_tiles = generate_sample_tiles(sample_choice)
-    st.session_state.image_tiles_loaded = True
+    st.session_state.image_active = True
+
+if "show_numbers" not in st.session_state:
+    st.session_state.show_numbers = True
+st.session_state.show_numbers = st.sidebar.checkbox(
+    "Hiển thị số trên ảnh (Helper)",
+    value=st.session_state.show_numbers,
+    key="show_numbers_checkbox"
+)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Current Start State")
@@ -160,11 +168,13 @@ if tab == "Play":
         tiles = process_uploaded_image(uploaded_img)
         if tiles:
             st.session_state.image_tiles = tiles
+            st.session_state.image_active = True
             st.success(f"Image loaded! {len(tiles)} tile pieces created.")
         else:
             st.error("Failed to process image. Make sure it's a valid image file.")
     if st.button("Remove Image", key="remove_img"):
         st.session_state.image_tiles = {}
+        st.session_state.image_active = False
 
     st.markdown("---")
     st.subheader("Manual Play")
@@ -174,15 +184,47 @@ if tab == "Play":
         st.session_state.play_state = st.session_state.start_state
         st.session_state.play_moves = 0
 
+    if "play_start_ref" not in st.session_state:
+        st.session_state.play_start_ref = st.session_state.start_state
+    if st.session_state.play_start_ref != st.session_state.start_state:
+        st.session_state.play_state = st.session_state.start_state
+        st.session_state.play_moves = 0
+        st.session_state.play_start_ref = st.session_state.start_state
+
     has_image = "image_tiles" in st.session_state and st.session_state.image_tiles
     if has_image:
-        render_image_board(
-            st.session_state.play_state,
-            st.session_state.image_tiles,
-            key_prefix="play",
-            highlight_correct=True,
-            on_click_fn=_handle_play_slide,
-        )
+        col_board, col_preview = st.columns([5, 3])
+        with col_board:
+            render_image_board(
+                st.session_state.play_state,
+                st.session_state.image_tiles,
+                key_prefix="play",
+                highlight_correct=True,
+                on_click_fn=_handle_play_slide,
+                show_numbers=st.session_state.get("show_numbers", True),
+            )
+        with col_preview:
+            st.markdown('<div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
+            preview_img = None
+            if "sample_select" in st.session_state:
+                choice = st.session_state.sample_select
+                if "Cyberpunk" in choice:
+                    preview_img = "ui/assets/cyberpunk_city.png"
+                elif "Cosmic" in choice:
+                    preview_img = "ui/assets/cosmic_cat.png"
+                elif "Floating" in choice:
+                    preview_img = "ui/assets/magic_castle.png"
+            
+            if preview_img:
+                import os
+                if os.path.exists(preview_img):
+                    st.image(preview_img, use_container_width=True)
+                else:
+                    st.caption("Preview not found on disk.")
+            elif uploaded_img:
+                st.image(uploaded_img, use_container_width=True)
+            else:
+                st.info("Gradient/Mandala preview is not available.")
     else:
         render_clickable_board(
             st.session_state.play_state,
@@ -220,8 +262,13 @@ elif tab == "Run Algorithm":
         algorithms = ALGORITHM_GROUPS[group]
         algo_name = st.selectbox("Algorithm", algorithms, key="algo_name")
 
+        # Only show heuristic for algorithms that use it
         heuristic_options = list(HEURISTICS.keys())
-        heuristic = st.selectbox("Heuristic", heuristic_options, key="heuristic_select")
+        uninformed_algos = ["BFS", "DFS", "UCS", "IDS"]
+        if algo_name not in uninformed_algos:
+            heuristic = st.selectbox("Heuristic", heuristic_options, key="heuristic_select")
+        else:
+            heuristic = "Manhattan Distance"  # default, won't be used
 
     with col_params:
         col_p1, col_p2 = st.columns(2)
@@ -568,44 +615,45 @@ elif tab == "Advanced":
 
     common_kw = dict(start=start, goal=GOAL_STATE, timeout=30.0, action_order="LRUD")
 
-    if "CSP Definition" in mode:
+    if mode == "CSP Definition & Propagation":
         t = st.number_input("Time Horizon", 1, 5, 3, key="csp_t")
+        st.subheader("CSP Definition")
         result = csp_definition(time_horizon=t, **common_kw)
         st.markdown(result.message)
+        st.subheader("Constraint Propagation")
+        result2 = constraint_propagation(time_horizon=t, **common_kw)
+        st.markdown(result2.message)
 
-    elif "Propagation" in mode:
-        t = st.number_input("Time Horizon", 1, 5, 3, key="csp_prop_t")
-        result = constraint_propagation(time_horizon=t, **common_kw)
-        st.markdown(result.message)
-
-    elif "Backtracking" in mode:
+    elif mode == "Backtracking & Min-Conflicts":
+        st.subheader("Backtracking Search")
         result = backtracking_search(**common_kw, max_steps=5000, timeout=30.0)
         render_result_metrics(result)
         if result.trace:
             render_trace_table(result.trace)
-
-    elif "Min-Conflicts" in mode:
+        st.markdown("---")
+        st.subheader("Min-Conflicts")
         seed = st.number_input("Seed", 0, 99999, 42, key="mc_seed")
-        result = min_conflicts(**common_kw, max_iterations=10000, seed=seed)
-        render_result_metrics(result)
+        result2 = min_conflicts(**common_kw, max_iterations=10000, seed=seed)
+        render_result_metrics(result2)
 
-    elif "Constraint Graphs" in mode:
+    elif mode == "Constraint Graphs & Path Consistency":
+        st.subheader("Constraint Graphs")
         t = st.number_input("Time Horizon", 1, 3, 2, key="cg_t")
         result = solve_csp_constraint_graphs(time_horizon=t, **common_kw)
         st.markdown(result.message)
+        st.markdown("---")
+        st.subheader("Path Consistency")
+        result2 = path_consistency(**common_kw)
+        st.markdown(result2.message)
 
-    elif "Path Consistency" in mode:
-        result = path_consistency(**common_kw)
-        st.markdown(result.message)
-
-    elif "AND-OR" in mode:
+    elif mode == "AND-OR Search (Nondeterministic)":
         d = st.number_input("Max Depth", 1, 15, 5, key="andor_depth")
         p = st.slider("Nondeterministic Probability", 0.1, 0.5, 0.3, key="andor_prob")
         seed = st.number_input("Seed", 0, 99999, 42, key="andor_seed")
         result = and_or_search(max_depth=d, nondet_prob=p, seed=seed, **common_kw)
         st.markdown(result.message)
 
-    elif "No Observation" in mode:
+    elif mode == "No Observation (Belief State)":
         n = st.number_input("Belief States", 2, 10, 5, key="no_obs_n")
         steps = st.number_input("Max Steps", 5, 50, 20, key="no_obs_steps")
         seed = st.number_input("Seed", 0, 99999, 42, key="no_obs_seed")
@@ -614,7 +662,7 @@ elif tab == "Advanced":
         if result.trace:
             render_trace_table(result.trace)
 
-    elif "Partially Observable" in mode:
+    elif mode == "Partially Observable":
         n = st.number_input("Belief States", 2, 10, 5, key="po_n")
         steps = st.number_input("Max Steps", 5, 50, 20, key="po_steps")
         seed = st.number_input("Seed", 0, 99999, 42, key="po_seed")
@@ -623,7 +671,7 @@ elif tab == "Advanced":
         if result.trace:
             render_trace_table(result.trace)
 
-    elif "LRTA" in mode:
+    elif mode == "Online Search (LRTA*)":
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="lrta_h")
         steps = st.number_input("Max Steps", 100, 100000, 10000, key="lrta_steps")
         result = online_search_lrta(heuristic=heuristic, max_steps=steps, **common_kw)
@@ -631,21 +679,21 @@ elif tab == "Advanced":
         if result.trace:
             render_trace_table(result.trace)
 
-    elif "Minimax" in mode:
+    elif mode == "Minimax Game":
         d = st.number_input("Game Tree Depth", 1, 5, 3, key="mm_depth")
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="mm_h")
         result = minimax(depth=d, heuristic=heuristic, **common_kw)
         render_result_metrics(result)
         st.markdown(result.message)
 
-    elif "Alpha-Beta" in mode:
+    elif mode == "Alpha-Beta Pruning Game":
         d = st.number_input("Game Tree Depth", 1, 5, 3, key="ab_depth")
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="ab_h")
         result = alpha_beta_pruning(depth=d, heuristic=heuristic, **common_kw)
         render_result_metrics(result)
         st.markdown(result.message)
 
-    elif "Expectimax" in mode:
+    elif mode == "Expectimax (Stochastic)":
         d = st.number_input("Game Tree Depth", 1, 5, 3, key="em_depth")
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="em_h")
         sp = st.slider("Success Probability", 0.5, 1.0, 0.8, key="em_sp")

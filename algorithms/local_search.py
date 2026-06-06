@@ -2,6 +2,7 @@
 
 import time
 import random
+import math
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE
 from core.heuristics import HEURISTICS, manhattan_distance
@@ -249,10 +250,13 @@ def random_restart_hill_climbing(
                 break
 
             if current == goal:
+                msg = f"Goal reached (restart {restart})"
+                if restart > 0:
+                    msg += ". Note: Restart was needed; the returned path starts from the restart's scrambled state, not the original start state."
                 return SearchResult(success=True, algorithm="Random-Restart Hill Climbing", group="Local Search",
                                     path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                     nodes_expanded=total_expanded, nodes_generated=total_expanded,
-                                    runtime=time.perf_counter() - t0, message=f"Goal reached (restart {restart})", trace=trace,
+                                    runtime=time.perf_counter() - t0, message=msg, trace=trace,
                                     uses_heuristic=True, uses_randomness=True,
                                     is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
@@ -347,7 +351,7 @@ def local_beam_search(
             break
 
         beam = new_beam
-        best_path.update(new_best_path)
+        best_path = new_best_path
 
         if len(trace) < 200:
             trace.append(TraceStep(step=i, state=beam[0][1], current_h=beam[0][0],
@@ -422,8 +426,7 @@ def simulated_annealing(
         if delta < 0:
             accepted = True
         else:
-            probability = min(1.0, (temp / initial_temp) if temp > 0 else 0.0) ** (delta / max(temp, 0.001))
-            probability = min(1.0, 2.71828 ** (-delta / max(temp, 0.001)))
+            probability = min(1.0, math.exp(-delta / max(temp, 0.001)))
             accepted = rng.random() < probability
 
         if accepted:

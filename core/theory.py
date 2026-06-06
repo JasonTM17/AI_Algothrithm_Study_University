@@ -111,7 +111,7 @@ THEORY["IDS"] = {
     "complexity": "Thời gian: O(b^d) (như BFS), Bộ nhớ: O(b*d) (như DFS)",
     "bad_example": "IDS lặp lại DFS nhiều lần. Với b=3, d=10: tổng node ≈ b^d/(b-1) gần như BFS. Overhead nhỏ.",
     "comparison": "IDS có tính chất optimal + complete của BFS nhưng bộ nhớ của DFS. Là lựa chọn tốt nhất trong uninformed search cho 15-puzzle.",
-    "exam_tips": "IDS ⇒ optimal (unit cost), complete, tiết kiệm bộ nhớ. IDS expand lại node nhưng overhead nhỏ. IDS là uninformed search tốt nhất cho bài toán неизвест trước depth.",
+    "exam_tips": "IDS ⇒ optimal (unit cost), complete, tiết kiệm bộ nhớ. IDS expand lại node nhưng overhead nhỏ. IDS là uninformed search tốt nhất cho bài toán không biết trước depth.",
 }
 
 # ============================================================
@@ -124,7 +124,7 @@ THEORY["Greedy"] = {
     "goal": "Tìm lời giải nhanh bằng cách ưu tiên node có heuristic nhỏ nhất.",
     "idea": "Chỉ dùng h(n) để đánh giá, không xét g(n). Chạy nhanh nhưng không đảm bảo tối ưu.",
     "data_structure": "Priority Queue theo h(n), Dict cho reached.",
-    "formula": "Ưu tiên: h(n) nhỏ nhất. h(n) =估计 chi phí từ n đến goal.",
+    "formula": "Ưu tiên: h(n) nhỏ nhất. h(n) = ước tính chi phí từ n đến goal.",
     "pseudocode": """Greedy(start, goal, h):
   Frontier ← PriorityQueue [(h(start), start)]
   Reached ← {start}
@@ -423,7 +423,7 @@ for algo_name in ["Constraint Propagation", "Path Consistency", "Global Constrai
 THEORY["Minimax"] = {
     "name": "Minimax",
     "group": "Adversarial/Stochastic",
-    "goal": "Tìm chiến lược tối ưu trong game 2 người zero-sum. MAX максимin, MIN minimax.",
+    "goal": "Tìm chiến lược tối ưu trong game 2 người zero-sum. MAX maximize, MIN minimax.",
     "idea": "MAX chọn action tối đa hóa utility. MIN chọn action tối tiểu hóa utility. Depth-limited với evaluation function.",
     "data_structure": "Game tree. MAX node: chọn max. MIN node: chọn min.",
     "formula": "Minimax(s) = utility(s) if terminal. Max_a Minimax(Result(s,a)) if MAX. Min_a Minimax(Result(s,a)) if MIN.",
