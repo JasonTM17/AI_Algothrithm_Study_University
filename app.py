@@ -26,6 +26,7 @@ from ui.components import (
     render_trace_table, render_path_animation, render_comparison_table,
     render_algorithm_info, render_search_detail_table, render_search_tree,
     process_uploaded_image, render_clickable_board, render_image_board,
+    render_algorithm_evaluation,
 )
 from ui.sample_images import SAMPLE_IMAGES, generate_sample_tiles
 
@@ -394,6 +395,7 @@ elif tab == "Run Algorithm":
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
+        render_algorithm_evaluation(result.algorithm)
 
         if result.success and result.path:
             st.subheader("Solution Path")

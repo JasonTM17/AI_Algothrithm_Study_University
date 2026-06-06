@@ -381,7 +381,7 @@ def expectimax(
                     if any(o[0] == next_state for o in outcomes):
                         actions.append(action)
                         break
-                current_idx = game_tree.index(next_max_node)
+                current_idx = idx
             else:
                 break
         else:

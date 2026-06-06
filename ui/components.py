@@ -653,3 +653,80 @@ def process_uploaded_image(image_file, grid_size: int = 4):
         import logging
         logging.warning(f"process_uploaded_image failed: {e}")
         return {}
+
+def render_algorithm_evaluation(algo_name: str):
+    """Render a dedicated academic evaluation table for the selected algorithm."""
+    from ui.styles import THEORY_KEY_MAP, COMPARISON_TABLE
+    from core.theory import THEORY
+    import pandas as pd
+
+    theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
+    theory_data = THEORY.get(theory_key)
+
+    # Find the algorithm row in COMPARISON_TABLE
+    row_data = None
+    for row in COMPARISON_TABLE:
+        if row["Algorithm"].lower() in algo_name.lower() or algo_name.lower() in row["Algorithm"].lower():
+            row_data = row
+            break
+    # Fallback search
+    if not row_data and theory_data:
+        for row in COMPARISON_TABLE:
+            if row["Group"].lower() in theory_data.get("group", "").lower():
+                row_data = row
+                break
+
+    st.markdown("---")
+    st.markdown("### 🎓 Đánh Giá Học Thuật (Academic Evaluation)")
+    
+    if row_data and theory_data:
+        # Get complexities
+        comp_str = theory_data.get("complexity", "N/A")
+        time_comp = "N/A"
+        space_comp = "N/A"
+        if "," in comp_str:
+            parts = comp_str.split(",")
+            for p in parts:
+                if "thời gian" in p.lower() or "time" in p.lower() or "trước" in p.lower():
+                    time_comp = p.replace("Thời gian:", "").replace("time:", "").strip()
+                elif "bộ nhớ" in p.lower() or "space" in p.lower() or "memory" in p.lower():
+                    space_comp = p.replace("Bộ nhớ:", "").replace("space:", "").strip()
+        else:
+            time_comp = comp_str
+
+        # Create properties table
+        properties = {
+            "Thuộc tính (Property)": [
+                "Tính đầy đủ (Completeness)",
+                "Tính tối ưu (Optimality)",
+                "Độ phức tạp thời gian (Time Complexity)",
+                "Độ phức tạp không gian (Space Complexity)",
+                "Độ phù hợp 15-Puzzle (Suitability)"
+            ],
+            "Thông tin học thuật (Academic Value)": [
+                row_data.get("Complete", "N/A"),
+                row_data.get("Optimal", "N/A"),
+                time_comp,
+                space_comp,
+                row_data.get("Suitable", "N/A")
+            ]
+        }
+        df = pd.DataFrame(properties)
+        st.table(df)
+        
+        # Render Pros & Cons
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**👍 Ưu điểm (Pros)**")
+            for pro in theory_data.get("pros", ["N/A"]):
+                st.markdown(f"- {pro}")
+        with col2:
+            st.markdown("**👎 Nhược điểm (Cons)**")
+            for con in theory_data.get("cons", ["N/A"]):
+                st.markdown(f"- {con}")
+                
+        # Render Exam Tips
+        if theory_data.get("exam_tips"):
+            st.info(f"💡 **Lưu ý ôn thi (Exam Tips):** {theory_data.get('exam_tips')}")
+    else:
+        st.info("Không tìm thấy dữ liệu đánh giá học thuật cho thuật toán này.")
