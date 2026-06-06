@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Claude / OMC internal
+.claude/
+.omc/
+
+# Plans (private)
+plans/
+*.private.md
+*.local.md
+PLAN*.md
+PLAN*.md
+NOTES*.md
+TODO*.md
+DRAFT*.md
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Test / coverage
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
