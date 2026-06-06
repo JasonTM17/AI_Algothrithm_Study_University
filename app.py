@@ -368,87 +368,168 @@ if tab == "Play":
 
     # ── Academic Theory Section ──────────────────────────────
     st.markdown("---")
-    st.markdown("## 🎓 Bài Toán 15-Puzzle & 6 Nhóm Thuật Toán Tìm Kiếm (Phân Tích Học Thuật)")
+    st.markdown("## 🎓 15-Puzzle & 6 Search Algorithm Groups (Academic Analysis)")
     
-    with st.expander("📚 Xem Phân Tích Lý Thuyết Chi Tiết & Mô Hình Hóa Học Thuật", expanded=False):
-        st.markdown("""
-        ### 1. Mô hình hóa bài toán 15-Puzzle dưới dạng Tìm kiếm không gian trạng thái (State-Space Search)
-        
-        Để giải quyết 15-Puzzle một cách học thuật, bài toán được mô tả bằng bộ ngũ thức định nghĩa không gian trạng thái:
-        
-        *   **Không gian trạng thái ($S$):** Tập hợp tất cả các hoán vị hợp lệ của bảng 4x4 chứa các số từ $0$ đến $15$. Có tổng cộng $16! = 20.922.789.888.000$ cấu hình bảng, nhưng chỉ một nửa trong số đó (tức $16! / 2 \approx 10.46 \times 10^{12}$) là có thể giải được (solvable). Trạng thái đích là:
-            $$S_{goal} = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)$$
-        *   **Trạng thái bắt đầu ($S_0$):** Cấu hình bảng số ban đầu cần giải quyết.
-        *   **Tập hành động ($A(s)$):** Tập các hành động dịch chuyển ô trống hợp lệ từ vị trí hiện tại:
-            $$A(s) \subseteq \{ L (Left), R (Right), U (Up), D (Down) \}$$
-        *   **Hàm chuyển trạng thái ($Result(s, a)$):** Trả về trạng thái mới $s'$ sau khi áp dụng hành động $a \in A(s)$ vào trạng thái $s$.
-        *   **Hàm kiểm tra mục tiêu ($Goal-Test(s)$):** Trả về True nếu $s = S_{goal}$, ngược lại False.
-        *   **Chi phí đường đi ($g(n)$):** Được tính bằng tổng chi phí từng bước. Với 15-puzzle, chi phí mỗi bước di chuyển $c(s, a, s') = 1$, do đó $g(n)$ chính là số bước đi (depth của nút $n$).
-
-        ---
-        
-        ### 2. Cấu trúc học thuật của Đại lý Tìm kiếm (Search Agent)
-        
-        *   **Nút (Node):** Là cấu trúc dữ liệu lưu trữ một trạng thái và thông tin bổ sung:
-            *   `state`: Trạng thái bảng số hiện tại.
-            *   `parent`: Nút cha sinh ra nút này.
-            *   `action`: Hành động dẫn từ nút cha tới nút hiện tại.
-            *   `g`: Chi phí đường đi từ trạng thái bắt đầu.
-            *   `h`: Giá trị heuristic ước lượng chi phí tới đích.
-            *   `f`: Hàm đánh giá tổng thể ($f = g + h$).
-        *   **Biên giới (Frontier):** Tập hợp các nút đã được sinh ra nhưng chưa được mở rộng (expanded). Cách Frontier lưu trữ quyết định chiến lược tìm kiếm (FIFO cho BFS, LIFO cho DFS, Min-Heap cho UCS và A*).
-        *   **Tập đã duyệt (Reached/Closed Set):** Tập hợp các trạng thái đã được mở rộng để ngăn chặn trùng lặp và loại bỏ các chu trình trong đồ thị tìm kiếm.
-
-        ---
-
-        ### 3. Phân tích Chi tiết 6 Nhóm Thuật Toán
-        
-        #### ① Nhóm 1: Tìm kiếm mù (Uninformed Search)
-        *Các thuật toán này không có thông tin về khoảng cách tới đích, chỉ duyệt hệ thống dựa trên cấu trúc đồ thị.*
-        *   **BFS (Breadth-First Search):** Duyệt theo chiều rộng. Đảm bảo tìm thấy lời giải ngắn nhất (tính tối ưu) khi chi phí bước đồng nhất. Tuy nhiên, độ phức tạp bộ nhớ là $O(b^d)$ (với hệ số phân nhánh $b \approx 3$). Với 15-puzzle, bộ nhớ tăng cực nhanh và nhanh chóng tràn RAM.
-        *   **DFS (Depth-First Search):** Duyệt theo chiều sâu. Độ phức tạp bộ nhớ chỉ là $O(bd)$ (tuyến tính), nhưng không đảm bảo tính tối ưu và dễ rơi vào các đường đi vô hạn nếu không quản lý chu trình nghiêm ngặt.
-        *   **UCS (Uniform-Cost Search):** Mở rộng nút có chi phí đường đi $g(n)$ nhỏ nhất. Với chi phí bước đồng nhất bằng 1, UCS hoạt động hoàn toàn giống BFS nhưng có chi phí quản lý hàng đợi ưu tiên lớn hơn.
-        *   **IDS (Iterative Deepening Search):** Kết hợp ưu điểm bộ nhớ của DFS và tính tối ưu của BFS bằng cách lặp lại DFS với giới hạn độ sâu tăng dần. Đây là thuật toán tìm kiếm mù tốt nhất cho 15-puzzle.
-
-        #### ② Nhóm 2: Tìm kiếm có thông tin (Informed / Heuristic Search)
-        *Sử dụng tri thức về bài toán thông qua hàm Heuristic $h(n)$ để hướng dẫn quá trình tìm kiếm.*
-        *   **Hàm Heuristic chấp nhận được (Admissible Heuristic):** Luôn ước lượng thấp hơn hoặc bằng chi phí thực tế tới đích ($h(n) \le h^*(n)$). Đảm bảo tính tối ưu cho thuật toán A*.
-            *   *Khoảng cách Manhattan (Manhattan Distance):* Tổng khoảng cách theo chiều ngang và dọc của từng ô số về vị trí đích. Đây là heuristic chấp nhận được và nhất quán (consistent).
-            *   *Số ô sai vị trí (Misplaced Tiles):* Đếm số ô không nằm đúng vị trí. Yếu hơn Manhattan vì không phản ánh khoảng cách cần di chuyển.
-            *   *Linear Conflict:* Manhattan cộng thêm $2 \times$ số xung đột tuyến tính (các ô cùng dòng/cột đích nhưng ngược thứ tự). Đây là heuristic mạnh nhất được sử dụng.
-        *   **A\* Search:** Mở rộng nút có $f(n) = g(n) + h(n)$ nhỏ nhất. Tìm kiếm tối ưu và đầy đủ nhất nếu dùng Heuristic chấp nhận được.
-        *   **Greedy Best-First Search:** Chỉ ưu tiên $h(n)$ nhỏ nhất. Rất nhanh nhưng đường đi tìm được thường không tối ưu và dễ rơi vào cực trị cục bộ.
-        *   **IDA\* (Iterative Deepening A\*):** Lập lại tìm kiếm sâu với giới hạn $f$-cost thay vì giới hạn độ sâu. Giúp giải quyết bài toán bộ nhớ của A*.
-
-        #### ③ Nhóm 3: Tìm kiếm cục bộ (Local Search)
-        *Thích hợp khi chỉ quan tâm tới trạng thái đích chứ không quan tâm tới đường đi.*
-        *   **Hill Climbing (Steepest Ascent):** Chọn nước đi láng giềng cải thiện hàm đánh giá (giảm heuristic $h(n)$) tốt nhất. Dễ bị kẹt ở **Cực trị cục bộ (Local Minima)** hoặc **Cao nguyên (Plateau)**.
-        *   **Stochastic / Random-Restart HC:** Khắc phục nhược điểm bằng cách chọn láng giềng ngẫu nhiên tốt hơn hoặc khởi chạy lại từ các trạng thái ngẫu nhiên khác nhau.
-        *   **Simulated Annealing (Luyện kim):** Cho phép thực hiện các nước đi làm tăng heuristic (tệ đi) với xác suất $P = e^{-\Delta E / T}$ để nhảy ra khỏi cực trị cục bộ, giảm nhiệt độ $T$ theo thời gian.
-        *   **Local Beam Search:** Lưu trữ $k$ trạng thái thay vì 1. Tại mỗi bước, sinh ra tất cả các trạng thái kế tiếp và chỉ giữ lại $k$ trạng thái tốt nhất.
-
-        #### ④ Nhóm 4: Môi trường phức tạp (Complex Environments Search)
-        *Giải quyết bài toán khi môi trường không xác định (nondeterministic), không quan sát toàn phần (partially observable), hoặc cần tìm kiếm trực tuyến (online).*
-        *   **Tìm kiếm AND-OR:** Sử dụng khi hành động của Agent có thể dẫn tới nhiều kết quả ngẫu nhiên (môi trường không xác định). Tìm kiếm sinh ra cây lời giải (solution tree) thay vì đường đi.
-        *   **Belief State Search (Không quan sát):** Agent bắt đầu bằng việc không biết mình đang ở trạng thái nào (tập tất cả các hoán vị có thể), và phải thực hiện một chuỗi hành động ép trạng thái tin tưởng (belief state) hội tụ về trạng thái đích.
-        *   **LRTA\* (Learning Real-Time A\*):** Thuật toán tìm kiếm trực tuyến. Agent đưa ra quyết định di chuyển ngay lập tức dựa trên thông tin cục bộ và cập nhật giá trị heuristic ước lượng của trạng thái vừa đi qua để tối ưu hóa cho các lần sau.
-
-        #### ⑤ Nhóm 5: Bài toán thỏa mãn ràng buộc (CSP)
-        *Biểu diễn bài toán dưới dạng tập hợp các Biến, Miền giá trị và Ràng buộc.*
-        *   **Biểu diễn:**
-            *   *Biến ($X$):* Trạng thái bảng tại các bước thời gian $t \in \{0, 1, ..., T\}$.
-            *   *Miền giá trị ($D$):* Các hoán vị hợp lệ.
-            *   *Ràng buộc ($C$):* Chuyển trạng thái giữa bước $t$ và $t+1$ phải tuân thủ luật dịch chuyển ô trống.
-        *   **Thuật toán áp dụng:**
-            *   *Constraint Propagation (Lan truyền ràng buộc):* Sử dụng kiểm tra tính nhất quán (Arc Consistency AC-3) để lọc đi các miền giá trị không hợp lệ trước khi tìm kiếm.
-            *   *Backtracking Search:* DFS kết hợp lọc miền giá trị cục bộ (Forward Checking, MRV heuristic).
-            *   *Min-Conflicts:* Thuật toán local search hiệu quả cho CSP, liên tục thay đổi giá trị của biến bị vi phạm ràng buộc để giảm thiểu xung đột.
-
-        #### ⑥ Nhóm 6: Tìm kiếm đối kháng và ngẫu nhiên (Adversarial / Stochastic Search)
-        *Mở rộng bài toán sang môi trường có nhiều đối thủ hoặc có yếu tố may rủi.*
-        *   **Minimax & Alpha-Beta Pruning:** Giả định có 2 người chơi: **MAX** (cố gắng đưa bảng về đích nhanh nhất) và **MIN** (đối thủ cố gắng xáo bảng số, cản trở MAX). Alpha-Beta giúp cắt tỉa các nhánh tìm kiếm không ảnh hưởng tới quyết định cuối cùng, giảm độ phức tạp thời gian từ $O(b^d)$ xuống còn $O(b^{d/2})$.
-        *   **Expectimax:** Được áp dụng khi nước đi của ô trống có xác xuất trượt lỗi (ví dụ: muốn trượt Lên nhưng do ma sát trơn trượt có 10% cơ hội trượt Trái/Phải). Expectimax thay thế các nút MIN bằng nút cơ hội (Chance Node), tính giá trị kỳ vọng (Expected Value) dựa trên phân phối xác suất của các kết quả ngẫu nhiên.
-        """)
+    with st.expander("📚 Phân tích học thuật / Academic Analysis", expanded=False):
+        lang = st.radio("Language / Ngôn ngữ", ["Tiếng Việt", "English"], horizontal=True, key="theory_lang_select")
+        if lang == "Tiếng Việt":
+            st.markdown("""
+            ### 1. Mô hình hóa bài toán 15-Puzzle dưới dạng Tìm kiếm không gian trạng thái (State-Space Search)
+            
+            Để giải quyết 15-Puzzle một cách học thuật, bài toán được mô tả bằng bộ ngũ thức định nghĩa không gian trạng thái:
+            
+            *   **Không gian trạng thái ($S$):** Tập hợp tất cả các hoán vị hợp lệ của bảng 4x4 chứa các số từ $0$ đến $15$. Có tổng cộng $16! = 20.922.789.888.000$ cấu hình bảng, nhưng chỉ một nửa trong số đó (tức $16! / 2 \approx 10.46 \times 10^{12}$) là có thể giải được (solvable). Trạng thái đích là:
+                $$S_{goal} = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)$$
+            *   **Trạng thái bắt đầu ($S_0$):** Cấu hình bảng số ban đầu cần giải quyết.
+            *   **Tập hành động ($A(s)$):** Tập các hành động dịch chuyển ô trống hợp lệ từ vị trí hiện tại:
+                $$A(s) \subseteq \{ L (Left), R (Right), U (Up), D (Down) \}$$
+            *   **Hàm chuyển trạng thái ($Result(s, a)$):** Trả về trạng thái mới $s'$ sau khi áp dụng hành động $a \in A(s)$ vào trạng thái $s$.
+            *   **Hàm kiểm tra mục tiêu ($Goal-Test(s)$):** Trả về True nếu $s = S_{goal}$, ngược lại False.
+            *   **Chi phí đường đi ($g(n)$):** Được tính bằng tổng chi phí từng bước. Với 15-puzzle, chi phí mỗi bước di chuyển $c(s, a, s') = 1$, do đó $g(n)$ chính là số bước đi (depth của nút $n$).
+    
+            ---
+            
+            ### 2. Cấu trúc học thuật của Đại lý Tìm kiếm (Search Agent)
+            
+            *   **Nút (Node):** Là cấu trúc dữ liệu lưu trữ một trạng thái và thông tin bổ sung:
+                *   `state`: Trạng thái bảng số hiện tại.
+                *   `parent`: Nút cha sinh ra nút này.
+                *   `action`: Hành động dẫn từ nút cha tới nút hiện tại.
+                *   `g`: Chi phí đường đi từ trạng thái bắt đầu.
+                *   `h`: Giá trị heuristic ước lượng chi phí tới đích.
+                *   `f`: Hàm đánh giá tổng thể ($f = g + h$).
+            *   **Biên giới (Frontier):** Tập hợp các nút đã được sinh ra nhưng chưa được mở rộng (expanded). Cách Frontier lưu trữ quyết định chiến lược tìm kiếm (FIFO cho BFS, LIFO cho DFS, Min-Heap cho UCS và A*).
+            *   **Tập đã duyệt (Reached/Closed Set):** Tập hợp các trạng thái đã được mở rộng để ngăn chặn trùng lặp và loại bỏ các chu trình trong đồ thị tìm kiếm.
+    
+            ---
+    
+            ### 3. Phân tích Chi tiết 6 Nhóm Thuật Toán
+            
+            #### ① Nhóm 1: Tìm kiếm mù (Uninformed Search)
+            *Các thuật toán này không có thông tin về khoảng cách tới đích, chỉ duyệt hệ thống dựa trên cấu trúc đồ thị.*
+            *   **BFS (Breadth-First Search):** Duyệt theo chiều rộng. Đảm bảo tìm thấy lời giải ngắn nhất (tính tối ưu) khi chi phí bước đồng nhất. Tuy nhiên, độ phức tạp bộ nhớ là $O(b^d)$ (với hệ số phân nhánh $b \approx 3$). Với 15-puzzle, bộ nhớ tăng cực nhanh và nhanh chóng tràn RAM.
+            *   **DFS (Depth-First Search):** Duyệt theo chiều sâu. Độ phức tạp bộ nhớ chỉ là $O(bd)$ (tuyến tính), nhưng không đảm bảo tính tối ưu và dễ rơi vào các đường đi vô hạn nếu không quản lý chu trình nghiêm ngặt.
+            *   **UCS (Uniform-Cost Search):** Mở rộng nút có chi phí đường đi $g(n)$ nhỏ nhất. Với chi phí bước đồng nhất bằng 1, UCS hoạt động hoàn toàn giống BFS nhưng có chi phí quản lý hàng đợi ưu tiên lớn hơn.
+            *   **IDS (Iterative Deepening Search):** Kết hợp ưu điểm bộ nhớ của DFS và tính tối ưu của BFS bằng cách lặp lại DFS với giới hạn độ sâu tăng dần. Đây là thuật toán tìm kiếm mù tốt nhất cho 15-puzzle.
+    
+            #### ② Nhóm 2: Tìm kiếm có thông tin (Informed / Heuristic Search)
+            *Sử dụng tri thức về bài toán thông qua hàm Heuristic $h(n)$ để hướng dẫn quá trình tìm kiếm.*
+            *   **Hàm Heuristic chấp nhận được (Admissible Heuristic):** Luôn ước lượng thấp hơn hoặc bằng chi phí thực tế tới đích ($h(n) \le h^*(n)$). Đảm bảo tính tối ưu cho thuật toán A*.
+                *   *Khoảng cách Manhattan (Manhattan Distance):* Tổng khoảng cách theo chiều ngang và dọc của từng ô số về vị trí đích. Đây là heuristic chấp nhận được và nhất quán (consistent).
+                *   *Số ô sai vị trí (Misplaced Tiles):* Đếm số ô không nằm đúng vị trí. Yếu hơn Manhattan vì không phản ánh khoảng cách cần di chuyển.
+                *   *Linear Conflict:* Manhattan cộng thêm $2 \times$ số xung đột tuyến tính (các ô cùng dòng/cột đích nhưng ngược thứ tự). Đây là heuristic mạnh nhất được sử dụng.
+            *   **A\* Search:** Mở rộng nút có $f(n) = g(n) + h(n)$ nhỏ nhất. Tìm kiếm tối ưu và đầy đủ nhất nếu dùng Heuristic chấp nhận được.
+            *   **Greedy Best-First Search:** Chỉ ưu tiên $h(n)$ nhỏ nhất. Rất nhanh nhưng đường đi tìm được thường không tối ưu và dễ rơi vào cực trị cục bộ.
+            *   **IDA\* (Iterative Deepening A\*):** Lập lại tìm kiếm sâu với giới hạn $f$-cost thay vì giới hạn độ sâu. Giúp giải quyết bài toán bộ nhớ của A*.
+    
+            #### ③ Nhóm 3: Tìm kiếm cục bộ (Local Search)
+            *Thích hợp khi chỉ quan tâm tới trạng thái đích chứ không quan tâm tới đường đi.*
+            *   **Hill Climbing (Steepest Ascent):** Chọn nước đi láng giềng cải thiện hàm đánh giá (giảm heuristic $h(n)$) tốt nhất. Dễ bị kẹt ở **Cực trị cục bộ (Local Minima)** hoặc **Cao nguyên (Plateau)**.
+            *   **Stochastic / Random-Restart HC:** Khắc phục nhược điểm bằng cách chọn láng giềng ngẫu nhiên tốt hơn hoặc khởi chạy lại từ các trạng thái ngẫu nhiên khác nhau.
+            *   **Simulated Annealing (Luyện kim):** Cho phép thực hiện các nước đi làm tăng heuristic (tệ đi) với xác suất $P = e^{-\Delta E / T}$ để nhảy ra khỏi cực trị cục bộ, giảm nhiệt độ $T$ theo thời gian.
+            *   **Local Beam Search:** Lưu trữ $k$ trạng thái thay vì 1. Tại mỗi bước, sinh ra tất cả các trạng thái kế tiếp và chỉ giữ lại $k$ trạng thái tốt nhất.
+    
+            #### ④ Nhóm 4: Môi trường phức tạp (Complex Environments Search)
+            *Giải quyết bài toán khi môi trường không xác định (nondeterministic), không quan sát toàn phần (partially observable), hoặc cần tìm kiếm trực tuyến (online).*
+            *   **Tìm kiếm AND-OR:** Sử dụng khi hành động của Agent có thể dẫn tới nhiều kết quả ngẫu nhiên (môi trường không xác định). Tìm kiếm sinh ra cây lời giải (solution tree) thay vì đường đi.
+            *   **Belief State Search (Không quan sát):** Agent bắt đầu bằng việc không biết mình đang ở trạng thái nào (tập tất cả các hoán vị có thể), và phải thực hiện một chuỗi hành động ép trạng thái tin tưởng (belief state) hội tụ về trạng thái đích.
+            *   **LRTA\* (Learning Real-Time A\*):** Thuật toán tìm kiếm trực tuyến. Agent đưa ra quyết định di chuyển ngay lập tức dựa trên thông tin cục bộ và cập nhật giá trị heuristic ước lượng của trạng thái vừa đi qua để tối ưu hóa cho các lần sau.
+    
+            #### ⑤ Nhóm 5: Bài toán thỏa mãn ràng buộc (CSP)
+            *Biểu diễn bài toán dưới dạng tập hợp các Biến, Miền giá trị và Ràng buộc.*
+            *   **Biểu diễn:**
+                *   *Biến ($X$):* Trạng thái bảng tại các bước thời gian $t \in \{0, 1, ..., T\}$.
+                *   *Miền giá trị ($D$):* Các hoán vị hợp lệ.
+                *   *Ràng buộc ($C$):* Chuyển trạng thái giữa bước $t$ và $t+1$ phải tuân thủ luật dịch chuyển ô trống.
+            *   **Thuật toán áp dụng:**
+                *   *Constraint Propagation (Lan truyền ràng buộc):* Sử dụng kiểm tra tính nhất quán (Arc Consistency AC-3) để lọc đi các miền giá trị không hợp lệ trước khi tìm kiếm.
+                *   *Backtracking Search:* DFS kết hợp lọc miền giá trị cục bộ (Forward Checking, MRV heuristic).
+                *   *Min-Conflicts:* Thuật toán local search hiệu quả cho CSP, liên tục thay đổi giá trị của biến bị vi phạm ràng buộc để giảm thiểu xung đột.
+    
+            #### ⑥ Nhóm 6: Tìm kiếm đối kháng và ngẫu nhiên (Adversarial / Stochastic Search)
+            *Mở rộng bài toán sang môi trường có nhiều đối thủ hoặc có yếu tố may rủi.*
+            *   **Minimax & Alpha-Beta Pruning:** Giả định có 2 người chơi: **MAX** (cố gắng đưa bảng về đích nhanh nhất) và **MIN** (đối thủ cố gắng xáo bảng số, cản trở MAX). Alpha-Beta giúp cắt tỉa các nhánh tìm kiếm không ảnh hưởng tới quyết định cuối cùng, giảm độ phức tạp thời gian từ $O(b^d)$ xuống còn $O(b^{d/2})$.
+            *   **Expectimax:** Được áp dụng khi nước đi của ô trống có xác xuất trượt lỗi (ví dụ: muốn trượt Lên nhưng do ma sát trơn trượt có 10% cơ hội trượt Trái/Phải). Expectimax thay thế các nút MIN bằng nút cơ hội (Chance Node), tính giá trị kỳ vọng (Expected Value) dựa trên phân phối xác suất của các kết quả ngẫu nhiên.
+            """)
+        else:
+            st.markdown("""
+            ### 1. State-Space Search Formulation of 15-Puzzle
+            
+            To solve the 15-Puzzle academically, the problem is modeled as a state-space search using a 5-tuple definition:
+            
+            *   **State Space ($S$):** The set of all valid configurations (permutations) of the 4x4 grid containing numbers $0$ to $15$. There are $16! = 20,922,789,888,000$ possible configurations, but only half ($16! / 2 \approx 10.46 \times 10^{12}$) are solvable. The goal state is defined as:
+                $$S_{goal} = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)$$
+            *   **Initial State ($S_0$):** The starting scrambled board configuration.
+            *   **Action Space ($A(s)$):** The set of valid blank-tile movements:
+                $$A(s) \subseteq \{ L (Left), R (Right), U (Up), D (Down) \}$$
+            *   **Transition Model ($Result(s, a)$):** Returns the resulting state $s'$ after applying action $a \in A(s)$ to state $s$.
+            *   **Goal Test ($Goal-Test(s)$):** Returns True if $s = S_{goal}$, else False.
+            *   **Path Cost ($g(n)$):** Computed as the sum of step costs. In the 15-puzzle, each step cost $c(s, a, s') = 1$, so $g(n)$ equals the path depth.
+    
+            ---
+            
+            ### 2. Search Agent Node Structure
+            
+            *   **Node:** A data structure that stores a state and additional search path details:
+                *   `state`: The board configuration.
+                *   `parent`: The predecessor node that generated this node.
+                *   `action`: The action applied to the parent node to reach this node.
+                *   `g`: The path cost from the start state.
+                *   `h`: The heuristic estimate of the cost to reach the goal.
+                *   `f`: The total evaluation cost ($f = g + h$).
+            *   **Frontier:** The set of generated nodes that have not yet been expanded. The choice of frontier data structure determines the search strategy (FIFO queue for BFS, LIFO stack for DFS, Min-Heap priority queue for UCS and A*).
+            *   **Reached/Closed Set:** The set of states that have already been expanded, preventing duplicate state exploration and eliminating cycles.
+    
+            ---
+    
+            ### 3. Detailed Analysis of the 6 Algorithm Groups
+            
+            #### ① Group 1: Uninformed Search (Blind Search)
+            *Algorithms in this group have no information about the distance to the goal, exploring based purely on the graph structure.*
+            *   **BFS (Breadth-First Search):** Explores level-by-level. Guaranteed to find the shortest path (optimal) under uniform step costs. However, its memory complexity is $O(b^d)$ (with branching factor $b \approx 3$). In the 15-puzzle, memory grows exponentially and easily exhausts RAM.
+            *   **DFS (Depth-First Search):** Explores path-by-path. Memory complexity is linear $O(bd)$, but it is not optimal and can enter infinite loops if cycles are not strictly managed.
+            *   **UCS (Uniform-Cost Search):** Expands the node with the lowest path cost $g(n)$. Under uniform step costs, UCS behaves identically to BFS but carries priority queue management overhead.
+            *   **IDS (Iterative Deepening Search):** Combines BFS optimality and DFS space efficiency by iteratively running DFS with increasing depth limits. This is the most optimal uninformed search for the 15-puzzle.
+    
+            #### ② Group 2: Informed Search (Heuristic Search)
+            *Leverages problem-specific knowledge via a heuristic function $h(n)$ to guide the search towards the goal.*
+            *   **Admissible Heuristic:** Never overestimates the true cost to reach the goal ($h(n) \le h^*(n)$). Ensures A* optimality.
+                *   *Manhattan Distance:* Sum of vertical and horizontal distances of each tile from its goal position. Admissible and consistent.
+                *   *Misplaced Tiles:* Counts tiles out of position. Weaker than Manhattan since it ignores actual physical distance.
+                *   *Linear Conflict:* Manhattan distance plus $2 \times$ number of linear conflicts (tiles in their goal row/col but reversed in order). This is the strongest admissible heuristic here.
+            *   **A\* Search:** Expands the node with the lowest $f(n) = g(n) + h(n)$. Guaranteed to be complete and optimal if the heuristic is admissible.
+            *   **Greedy Best-First Search:** Prioritizes nodes based solely on the lowest $h(n)$. Very fast but suboptimal and prone to local minima.
+            *   **IDA\* (Iterative Deepening A\*):** Iteratively runs DFS with an $f$-cost limit instead of a depth limit, solving A*'s memory issue.
+    
+            #### ③ Group 3: Local Search
+            *Best suited when only the goal state matters, not the path taken to reach it.*
+            *   **Hill Climbing (Steepest Ascent):** Moves to the neighboring state that offers the best improvement in $h(n)$. Prone to getting stuck in **Local Minima** or **Plateaus**.
+            *   **Stochastic / Random-Restart HC:** Mitigates local minima by selecting random uphill moves or resetting the search from random starting configurations.
+            *   **Simulated Annealing:** Allows moves that temporarily worsen the heuristic with a probability $P = e^{-\Delta E / T}$ to escape local minima, decreasing the temperature $T$ over time.
+            *   **Local Beam Search:** Maintains $k$ states. Generates all successors and retains only the $k$ best candidates at each step.
+    
+            #### ④ Group 4: Complex Environments Search
+            *Designed for environments that are nondeterministic, partially observable, or require online decision making.*
+            *   **AND-OR Search:** Used when actions have multiple possible outcomes. Produces a solution tree rather than a single path.
+            *   **Belief State Search (No Observation):** The agent starts with no knowledge of its exact state (belief set contains all configurations) and executes actions to force the belief state to converge to the goal.
+            *   **LRTA\* (Learning Real-Time A\*):** An online search algorithm. The agent makes instant moves based on local information and updates the heuristic values of visited states to optimize subsequent trials.
+    
+            #### ⑤ Group 5: Constraint Satisfaction Problems (CSP)
+            *Formulates the puzzle in terms of Variables, Domains, and Constraints.*
+            *   **Formulation:**
+                *   *Variables ($X$):* Grid locations at each time step $t \in \{0, 1, ..., T\}$.
+                *   *Domains ($D$):* Valid tile values.
+                *   *Constraints ($C$):* Tile moves between $t$ and $t+1$ must adhere to blank-sliding rules.
+            *   **Algorithms:**
+                *   *Constraint Propagation:* Uses arc consistency (AC-3) to filter domain values before searching.
+                *   *Backtracking Search:* DFS enhanced with variable ordering (MRV) and domain pruning.
+                *   *Min-Conflicts:* A local search CSP heuristic that selects variables violating constraints and updates them to minimize conflicts.
+    
+            #### ⑥ Group 6: Adversarial and Stochastic Search
+            *Extends the search model to multi-agent competition or environments with environmental uncertainty.*
+            *   **Minimax & Alpha-Beta Pruning:** Models the puzzle as a two-player game: **MAX** (trying to solve the board) and **MIN** (an opponent shifting tiles to block MAX). Alpha-Beta cuts off search branches, reducing time complexity from $O(b^d)$ to $O(b^{d/2})$.
+            *   **Expectimax:** Applied when actions are stochastic (e.g. a slide has a 10% chance of failing). Replaces MIN nodes with Chance Nodes that compute the expected utility of outcomes.
+            """)
 
 
 # â”€â”€ Tab 2: Run Algorithm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
