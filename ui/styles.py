@@ -415,14 +415,16 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
 /* Styles for image board buttons (tactile low-profile tabs) */
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button {
     width: 100% !important;
+    height: 28px !important;
+    line-height: 28px !important;
     margin-top: 4px !important;
+    padding: 0 !important;
     background: #4a3319 !important;
     border: 1px solid #36220f !important;
     color: #e6dfd5 !important;
     border-radius: 6px !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    padding: 2px 0 !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
 }
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button:hover:not(:disabled) {
@@ -431,10 +433,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) butto
     transform: translateY(-1px) !important;
 }
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button:disabled {
-    background: transparent !important;
-    border: 1px solid transparent !important;
-    color: transparent !important;
-    box-shadow: none !important;
+    visibility: hidden !important;
 }
 </style>
 """

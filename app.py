@@ -205,26 +205,21 @@ if tab == "Play":
             )
         with col_preview:
             st.markdown('<div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
-            preview_img = None
-            if "sample_select" in st.session_state:
-                choice = st.session_state.sample_select
-                if "Cyberpunk" in choice:
-                    preview_img = "ui/assets/cyberpunk_city.png"
-                elif "Cosmic" in choice:
-                    preview_img = "ui/assets/cosmic_cat.png"
-                elif "Floating" in choice:
-                    preview_img = "ui/assets/magic_castle.png"
-            
-            if preview_img:
-                import os
-                if os.path.exists(preview_img):
-                    st.image(preview_img, use_container_width=True)
-                else:
-                    st.caption("Preview not found on disk.")
-            elif uploaded_img:
+            if uploaded_img:
                 st.image(uploaded_img, use_container_width=True)
+            elif "sample_select" in st.session_state:
+                choice = st.session_state.sample_select
+                from ui.sample_images import get_full_sample_image
+                try:
+                    preview_img_data = get_full_sample_image(choice)
+                    if preview_img_data:
+                        st.image(preview_img_data, use_container_width=True)
+                    else:
+                        st.caption("Preview could not be generated.")
+                except Exception as e:
+                    st.caption(f"Error loading preview: {e}")
             else:
-                st.info("Gradient/Mandala preview is not available.")
+                st.info("No preview available.")
     else:
         render_clickable_board(
             st.session_state.play_state,
@@ -578,7 +573,40 @@ elif tab == "Compare":
 
 # â”€â”€ Tab 5: Theory Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 elif tab == "Theory":
-    st.title("Theory Notes")
+    st.title("Theory Notes & PEAS Analysis")
+
+    # Collapsible PEAS Analysis
+    with st.expander("📚 Phân tích PEAS cho Đại lý (Agent) giải 15-Puzzle", expanded=True):
+        st.markdown("""
+        ### Mô hình PEAS (Performance, Environment, Actuators, Sensors)
+        Để xây dựng một đại lý thông minh giải bài toán 15-Puzzle, chúng ta phân tích hệ thống qua 4 yếu tố PEAS:
+
+        1. **P (Performance Measure - Tiêu chí đánh giá)**
+           - **Độ chính xác**: Đưa bảng số từ trạng thái xáo trộn về đúng trạng thái đích (Goal State: 1-15 và ô trống ở cuối).
+           - **Số bước di chuyển**: Tối thiểu hóa số lượng bước trượt g(n).
+           - **Hiệu năng tìm kiếm**: Tối thiểu hóa số node cần mở rộng (Memory) và thời gian thực thi (Runtime).
+
+        2. **E (Environment - Môi trường)**
+           - Khung bảng lưới **4x4** gồm 15 ô số (1-15) và 1 ô trống (0).
+           - **Tính chất môi trường**:
+             - **Fully Observable (Quan sát toàn phần)**: Agent luôn biết rõ vị trí của mọi ô số tại mọi thời điểm (trừ các trường hợp học thuật như *No Observation* hay *Partially Observable*).
+             - **Deterministic (Xác định)**: Mọi hành động trượt ô trống (L, R, U, D) đều dẫn tới một trạng thái tiếp theo chắc chắn và biết trước (trừ mở rộng stochastic như *Expectimax* hay *AND-OR*).
+             - **Static (Tĩnh)**: Trạng thái bảng chỉ thay đổi khi Agent đưa ra nước đi, không tự động biến đổi.
+             - **Discrete (Rời rạc)**: Vị trí của các ô số và hành động trượt diễn ra theo các bước rời rạc rõ ràng.
+             - **Sequential (Tuần tự)**: Nước đi hiện tại ảnh hưởng trực tiếp đến tập trạng thái khả dụng tiếp theo.
+             - **Single-Agent (Đơn đại lý)**: Chỉ có duy nhất một Agent đưa ra quyết định giải đố (trừ giả lập đối kháng trong *Minimax*).
+
+        3. **A (Actuators - Cơ cấu tác động / Hành động)**
+           - Thực hiện hành động **trượt (Slide)** một ô số kề cạnh vào ô trống. Trên mô hình, hành động này được biểu diễn dưới dạng di chuyển ô trống: **L** (Trái), **R** (Phải), **U** (Lên), **D** (Xuống).
+
+        4. **S (Sensors - Cảm biến)**
+           - Đọc cấu hình bảng trạng thái hiện tại (mảng 1 chiều hoặc 2 chiều kích thước 16 phần tử).
+           - Cảm nhận các hành động hợp lệ (bằng cách kiểm tra tọa độ biên của ô trống).
+           - Các cảm biến heuristic (như khoảng cách Manhattan, Linear Conflict) cung cấp thông tin ước tính khoảng cách H(n) tới đích.
+        """)
+
+    st.markdown("---")
+    st.subheader("Chi tiết lý thuyết thuật toán")
 
     group = st.selectbox("Algorithm Group", list(ALGORITHM_GROUPS.keys()), key="theory_group")
     algorithms = ALGORITHM_GROUPS[group]
