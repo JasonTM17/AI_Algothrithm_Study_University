@@ -14,6 +14,7 @@ def greedy_best_first(
     heuristic: str = "Manhattan Distance",
     max_nodes: int = 50000, timeout: float = 60.0,
     action_order: str = "LRUD",
+    tie_breaker: str = "FIFO",
 ) -> SearchResult:
     """Greedy Best-First Search. Uses h(n) only, not optimal."""
     t0 = time.perf_counter()
@@ -25,9 +26,19 @@ def greedy_best_first(
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=False, uses_heuristic=True)
 
+    def make_item(cost, n, c):
+        if tie_breaker == "LIFO":
+            return (cost, 0, -c, n)
+        elif tie_breaker == "Min-g":
+            return (cost, n.g, c, n)
+        elif tie_breaker == "Max-g":
+            return (cost, -n.g, c, n)
+        else: # FIFO
+            return (cost, 0, c, n)
+
     root = Node(state=start, g=0, depth=0, h=h_fn(start))
     counter = 0
-    frontier: list[tuple[float, int, Node]] = [(root.h, counter, root)]
+    frontier = [make_item(root.h, root, counter)]
     reached = {start: 0}
     nodes_expanded = 0
     nodes_generated = 1
@@ -49,7 +60,8 @@ def greedy_best_first(
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
                                 is_complete=False, is_optimal=False, uses_heuristic=True)
 
-        _, _, node = heapq.heappop(frontier)
+        item = heapq.heappop(frontier)
+        node = item[-1]
         nodes_expanded += 1
 
         if node.state == goal:
@@ -77,7 +89,7 @@ def greedy_best_first(
             if ns not in reached or child.g < reached[ns]:
                 reached[ns] = child.g
                 counter += 1
-                heapq.heappush(frontier, (h, counter, child))
+                heapq.heappush(frontier, make_item(h, child, counter))
                 max_frontier = max(max_frontier, len(frontier))
 
                 if len(trace) < 200:
@@ -85,7 +97,7 @@ def greedy_best_first(
                         step=nodes_expanded, state=ns, action=action,
                         g=child.g, h=h, f=child.g + h,
                         frontier_size=len(frontier), reached_size=len(reached),
-                        node_state=node.state, frontier_states=[n.state for _, _, n in frontier], reached_states=list(reached.keys()),
+                        node_state=node.state, frontier_states=[item[-1].state for item in frontier], reached_states=list(reached.keys()),
                         reason=f"Greedy: expand h={h:.1f}",
                     ))
 
@@ -101,6 +113,7 @@ def a_star(
     heuristic: str = "Manhattan Distance",
     max_nodes: int = 100000, timeout: float = 120.0,
     action_order: str = "LRUD",
+    tie_breaker: str = "FIFO",
 ) -> SearchResult:
     """A* Search. Optimal if heuristic is admissible and consistent."""
     t0 = time.perf_counter()
@@ -112,9 +125,19 @@ def a_star(
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
 
+    def make_item(cost, n, c):
+        if tie_breaker == "LIFO":
+            return (cost, 0, -c, n)
+        elif tie_breaker == "Min-g":
+            return (cost, n.g, c, n)
+        elif tie_breaker == "Max-g":
+            return (cost, -n.g, c, n)
+        else: # FIFO
+            return (cost, 0, c, n)
+
     root = Node(state=start, g=0, depth=0, h=h_fn(start))
     counter = 0
-    frontier: list[tuple[float, int, Node]] = [(root.f, counter, root)]
+    frontier = [make_item(root.f, root, counter)]
     best_g = {start: 0}
     nodes_expanded = 0
     nodes_generated = 1
@@ -136,7 +159,8 @@ def a_star(
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
                                 is_complete=True, is_optimal=True, uses_heuristic=True)
 
-        _, _, node = heapq.heappop(frontier)
+        item = heapq.heappop(frontier)
+        node = item[-1]
 
         if node.state == goal:
             return SearchResult(success=True, algorithm="A*", group="Informed Search",
@@ -167,7 +191,7 @@ def a_star(
                 h = h_fn(ns)
                 child = Node(state=ns, parent=node, action=action, g=new_g, depth=node.depth + 1, h=h)
                 counter += 1
-                heapq.heappush(frontier, (child.f, counter, child))
+                heapq.heappush(frontier, make_item(child.f, child, counter))
                 nodes_generated += 1
                 max_frontier = max(max_frontier, len(frontier))
 
@@ -176,7 +200,7 @@ def a_star(
                         step=nodes_expanded, state=ns, action=action,
                         g=new_g, h=h, f=new_g + h,
                         frontier_size=len(frontier), reached_size=len(best_g),
-                        node_state=node.state, frontier_states=[n.state for _, _, n in frontier], reached_states=list(best_g.keys()),
+                        node_state=node.state, frontier_states=[item[-1].state for item in frontier], reached_states=list(best_g.keys()),
                         reason=f"A*: g={new_g}, h={h:.1f}, f={new_g+h:.1f}",
                     ))
 

@@ -5,6 +5,15 @@ import pandas as pd
 from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.utils import format_state_grid
 from ui.styles import STYLES, GROUP_COLORS
+from ui.localization import LOC
+
+
+def t(key, **kwargs):
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    text = LOC[global_lang].get(key, key)
+    if kwargs:
+        return text.format(**kwargs)
+    return text
 
 
 def render_styles():
@@ -78,7 +87,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
                             st.button(
                                 str(val), key=f"{key_prefix}_hit_{r}_{c}",
                                 on_click=on_click_fn, args=(direction,),
-                                type="primary", use_container_width=True,
+                                type="primary", width="stretch",
                             )
                         else:
                             st.markdown(
@@ -119,7 +128,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                             unsafe_allow_html=True,
                         )
                         st.button(f" ", key=f"{key_prefix}_blank_btn_{r}_{c}",
-                                  disabled=True, use_container_width=True)
+                                  disabled=True, width="stretch")
                     elif val in image_tiles:
                         is_correct = highlight_correct and val == GOAL_STATE[idx]
                         border_color = "#557c55" if is_correct else "#8b5a2b"
@@ -147,23 +156,23 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                         if _is_adjacent_to_blank(state, idx) and on_click_fn:
                             direction = _get_slide_direction(state, idx)
                             # Translate blank move direction to physical tile slide direction
-                            # Blank 'L' (left) means tile slides Right '➔'
+                            # Blank 'L' (left) means tile slides Right '▶'
                             # Blank 'R' (right) means tile slides Left '◀'
                             # Blank 'U' (up) means tile slides Down '▼'
                             # Blank 'D' (down) means tile slides Up '▲'
-                            dir_labels = {"L": "Slide ➔", "R": "Slide ◀", "U": "Slide ▼", "D": "Slide ▲"}
+                            dir_labels = {"L": "Slide ▶", "R": "Slide ◀", "U": "Slide ▼", "D": "Slide ▲"}
                             label = dir_labels.get(direction, "Slide")
                             st.markdown(img_html, unsafe_allow_html=True)
                             st.button(label, key=f"{key_prefix}_hit_{val}_{r}_{c}",
                                       on_click=on_click_fn, args=(direction,),
-                                      type="primary", use_container_width=True)
+                                      type="primary", width="stretch")
                         else:
                             st.markdown(img_html, unsafe_allow_html=True)
                             st.button(f" ", key=f"{key_prefix}_nohit_{val}_{r}_{c}",
-                                      disabled=True, use_container_width=True)
+                                      disabled=True, width="stretch")
                     else:
                         st.button(str(val), key=f"{key_prefix}_{val}_{r}_{c}",
-                                  disabled=True, use_container_width=True)
+                                  disabled=True, width="stretch")
 
 
 def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str = "normal"):
@@ -248,23 +257,23 @@ def render_result_metrics(result):
     icon = "OK" if success else "FAIL"
 
     with col1:
-        st.metric("Status", f"{icon} {'Solved' if success else 'Failed'}")
+        st.metric(t("mc_status"), f"{icon} {t('mc_solved') if success else t('mc_failed')}")
     with col2:
-        st.metric("Path Length", str(len(result.actions)) if success else "-")
+        st.metric(t("mc_path_len"), str(len(result.actions)) if success else "-")
     with col3:
-        st.metric("Runtime", f"{result.runtime:.4f}s")
+        st.metric(t("mc_runtime"), f"{result.runtime:.4f}s")
     with col4:
-        st.metric("Nodes Expanded", str(result.nodes_expanded))
+        st.metric(t("mc_expanded"), str(result.nodes_expanded))
 
     col5, col6, col7, col8 = st.columns(4)
     with col5:
-        st.metric("Cost", str(result.cost) if success else "-")
+        st.metric(t("mc_cost"), str(result.cost) if success else "-")
     with col6:
-        st.metric("Max Frontier", str(result.max_frontier_size))
+        st.metric(t("mc_max_f"), str(result.max_frontier_size))
     with col7:
-        st.metric("Reached Size", str(result.reached_size))
+        st.metric(t("mc_reached_size"), str(result.reached_size))
     with col8:
-        st.metric("Depth", str(result.depth) if success else "-")
+        st.metric(t("mc_depth"), str(result.depth) if success else "-")
 
     if result.message:
         msg_cls = "result-success" if success else "result-failure"
@@ -274,14 +283,14 @@ def render_result_metrics(result):
 def render_trace_table(trace: list, max_rows: int = 100):
     """Render trace steps as a scrollable table."""
     if not trace:
-        st.info("No trace data available.")
+        st.info(t("tc_no_trace"))
         return
 
     rows = []
     for step in trace[:max_rows]:
         row = {
-            "Step": step.step,
-            "Action": step.action or "-",
+            t("tc_step"): step.step,
+            t("tc_action"): step.action or "-",
         }
         if step.g > 0:
             row["g(n)"] = step.g
@@ -290,28 +299,28 @@ def render_trace_table(trace: list, max_rows: int = 100):
         if step.f > 0:
             row["f(n)"] = f"{step.f:.1f}"
         if step.frontier_size > 0:
-            row["Frontier"] = step.frontier_size
+            row[t("tc_frontier")] = step.frontier_size
         if step.reached_size > 0:
-            row["Reached"] = step.reached_size
+            row[t("tc_reached")] = step.reached_size
         if step.temperature is not None:
-            row["T"] = f"{step.temperature:.4f}"
+            row[t("tc_temp")] = f"{step.temperature:.4f}"
         if step.probability is not None:
-            row["P(accept)"] = f"{step.probability:.4f}"
+            row[t("tc_prob")] = f"{step.probability:.4f}"
         if step.accepted is not None:
-            row["Accepted"] = "Yes" if step.accepted else "No"
+            row[t("tc_accepted")] = t("tc_yes") if step.accepted else t("tc_no")
         if step.belief_size is not None:
-            row["Belief"] = step.belief_size
+            row[t("tc_belief")] = step.belief_size
         if step.node_type:
-            row["Type"] = step.node_type
+            row[t("tc_type")] = step.node_type
         if step.reason:
-            row["Reason"] = step.reason[:60]
+            row[t("tc_reason")] = step.reason[:60]
         rows.append(row)
 
     if len(trace) > max_rows:
-        st.caption(f"Showing {max_rows} of {len(trace)} steps")
+        st.caption(t("tc_showing", curr=max_rows, total=len(trace)))
 
     df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, height=300)
+    st.dataframe(df, width="stretch", height=300)
 
 
 def _state_to_mini_grid(state: tuple) -> str:
@@ -342,7 +351,7 @@ def _state_to_grid_str(state: tuple) -> str:
 def render_search_detail_table(trace: list, max_rows: int = 50):
     """Render detailed Node/Frontier/Reached table for each trace step."""
     if not trace:
-        st.info("No trace data available.")
+        st.info(t("tc_no_trace"))
         return
 
     has_detail = any(
@@ -350,50 +359,49 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         for s in trace[:max_rows]
     )
     if not has_detail:
-        st.info("Node/Frontier/Reached detail not available for this algorithm. "
-                "Available for: BFS, DFS, UCS, IDS, Greedy, A*, IDA*.")
+        st.info(t("det_no_detail"))
         return
 
     step_idx = st.slider(
-        "Select step to inspect", 0, min(len(trace) - 1, max_rows - 1), 0,
+        t("det_slider"), 0, min(len(trace) - 1, max_rows - 1), 0,
         key="detail_step_slider"
     )
 
     step = trace[step_idx]
 
-    st.markdown(f"**Step {step.step}** | Action: `{step.action or 'Start'}` | "
+    st.markdown(f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
                 f"g={step.g} h={step.h:.1f} f={step.f:.1f}")
 
     col1, col2, col3 = st.columns([1, 2, 2])
 
     with col1:
-        st.markdown("**Current Node**")
+        st.markdown(f"**{t('det_curr_node')}**")
         if step.node_state:
             render_puzzle_board(step.node_state, size="small")
         else:
             render_puzzle_board(step.state, size="small")
 
     with col2:
-        st.markdown(f"**Frontier** ({step.frontier_size} states)")
+        st.markdown(f"**{t('tc_frontier')}** ({step.frontier_size} states)")
         if step.frontier_states and len(step.frontier_states) > 0:
             frontier_display = step.frontier_states[:6]
             for i, fs in enumerate(frontier_display):
                 st.markdown(_state_to_mini_grid(fs), unsafe_allow_html=True)
             if len(step.frontier_states) > 6:
-                st.caption(f"... +{len(step.frontier_states) - 6} more")
+                st.caption(t("det_more", count=len(step.frontier_states) - 6))
         else:
-            st.caption("Empty or not captured")
+            st.caption(t("det_empty"))
 
     with col3:
-        st.markdown(f"**Reached** ({step.reached_size} states)")
+        st.markdown(f"**{t('tc_reached')}** ({step.reached_size} states)")
         if step.reached_states and len(step.reached_states) > 0:
             reached_display = step.reached_states[:6]
             for i, rs in enumerate(reached_display):
                 st.markdown(_state_to_mini_grid(rs), unsafe_allow_html=True)
             if len(step.reached_states) > 6:
-                st.caption(f"... +{len(step.reached_states) - 6} more")
+                st.caption(t("det_more", count=len(step.reached_states) - 6))
         else:
-            st.caption("Not captured for this algorithm")
+            st.caption(t("det_not_captured"))
 
 
 def render_path_animation(path: list[tuple], actions: list[str], key: str = "path"):
@@ -401,11 +409,11 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
     if not path or len(path) < 2:
         if path and len(path) == 1:
             render_puzzle_board(path[0])
-            st.caption("Already at goal state!")
+            st.caption(t("anim_already_goal"))
         return
 
     st.markdown("---")
-    st.subheader("Solution Animation")
+    st.subheader(t("anim_title"))
 
     # Auto-play controls
     auto_key = f"{key}_autoplay"
@@ -415,24 +423,24 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
 
     with col_play:
         if st.session_state.get(auto_key, False):
-            if st.button("Stop", key=f"{key}_stop_btn", type="secondary"):
+            if st.button(t("play_stop_run"), key=f"{key}_stop_btn", type="secondary"):
                 st.session_state[auto_key] = False
                 st.rerun()
         else:
-            if st.button("Auto Play", key=f"{key}_play_btn", type="primary"):
+            if st.button(t("play_auto_run"), key=f"{key}_play_btn", type="primary"):
                 st.session_state[auto_key] = True
                 st.session_state[f"{key}_auto_step"] = st.session_state.get(f"{key}_slider", 0)
                 st.rerun()
 
     with col_speed:
         speed = st.selectbox(
-            "Speed", [0.1, 0.3, 0.5, 1.0, 2.0], index=2,
-            format_func=lambda x: f"{x}s per step",
+            t("anim_speed"), [0.1, 0.3, 0.5, 1.0, 2.0], index=2,
+            format_func=lambda x: t("anim_per_step", sec=x),
             key=speed_key
         )
 
     current_step = st.slider(
-        "Step", 0, len(path) - 1, 0, key=f"{key}_slider"
+        t("play_curr_step"), 0, len(path) - 1, 0, key=f"{key}_slider"
     )
 
     # Show current state
@@ -440,22 +448,27 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
 
     if current_step < len(actions):
         action_display = actions[current_step] if current_step > 0 else "Start"
-        direction_map = {"L": "Left", "R": "Right", "U": "Up", "D": "Down"}
+        direction_map = {
+            "L": t("dir_L").split(" ")[0],
+            "R": t("dir_R").split(" ")[0],
+            "U": t("dir_U").split(" ")[0],
+            "D": t("dir_D").split(" ")[0]
+        }
         display = direction_map.get(action_display, action_display)
         st.caption(f"Step {current_step}/{len(path)-1}: {display}")
     else:
-        st.caption(f"Step {current_step}/{len(path)-1}: Goal!")
+        st.caption(f"Step {current_step}/{len(path)-1}: {t('anim_goal')}")
 
     # Navigation buttons
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("Prev", key=f"{key}_prev"):
+        if st.button(t("anim_prev"), key=f"{key}_prev"):
             st.session_state[f"{key}_slider"] = max(0, current_step - 1)
     with col2:
-        if st.button("Next", key=f"{key}_next"):
+        if st.button(t("anim_next"), key=f"{key}_next"):
             st.session_state[f"{key}_slider"] = min(len(path) - 1, current_step + 1)
     with col3:
-        if st.button("Reset", key=f"{key}_reset"):
+        if st.button(t("anim_reset"), key=f"{key}_reset"):
             st.session_state[f"{key}_slider"] = 0
             st.session_state[auto_key] = False
             st.session_state[f"{key}_auto_step"] = 0
@@ -471,50 +484,62 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
         else:
             st.session_state[auto_key] = False
             st.session_state[f"{key}_auto_step"] = 0
-            st.success("Animation complete!")
+            st.success(t("anim_complete"))
 
 
 def render_comparison_table(results: list):
     """Render comparison table for benchmark results."""
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     if not results:
-        st.info("Run algorithms first to see comparison.")
+        st.info(t("compare_no_data"))
         return
 
     rows = []
     for r in results:
+        group_trans = r.group
+        if global_lang == "Tiếng Việt":
+            if r.group == "Uninformed Search": group_trans = "Tìm kiếm mù"
+            elif r.group == "Informed Search": group_trans = "Tìm kiếm có thông tin"
+            elif r.group == "Local Search": group_trans = "Tìm kiếm cục bộ"
+            elif r.group == "Complex Environments": group_trans = "Môi trường phức tạp"
+            elif r.group == "CSP": group_trans = "Thỏa mãn ràng buộc"
+            elif r.group == "Adversarial/Stochastic": group_trans = "Đối kháng/Ngẫu nhiên"
+            
         row = {
-            "Group": r.group,
-            "Algorithm": r.algorithm,
-            "Solved": "Yes" if r.success else "No",
-            "Path": len(r.actions) if r.success else "-",
-            "Cost": r.cost if r.success else "-",
-            "Expanded": r.nodes_expanded,
-            "Max Frontier": r.max_frontier_size,
-            "Time (s)": f"{r.runtime:.4f}",
-            "Optimal?": "Yes" if r.is_optimal else "No",
-            "Complete?": "Yes" if r.is_complete else "No",
+            t("compare_group_col"): group_trans,
+            t("run_algo"): r.algorithm,
+            t("mc_status"): t("mc_solved") if r.success else t("mc_failed"),
+            t("mc_path_len"): len(r.actions) if r.success else "-",
+            t("mc_cost"): r.cost if r.success else "-",
+            t("mc_expanded"): r.nodes_expanded,
+            t("mc_max_f"): r.max_frontier_size,
+            t("mc_runtime"): f"{r.runtime:.4f}",
+            t("compare_optimal_col"): t("tc_yes") if r.is_optimal else t("tc_no"),
+            t("compare_complete_col"): t("tc_yes") if r.is_complete else t("tc_no"),
         }
         rows.append(row)
 
     df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     if len([r for r in results if r.success]) > 1:
         successful = [r for r in results if r.success]
         fastest = min(successful, key=lambda x: x.runtime)
         shortest = min(successful, key=lambda x: len(x.actions))
+        max_mem = max(successful, key=lambda x: x.nodes_expanded)
 
-        st.markdown("### Analysis")
-        st.markdown(f"- **Fastest**: {fastest.algorithm} ({fastest.runtime:.4f}s)")
-        st.markdown(f"- **Shortest path**: {shortest.algorithm} ({len(shortest.actions)} steps)")
-        if max(successful, key=lambda x: x.nodes_expanded).algorithm != min(successful, key=lambda x: x.nodes_expanded).algorithm:
-            st.markdown(f"- **Most memory**: {max(successful, key=lambda x: x.nodes_expanded).algorithm} ({max(successful, key=lambda x: x.nodes_expanded).nodes_expanded} nodes)")
+        st.markdown(f"### {t('compare_analysis')}")
+        st.markdown(f"- {t('compare_fastest', algo=fastest.algorithm, time=fastest.runtime)}")
+        st.markdown(f"- {t('compare_shortest', algo=shortest.algorithm, steps=len(shortest.actions))}")
+        if max_mem.algorithm != min(successful, key=lambda x: x.nodes_expanded).algorithm:
+            st.markdown(f"- {t('compare_most_memory', algo=max_mem.algorithm, nodes=max_mem.nodes_expanded)}")
 
 
 def render_algorithm_info(algo_name: str, theory: dict):
     """Render algorithm theory information."""
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     if not theory:
-        st.info(f"No theory information available for {algo_name}.")
+        st.info(t("theory_coming_soon", algo=algo_name))
         return
 
     group = theory.get("group", "")
@@ -522,46 +547,58 @@ def render_algorithm_info(algo_name: str, theory: dict):
 
     st.markdown(f"### {theory.get('name', algo_name)}")
 
+    group_display = group
+    if global_lang == "Tiếng Việt":
+        if group == "Uninformed Search": group_display = "Tìm kiếm mù"
+        elif group == "Informed Search": group_display = "Tìm kiếm có thông tin"
+        elif group == "Local Search": group_display = "Tìm kiếm cục bộ"
+        elif group == "Complex Environments": group_display = "Môi trường phức tạp"
+        elif group == "CSP": group_display = "Thỏa mãn ràng buộc"
+        elif group == "Adversarial/Stochastic": group_display = "Đối kháng/Ngẫu nhiên"
+
     badge_cls = group_style.get("badge", "")
     if badge_cls:
-        st.markdown(f'<span class="group-badge {badge_cls}">{group}</span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="group-badge {badge_cls}">{group_display}</span>', unsafe_allow_html=True)
 
     props = []
-    if theory.get("suitable"):
-        suitable = theory["suitable"]
-        if "RẤT" in suitable or "rất" in suitable.lower():
-            props.append(("Phu hop", "#06d6a0"))
-        elif "KHÔNG" in suitable or "không" in suitable.lower():
-            props.append(("Khong phu hop", "#ef476f"))
+    suitable_key = "suitable_en" if global_lang == "English" and "suitable_en" in theory else "suitable"
+    suitable_val = theory.get(suitable_key)
+    if suitable_val:
+        if "RẤT" in suitable_val or "rất" in suitable_val.lower() or "highly" in suitable_val.lower():
+            props.append(("Phù hợp" if global_lang == "Tiếng Việt" else "Suitable", "#06d6a0"))
+        elif "KHÔNG" in suitable_val or "không" in suitable_val.lower() or "not" in suitable_val.lower():
+            props.append(("Không phù hợp" if global_lang == "Tiếng Việt" else "Not suitable", "#ef476f"))
         else:
-            props.append(("Han che", "#ffd166"))
+            props.append(("Hạn chế" if global_lang == "Tiếng Việt" else "Limited", "#ffd166"))
 
     for label, color in props:
         st.markdown(f'<span style="background:{color};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;">{label}</span>', unsafe_allow_html=True)
 
     sections = [
-        ("Mục tiêu", "goal"),
-        ("Ý tưởng", "idea"),
-        ("Cấu trúc dữ liệu", "data_structure"),
-        ("Công thức", "formula"),
-        ("Áp dụng 15-Puzzle", "application"),
-        ("Phù hợp 15-Puzzle?", "suitable"),
-        ("Ưu điểm", "pros"),
-        ("Nhược điểm", "cons"),
-        ("Độ phức tạp", "complexity"),
-        ("Ví dụ chạy tệ", "bad_example"),
-        ("So sánh", "comparison"),
-        ("Điểm cần nhớ khi thi", "exam_tips"),
+        ("Mục tiêu" if global_lang == "Tiếng Việt" else "Goal", "goal"),
+        ("Ý tưởng" if global_lang == "Tiếng Việt" else "Idea", "idea"),
+        ("Cấu trúc dữ liệu" if global_lang == "Tiếng Việt" else "Data Structure", "data_structure"),
+        ("Công thức" if global_lang == "Tiếng Việt" else "Formula", "formula"),
+        ("Áp dụng 15-Puzzle" if global_lang == "Tiếng Việt" else "15-Puzzle Application", "application"),
+        ("Phù hợp 15-Puzzle?" if global_lang == "Tiếng Việt" else "Suitable for 15-Puzzle?", "suitable"),
+        ("Ưu điểm" if global_lang == "Tiếng Việt" else "Pros", "pros"),
+        ("Nhược điểm" if global_lang == "Tiếng Việt" else "Cons", "cons"),
+        ("Độ phức tạp" if global_lang == "Tiếng Việt" else "Complexity", "complexity"),
+        ("Ví dụ chạy tệ" if global_lang == "Tiếng Việt" else "Worst-case Example", "bad_example"),
+        ("So sánh" if global_lang == "Tiếng Việt" else "Comparison", "comparison"),
+        ("Điểm cần nhớ khi thi" if global_lang == "Tiếng Việt" else "Exam Tips", "exam_tips"),
     ]
 
     for title, key in sections:
-        content = theory.get(key)
+        content_key = f"{key}_en" if global_lang == "English" and f"{key}_en" in theory else key
+        content = theory.get(content_key)
         if content:
             if isinstance(content, list):
                 content = "\n".join(f"- {item}" for item in content)
             st.markdown(f"**{title}**\n\n{content}")
 
-    pseudocode = theory.get("pseudocode")
+    pseudocode_key = "pseudocode_en" if global_lang == "English" and "pseudocode_en" in theory else "pseudocode"
+    pseudocode = theory.get(pseudocode_key)
     if pseudocode:
         st.markdown("**Pseudocode**")
         st.code(pseudocode, language="python")
@@ -569,12 +606,13 @@ def render_algorithm_info(algo_name: str, theory: dict):
 
 def render_search_tree(trace: list, max_nodes: int = 30):
     """Render search tree as indented text with matrix states."""
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     if not trace:
-        st.info("No trace data to visualize.")
+        st.info(t("tc_no_trace"))
         return
 
-    st.markdown("### Search Tree Visualization")
-    st.caption("Each node shows the 4×4 puzzle grid, g/h/f values, and action taken.")
+    st.markdown(f"### {t('run_search_tree')}")
+    st.caption("Mỗi node hiển thị cấu hình lưới 4×4, các giá trị g/h/f và hành động." if global_lang == "Tiếng Việt" else "Each node shows the 4×4 puzzle grid, g/h/f values, and action taken.")
 
     has_detail = any(
         hasattr(s, 'node_state') and s.node_state is not None
@@ -605,7 +643,7 @@ def render_search_tree(trace: list, max_nodes: int = 30):
 
     st.code("\n".join(lines), language="")
     if len(trace) > max_nodes:
-        st.caption(f"Showing first {max_nodes} of {len(trace)} nodes")
+        st.caption(f"Đang hiển thị {max_nodes} trên tổng số {len(trace)} nodes" if global_lang == "Tiếng Việt" else f"Showing first {max_nodes} of {len(trace)} nodes")
 
 
 def process_uploaded_image(image_file, grid_size: int = 4):
@@ -660,6 +698,9 @@ def render_algorithm_evaluation(algo_name: str):
     from core.theory import THEORY
     import pandas as pd
 
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    is_eng = (global_lang == "English")
+
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
     theory_data = THEORY.get(theory_key)
 
@@ -677,38 +718,76 @@ def render_algorithm_evaluation(algo_name: str):
                 break
 
     st.markdown("---")
-    st.markdown("### 🎓 Đánh Giá Học Thuật (Academic Evaluation)")
+    st.markdown(f"### {t('eval_title')}")
     
     if row_data and theory_data:
         # Get complexities
-        comp_str = theory_data.get("complexity", "N/A")
+        comp_key = "complexity_en" if is_eng and "complexity_en" in theory_data else "complexity"
+        comp_str = theory_data.get(comp_key, "N/A")
         time_comp = "N/A"
         space_comp = "N/A"
         if "," in comp_str:
             parts = comp_str.split(",")
             for p in parts:
                 if "thời gian" in p.lower() or "time" in p.lower() or "trước" in p.lower():
-                    time_comp = p.replace("Thời gian:", "").replace("time:", "").strip()
+                    time_comp = p.replace("Thời gian:", "").replace("time:", "").replace("Time:", "").strip()
                 elif "bộ nhớ" in p.lower() or "space" in p.lower() or "memory" in p.lower():
-                    space_comp = p.replace("Bộ nhớ:", "").replace("space:", "").strip()
+                    space_comp = p.replace("Bộ nhớ:", "").replace("space:", "").replace("Space:", "").strip()
         else:
             time_comp = comp_str
 
+        def translate_comp_val(val, lang):
+            if lang == "Tiếng Việt":
+                trans = {
+                    "Yes": "Có",
+                    "No": "Không",
+                    "Yes*": "Có*",
+                    "Limited (memory)": "Hạn chế (bộ nhớ)",
+                    "Same as BFS": "Giống BFS",
+                    "Good (low memory)": "Tốt (ít bộ nhớ)",
+                    "Fast, suboptimal": "Nhanh, không tối ưu",
+                    "Best choice": "Lựa chọn tốt nhất",
+                    "Memory efficient": "Tiết kiệm bộ nhớ",
+                    "Gets stuck": "Bị kẹt",
+                    "Asymptotic": "Tiệm cận",
+                    "May find solution": "Có thể tìm lời giải",
+                    "Better than HC": "Tốt hơn HC",
+                    "Unreliable": "Không đáng tin",
+                    "Nondeterministic": "Không xác định",
+                    "Academic": "Học thuật",
+                    "Online learning": "Học trực tuyến",
+                    "Online demo": "Minh họa online",
+                    "Extended env": "Môi trường mở rộng",
+                    "Planning demo": "Minh họa planning",
+                    "Game demo": "Minh họa game tree",
+                    "Pruning demo": "Minh họa cắt tỉa",
+                    "Stochastic demo": "Minh họa ngẫu nhiên",
+                    "Illustrative": "Minh họa",
+                    "Not standard": "Không chuẩn",
+                    "N-Queens better": "N-Queens tốt hơn",
+                    "2-player game": "Trò chơi 2 người",
+                    "2-player (faster)": "Trò chơi 2 người (nhanh hơn)",
+                    "Stochastic env": "Môi trường ngẫu nhiên",
+                    "-": "-"
+                }
+                return trans.get(val, val)
+            return val
+
         # Create properties table
         properties = {
-            "Thuộc tính (Property)": [
-                "Tính đầy đủ (Completeness)",
-                "Tính tối ưu (Optimality)",
-                "Độ phức tạp thời gian (Time Complexity)",
-                "Độ phức tạp không gian (Space Complexity)",
-                "Độ phù hợp 15-Puzzle (Suitability)"
+            t("eval_prop"): [
+                t("eval_complete"),
+                t("eval_optimal"),
+                t("eval_time"),
+                t("eval_space"),
+                t("eval_suit")
             ],
-            "Thông tin học thuật (Academic Value)": [
-                row_data.get("Complete", "N/A"),
-                row_data.get("Optimal", "N/A"),
+            t("eval_val"): [
+                translate_comp_val(row_data.get("Complete", "N/A"), global_lang),
+                translate_comp_val(row_data.get("Optimal", "N/A"), global_lang),
                 time_comp,
                 space_comp,
-                row_data.get("Suitable", "N/A")
+                translate_comp_val(row_data.get("Suitable", "N/A"), global_lang)
             ]
         }
         df = pd.DataFrame(properties)
@@ -717,16 +796,19 @@ def render_algorithm_evaluation(algo_name: str):
         # Render Pros & Cons
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("**👍 Ưu điểm (Pros)**")
-            for pro in theory_data.get("pros", ["N/A"]):
+            st.markdown(f"**{t('eval_pros')}**")
+            pros_key = "pros_en" if is_eng and "pros_en" in theory_data else "pros"
+            for pro in theory_data.get(pros_key, ["N/A"]):
                 st.markdown(f"- {pro}")
         with col2:
-            st.markdown("**👎 Nhược điểm (Cons)**")
-            for con in theory_data.get("cons", ["N/A"]):
+            st.markdown(f"**{t('eval_cons')}**")
+            cons_key = "cons_en" if is_eng and "cons_en" in theory_data else "cons"
+            for con in theory_data.get(cons_key, ["N/A"]):
                 st.markdown(f"- {con}")
                 
         # Render Exam Tips
-        if theory_data.get("exam_tips"):
-            st.info(f"💡 **Lưu ý ôn thi (Exam Tips):** {theory_data.get('exam_tips')}")
+        tips_key = "exam_tips_en" if is_eng and "exam_tips_en" in theory_data else "exam_tips"
+        if theory_data.get(tips_key):
+            st.info(f"{t('eval_tips')}: {theory_data.get(tips_key)}")
     else:
-        st.info("Không tìm thấy dữ liệu đánh giá học thuật cho thuật toán này.")
+        st.info(t("eval_not_found"))

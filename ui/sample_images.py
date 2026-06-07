@@ -88,14 +88,14 @@ def coral_reef_fish():
 
 
 SAMPLE_IMAGES = {
-    "🏙️ Cyberpunk City": cyberpunk_city,
-    "🐱 Cosmic Astronaut Cat": cosmic_cat,
-    "🏰 Floating Magic Castle": magic_castle,
-    "🍁 Autumn Zen Garden": autumn_zen_garden,
-    "🐕 Shiba Inu Scholar": shiba_inu_scholar,
-    "🚂 Steampunk Locomotive": steampunk_locomotive,
-    "🏡 Cozy Winter Cabin": cozy_winter_cabin,
-    "🐠 Colorful Coral Reef": coral_reef_fish,
+    "Cyberpunk City": cyberpunk_city,
+    "Cosmic Astronaut Cat": cosmic_cat,
+    "Floating Magic Castle": magic_castle,
+    "Autumn Zen Garden": autumn_zen_garden,
+    "Shiba Inu Scholar": shiba_inu_scholar,
+    "Steampunk Locomotive": steampunk_locomotive,
+    "Cozy Winter Cabin": cozy_winter_cabin,
+    "Colorful Coral Reef": coral_reef_fish,
 }
 
 
@@ -110,14 +110,14 @@ def generate_sample_tiles(name: str) -> dict:
 def get_full_sample_image(name: str):
     """Return a PIL Image object representing the full un-sliced sample choice."""
     mapping = {
-        "🏙️ Cyberpunk City": lambda: load_real_image_raw("cyberpunk_city.png"),
-        "🐱 Cosmic Astronaut Cat": lambda: load_real_image_raw("cosmic_cat.png"),
-        "🏰 Floating Magic Castle": lambda: load_real_image_raw("magic_castle.png"),
-        "🍁 Autumn Zen Garden": lambda: load_real_image_raw("autumn_zen_garden.png"),
-        "🐕 Shiba Inu Scholar": lambda: load_real_image_raw("shiba_inu_scholar.png"),
-        "🚂 Steampunk Locomotive": lambda: load_real_image_raw("steampunk_locomotive.png"),
-        "🏡 Cozy Winter Cabin": lambda: load_real_image_raw("cozy_winter_cabin.png"),
-        "🐠 Colorful Coral Reef": lambda: load_real_image_raw("coral_reef_fish.png"),
+        "Cyberpunk City": lambda: load_real_image_raw("cyberpunk_city.png"),
+        "Cosmic Astronaut Cat": lambda: load_real_image_raw("cosmic_cat.png"),
+        "Floating Magic Castle": lambda: load_real_image_raw("magic_castle.png"),
+        "Autumn Zen Garden": lambda: load_real_image_raw("autumn_zen_garden.png"),
+        "Shiba Inu Scholar": lambda: load_real_image_raw("shiba_inu_scholar.png"),
+        "Steampunk Locomotive": lambda: load_real_image_raw("steampunk_locomotive.png"),
+        "Cozy Winter Cabin": lambda: load_real_image_raw("cozy_winter_cabin.png"),
+        "Colorful Coral Reef": lambda: load_real_image_raw("coral_reef_fish.png"),
     }
     
     fn = mapping.get(name)

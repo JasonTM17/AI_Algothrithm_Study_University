@@ -11,6 +11,17 @@ for _i, _v in enumerate(GOAL_STATE):
 
 ACTIONS = ("L", "R", "U", "D")
 
+TEACHING_PRESETS: dict[str, dict[str, object]] = {
+    "Greedy suboptimal: A*=15, Greedy=17": {
+        "state": (6, 1, 4, 8, 0, 2, 7, 3, 5, 10, 11, 12, 9, 13, 14, 15),
+        "purpose": "Shows that Greedy Best-First can find a longer path than A*.",
+    },
+    "Hill Climbing stuck: local optimum h=4": {
+        "state": (1, 2, 3, 4, 5, 6, 7, 8, 0, 13, 10, 11, 14, 9, 15, 12),
+        "purpose": "Shows Simple Hill Climbing stopping at a local optimum.",
+    },
+}
+
 
 def _blank_rc(state: tuple[int, ...]) -> tuple[int, int]:
     idx = state.index(0)

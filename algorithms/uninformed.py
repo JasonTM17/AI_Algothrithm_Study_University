@@ -171,15 +171,26 @@ def ucs(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     max_nodes: int = 50000, timeout: float = 60.0,
     action_order: str = "LRUD",
+    tie_breaker: str = "FIFO",
 ) -> SearchResult:
     """Uniform Cost Search. Optimal, same as BFS for unit cost."""
     t0 = time.perf_counter()
     if start == goal:
         return _make_result(True, "UCS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, True)
 
+    def make_item(cost, n, c):
+        if tie_breaker == "LIFO":
+            return (cost, 0, -c, n)
+        elif tie_breaker == "Min-g":
+            return (cost, n.g, c, n)
+        elif tie_breaker == "Max-g":
+            return (cost, -n.g, c, n)
+        else: # FIFO
+            return (cost, 0, c, n)
+
     root = Node(state=start, g=0, depth=0)
     counter = 0
-    frontier: list[tuple[int, int, Node]] = [(0, counter, root)]
+    frontier = [make_item(0, root, counter)]
     best_g = {start: 0}
     nodes_expanded = 0
     nodes_generated = 1
@@ -192,7 +203,8 @@ def ucs(
         if len(best_g) > max_nodes:
             return _make_result(False, "UCS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(best_g), t0, trace, f"Node limit exceeded ({max_nodes})", True, True)
 
-        _, _, node = heapq.heappop(frontier)
+        item = heapq.heappop(frontier)
+        node = item[-1]
 
         if node.state == goal:
             return _make_result(True, "UCS", node, start, goal, nodes_expanded, nodes_generated, max_frontier, len(best_g), t0, trace, "Solution found", True, True)
@@ -212,7 +224,7 @@ def ucs(
                 best_g[ns] = new_g
                 child = Node(state=ns, parent=node, action=action, g=new_g, depth=node.depth + 1)
                 counter += 1
-                heapq.heappush(frontier, (new_g, counter, child))
+                heapq.heappush(frontier, make_item(new_g, child, counter))
                 nodes_generated += 1
                 max_frontier = max(max_frontier, len(frontier))
 
@@ -221,7 +233,7 @@ def ucs(
                         step=nodes_expanded, state=ns, action=action,
                         g=new_g, h=0, f=new_g,
                         frontier_size=len(frontier), reached_size=len(best_g),
-                        node_state=node.state, frontier_states=[n.state for _, _, n in frontier], reached_states=list(best_g.keys()),
+                        node_state=node.state, frontier_states=[item[-1].state for item in frontier], reached_states=list(best_g.keys()),
                         reason=f"Expand node, g={new_g}",
                     ))
 

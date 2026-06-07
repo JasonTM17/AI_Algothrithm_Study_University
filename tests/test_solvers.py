@@ -1,7 +1,7 @@
 """Tests for all solver algorithms."""
 
 import pytest
-from core.puzzle import GOAL_STATE, is_solvable
+from core.puzzle import GOAL_STATE, TEACHING_PRESETS, is_solvable, validate_path
 from algorithms.uninformed import bfs, dfs, ucs, ids
 from algorithms.informed import greedy_best_first, a_star, ida_star
 from algorithms.local_search import (
@@ -15,17 +15,26 @@ EASY_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
 MEDIUM_STATE = (1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 7, 12, 13, 14, 11, 15)
 
 
+def assert_valid_solution(start, result):
+    if result.success:
+        valid, message, final_state = validate_path(start, result.actions)
+        assert valid, message
+        assert final_state == GOAL_STATE
+
+
 class TestBFS:
     def test_solves_easy(self):
         result = bfs(EASY_STATE, timeout=10)
         assert result.success is True
         assert result.algorithm == "BFS"
         assert len(result.actions) > 0
+        assert_valid_solution(EASY_STATE, result)
 
     def test_solves_goal(self):
         result = bfs(GOAL_STATE, timeout=5)
         assert result.success is True
         assert len(result.actions) == 0
+        assert_valid_solution(GOAL_STATE, result)
 
     def test_returns_result_object(self):
         result = bfs(EASY_STATE, timeout=5)
@@ -51,6 +60,7 @@ class TestUCS:
         assert result.success is True
         assert result.algorithm == "UCS"
         assert result.cost == len(result.actions)
+        assert_valid_solution(EASY_STATE, result)
 
 
 class TestIDS:
@@ -60,6 +70,7 @@ class TestIDS:
         assert result.algorithm == "IDS"
         # IDS should solve this easy state
         assert result.success is True
+        assert_valid_solution(EASY_STATE, result)
 
 
 class TestGreedyBestFirst:
@@ -67,6 +78,7 @@ class TestGreedyBestFirst:
         result = greedy_best_first(EASY_STATE, timeout=10)
         assert result.success is True
         assert result.algorithm == "Greedy Best-First"
+        assert_valid_solution(EASY_STATE, result)
 
     def test_uses_heuristic(self):
         result = greedy_best_first(EASY_STATE, heuristic="Manhattan Distance", timeout=10)
@@ -78,6 +90,7 @@ class TestAStar:
         result = a_star(EASY_STATE, timeout=10)
         assert result.success is True
         assert result.algorithm == "A*"
+        assert_valid_solution(EASY_STATE, result)
 
     def test_optimal(self):
         result = a_star(EASY_STATE, timeout=10)
@@ -86,6 +99,7 @@ class TestAStar:
     def test_solves_medium(self):
         result = a_star(MEDIUM_STATE, timeout=15)
         assert result.success is True
+        assert_valid_solution(MEDIUM_STATE, result)
 
 
 class TestIDAStar:
@@ -93,6 +107,7 @@ class TestIDAStar:
         result = ida_star(EASY_STATE, timeout=10)
         assert result.success is True
         assert result.algorithm == "IDA*"
+        assert_valid_solution(EASY_STATE, result)
 
     def test_optimal(self):
         result = ida_star(EASY_STATE, timeout=10)
@@ -185,7 +200,46 @@ class TestSolvableGuard:
         result = bfs(GOAL_STATE, timeout=2)
         assert result is not None
         assert result.success is True
+        assert_valid_solution(GOAL_STATE, result)
 
     def test_a_star_on_goal(self):
         result = a_star(GOAL_STATE, timeout=2)
         assert result.success is True
+        assert_valid_solution(GOAL_STATE, result)
+
+
+def test_a_star_matches_bfs_and_ids_on_shallow_puzzle():
+    bfs_result = bfs(EASY_STATE, timeout=10)
+    ids_result = ids(EASY_STATE, max_depth=20, timeout=10)
+    a_star_result = a_star(EASY_STATE, timeout=10)
+
+    assert bfs_result.success
+    assert ids_result.success
+    assert a_star_result.success
+    assert len(a_star_result.actions) == len(bfs_result.actions) == len(ids_result.actions)
+    assert_valid_solution(EASY_STATE, a_star_result)
+
+
+def test_greedy_suboptimal_teaching_preset():
+    state = TEACHING_PRESETS["Greedy suboptimal: A*=15, Greedy=17"]["state"]
+
+    a_star_result = a_star(state, max_nodes=300000, timeout=10)
+    greedy_result = greedy_best_first(state, max_nodes=300000, timeout=10)
+
+    assert a_star_result.success
+    assert greedy_result.success
+    assert len(a_star_result.actions) == 15
+    assert len(greedy_result.actions) == 17
+    assert len(greedy_result.actions) > len(a_star_result.actions)
+    assert_valid_solution(state, a_star_result)
+    assert_valid_solution(state, greedy_result)
+
+
+def test_hill_climbing_stuck_teaching_preset():
+    state = TEACHING_PRESETS["Hill Climbing stuck: local optimum h=4"]["state"]
+
+    result = simple_hill_climbing(state, max_iterations=1000, timeout=5)
+
+    assert result.success is False
+    assert len(result.actions) == 4
+    assert "Stuck at local optimum h=4.0" in result.message
