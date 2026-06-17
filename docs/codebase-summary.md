@@ -3,6 +3,7 @@
 ## Entry Point
 
 - `app.py` is the Streamlit entrypoint and main tab router.
+- `desktop_app.py` starts the Streamlit server and opens a lecturer-friendly app window.
 - `ui/advanced_tab.py` renders CSP, complex-environment, and game-tree demos.
 - `ui/academic_panels.py` renders PEAS, taxonomy, rubric, exam path, grading summary, and academic warning panels.
 
@@ -20,7 +21,7 @@
 - `algorithms/informed.py`: Greedy Best-First, A*, IDA*.
 - `algorithms/local_search.py`: hill climbing variants, beam search, simulated annealing.
 - `algorithms/complex_env.py`: AND-OR, belief-state, partial-observation, LRTA* demos.
-- `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graphs.
+- `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graph coloring, graphs.
 - `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos.
 
 ## Tests

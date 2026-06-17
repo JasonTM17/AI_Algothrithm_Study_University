@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_app_and_theory_compile():
     py_compile.compile(str(ROOT / "app.py"), doraise=True)
     py_compile.compile(str(ROOT / "core" / "theory.py"), doraise=True)
+    py_compile.compile(str(ROOT / "desktop_app.py"), doraise=True)
 
 
 def test_theory_import_has_key_algorithms():
@@ -35,6 +36,7 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
         backtracking_search,
         constraint_propagation,
         csp_definition,
+        graph_coloring_demo,
         min_conflicts,
         path_consistency,
         solve_csp_constraint_graphs,
@@ -48,6 +50,7 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     calls = [
         lambda: csp_definition(time_horizon=1, **base_kw),
         lambda: constraint_propagation(time_horizon=1, **base_kw),
+        lambda: graph_coloring_demo(),
         lambda: backtracking_search(**csp_search_kw, max_steps=10),
         lambda: min_conflicts(**csp_search_kw, max_iterations=10, seed=1),
         lambda: solve_csp_constraint_graphs(time_horizon=1, **base_kw),
@@ -97,3 +100,13 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     assert a_star_kwargs["action_order"] == "LRUD"
     assert a_star_kwargs["heuristic"] == "Manhattan Distance"
     assert a_star_kwargs["tie_breaker"] == "Min-g"
+
+
+def test_desktop_launcher_helpers_are_side_effect_free():
+    import desktop_app
+
+    command = desktop_app.build_streamlit_command(8520)
+
+    assert command[:3] == [desktop_app.sys.executable, "-m", "streamlit"]
+    assert "app.py" in command[4]
+    assert "--server.headless" in command

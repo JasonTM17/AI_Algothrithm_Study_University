@@ -22,10 +22,12 @@ Use a restrained academic dashboard style:
 - Keep Play usable as a puzzle board, but frame it as a solver lab.
 - Keep Advanced modes explicitly labeled as extensions.
 - Preserve mobile usability: no horizontal scroll, readable cards, and sidebar labels that wrap.
+- Treat launcher/app mode as the recommended classroom entrypoint; keep Streamlit web mode as the developer fallback.
 
 ## Content Rules
 
 - Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
+- Present graph coloring through map coloring or another graph game, never as a direct 15-puzzle algorithm.
 - When an algorithm is not optimal or not complete, state that directly.
 - Prefer concise tables and cards over long paragraphs for exam-facing material.
 - Preserve existing solver behavior unless a dedicated algorithm fix is planned.

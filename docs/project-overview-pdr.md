@@ -3,6 +3,7 @@
 ## Purpose
 
 This project is a Streamlit learning and demonstration app for an Artificial Intelligence final exam. It uses the 15-puzzle to teach state-space search, heuristics, PEAS, local search failure modes, CSP modeling, complex environments, and game-tree extensions.
+For lecturers, the project also provides a desktop-style launcher so the app can be opened without typing the Streamlit command.
 
 ## Audience
 
@@ -20,10 +21,12 @@ The standard 15-puzzle environment is deterministic, fully observable, static, d
 - Stochastic/game demos: Minimax, Alpha-Beta, Expectimax.
 
 This distinction is required so the app stays academically truthful while still covering broad AI topics.
+Graph coloring is handled as its own map-coloring CSP demo because it is a natural CSP example, not a 15-puzzle solver.
 
 ## Success Criteria
 
 - The app runs without Streamlit runtime errors.
+- The desktop launcher starts the same local dashboard for lecturer use.
 - Algorithm paths are validated when solvers succeed.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.

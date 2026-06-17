@@ -16,6 +16,7 @@ from core.academic_proofs import (
     PROOF_CARDS,
 )
 from core.academic_report import build_grading_report
+from algorithms.csp import AUSTRALIA_GRAPH, graph_coloring_demo
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
 from ui.localization import LOC
@@ -57,6 +58,24 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
             ILLUSTRATIVE_EXTENSION,
             STOCHASTIC_GAME_DEMO,
         }
+
+
+def test_graph_coloring_demo_is_separate_from_15_puzzle():
+    result = graph_coloring_demo()
+    assignments = {}
+    for line in result.message.splitlines():
+        if line.startswith("- ") and ": " in line:
+            key, value = line[2:].split(": ", 1)
+            if key in AUSTRALIA_GRAPH:
+                assignments[key] = value
+
+    assert result.success
+    assert result.suitable_for_puzzle is False
+    assert "not a natural 15-puzzle solver" in result.message
+    assert set(assignments) == set(AUSTRALIA_GRAPH)
+    for region, neighbors in AUSTRALIA_GRAPH.items():
+        for neighbor in neighbors:
+            assert assignments[region] != assignments[neighbor]
 
 
 def test_peas_table_has_complete_four_part_model():

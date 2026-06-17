@@ -13,6 +13,7 @@ from algorithms.csp import (
     backtracking_search,
     constraint_propagation,
     csp_definition,
+    graph_coloring_demo,
     min_conflicts,
     path_consistency,
     solve_csp_constraint_graphs,
@@ -34,6 +35,7 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
     render_extension_warning()
 
     mode = st.radio("Mode", [
+        "Graph Coloring (Map CSP)",
         "CSP Definition & Propagation",
         "Backtracking & Min-Conflicts",
         "Constraint Graphs & Path Consistency",
@@ -50,7 +52,26 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
     csp_search_kw = dict(**base_kw, timeout=30.0)
     search_kw = dict(**base_kw, timeout=30.0, action_order="LRUD")
 
-    if mode == "CSP Definition & Propagation":
+    if mode == "Graph Coloring (Map CSP)":
+        st.subheader("Graph Coloring CSP")
+        st.info(
+            "This coloring demo uses a map/graph CSP. It is intentionally separate "
+            "from the 15-puzzle because tile sliding is better modeled as state-space search."
+        )
+        selected_colors = st.multiselect(
+            "Available Colors",
+            ["Red", "Green", "Blue", "Yellow"],
+            default=["Red", "Green", "Blue"],
+            key="graph_coloring_colors",
+        )
+        colors = tuple(selected_colors) if selected_colors else ("Red", "Green", "Blue")
+        result = graph_coloring_demo(colors=colors)
+        render_result_metrics(result)
+        st.markdown(result.message)
+        if result.trace:
+            render_trace_table(result.trace)
+
+    elif mode == "CSP Definition & Propagation":
         t = st.number_input("Time Horizon", 1, 5, 3, key="csp_t")
         st.subheader("CSP Definition")
         result = csp_definition(time_horizon=t, **base_kw)

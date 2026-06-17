@@ -9,6 +9,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Lecturer App Mode
+
+For classroom or grading use on Windows, install dependencies once and launch the desktop-style app:
+
+```bash
+pip install -r requirements.txt
+start-15-puzzle-ai.bat
+```
+
+`desktop_app.py` starts Streamlit on a local port and opens it in a native app window when `pywebview` is available. If the native window backend is unavailable, it falls back to the default browser while keeping the same local app behavior.
+
 On Windows PowerShell, compile all Python files with:
 
 ```powershell
@@ -56,6 +67,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Benchmark comparison with methodology panels and academic evidence metrics.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
 - Advanced CSP, complex-environment, and game-tree demonstrations with warning labels.
+- Graph coloring is presented as a separate map-coloring CSP demo, not as a 15-puzzle solver.
 - Hand-tracing practice for oral/written exam preparation.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
 - Accessibility-oriented UI: focus states, reduced-motion support, responsive cards, and mobile sidebar safeguards.
@@ -63,7 +75,9 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 ## Project Structure
 
 ```text
-app.py                         Streamlit entrypoint and tab router
+app.py                         Streamlit web entrypoint and tab router
+desktop_app.py                 Desktop-style launcher for lecturers
+start-15-puzzle-ai.bat         Windows one-click launcher
 core/                          puzzle logic, theory data, academic data, dispatch helpers
 algorithms/                    uninformed, informed, local, CSP, complex, adversarial algorithms
 ui/                            Streamlit tab modules, shared panels, components, styles
@@ -84,4 +98,5 @@ Expected coverage includes puzzle mechanics, heuristic correctness, solver regre
 - A*, IDA*, BFS, UCS, and IDS are the main solver demonstrations.
 - Greedy and local search are intentionally kept as contrast cases.
 - CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax are labeled as educational extensions.
+- Graph coloring belongs to the map-coloring CSP demo. It is intentionally separate from 15-puzzle.
 - Benchmark output is course evidence, not a production solver leaderboard.
