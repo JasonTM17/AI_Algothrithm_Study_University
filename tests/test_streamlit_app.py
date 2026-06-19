@@ -83,6 +83,22 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert not app.exception
 
 
+def test_run_result_is_cleared_when_solver_limits_change():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.button(key="btn_run").click().run()
+
+    assert app.session_state.last_result.algorithm == "BFS"
+
+    app.number_input(key="max_nodes").set_value(55000).run()
+
+    assert "last_result" not in app.session_state
+    assert not app.exception
+
+
 def test_stochastic_run_uses_a_fresh_recorded_seed_each_time():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE

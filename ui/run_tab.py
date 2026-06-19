@@ -104,8 +104,9 @@ def render_run_algorithm_tab() -> None:
             extra_params["success_prob"] = st.slider("Success Probability", 0.1, 1.0, 0.8, key="success_prob")
 
     run_signature = (
-        tuple(st.session_state.start_state), algo_name, heuristic,
-        tie_breaker, action_order, fresh_seed_each_run, manual_seed,
+        tuple(st.session_state.start_state), selected_fn_name, algo_name, heuristic,
+        tie_breaker, action_order, int(max_nodes), int(max_depth), float(timeout),
+        tuple(sorted(extra_params.items())), fresh_seed_each_run, int(manual_seed),
     )
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
