@@ -300,6 +300,7 @@ def render_trace_table(trace: list, max_rows: int = 100):
     for step in trace[:max_rows]:
         row = {
             t("tc_step"): step.step,
+            "Event": step.event,
             t("tc_action"): step.action or "-",
         }
         if step.g > 0:
@@ -525,8 +526,10 @@ def render_comparison_table(results: list):
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
             t("mc_runtime"): f"{r.runtime:.4f}",
-            t("compare_optimal_col"): t("tc_yes") if r.is_optimal else t("tc_no"),
-            t("compare_complete_col"): t("tc_yes") if r.is_complete else t("tc_no"),
+            f"{t('compare_optimal_col')} (theory)": t("tc_yes") if r.is_optimal else t("tc_no"),
+            f"{t('compare_complete_col')} (theory)": t("tc_yes") if r.is_complete else t("tc_no"),
+            "Run optimality proven": t("tc_yes") if r.optimality_proven else t("tc_no"),
+            "Termination": r.termination_reason,
         }
         rows.append(row)
 

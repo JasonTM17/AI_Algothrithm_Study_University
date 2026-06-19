@@ -95,9 +95,9 @@ def greedy_best_first(
                 if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=child.g, h=h, f=child.g + h,
+                        g=child.g, h=h, f=child.g + h, depth=child.depth, event="generate",
                         frontier_size=len(frontier), reached_size=len(reached),
-                        node_state=node.state, frontier_states=[item[-1].state for item in frontier], reached_states=list(reached.keys()),
+                        node_state=node.state, frontier_states=[entry[-1].state for entry in sorted(frontier)], reached_states=list(reached.keys()),
                         reason=f"Greedy: expand h={h:.1f}",
                     ))
 
@@ -198,9 +198,9 @@ def a_star(
                 if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=new_g, h=h, f=new_g + h,
+                        g=new_g, h=h, f=new_g + h, depth=child.depth, event="generate",
                         frontier_size=len(frontier), reached_size=len(best_g),
-                        node_state=node.state, frontier_states=[item[-1].state for item in frontier], reached_states=list(best_g.keys()),
+                        node_state=node.state, frontier_states=[entry[-1].state for entry in sorted(frontier)], reached_states=list(best_g.keys()),
                         reason=f"A*: g={new_g}, h={h:.1f}, f={new_g+h:.1f}",
                     ))
 

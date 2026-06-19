@@ -22,7 +22,23 @@ def assert_tree_is_legal(result):
 
 
 def test_bfs_exposes_real_parent_child_edges():
-    assert_tree_is_legal(bfs(START, timeout=5))
+    result = bfs(START, timeout=5)
+    assert_tree_is_legal(result)
+    assert {event.event for event in result.trace} >= {"generate", "goal"}
+
+
+def test_priority_frontier_snapshot_matches_pop_order():
+    result = a_star(START, timeout=5)
+    f_by_state = {event.state: event.f for event in result.trace}
+    checked = False
+    for event in result.trace:
+        if len(event.frontier_states or []) > 1:
+            values = [f_by_state[state] for state in event.frontier_states if state in f_by_state]
+            if len(values) > 1:
+                assert values == sorted(values)
+                checked = True
+                break
+    assert checked
 
 
 def test_a_star_exposes_real_parent_child_edges_and_dot():
