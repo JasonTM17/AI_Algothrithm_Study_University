@@ -15,7 +15,7 @@ from ui.components import (
     render_search_tree,
     render_trace_table,
 )
-from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS
+from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS
 
 
 def render_run_algorithm_tab() -> None:
@@ -30,8 +30,8 @@ def render_run_algorithm_tab() -> None:
     col_algo, col_params = st.columns([1, 1])
 
     with col_algo:
-        group = st.selectbox("Algorithm Group", list(ALGORITHM_GROUPS.keys()), key="algo_group")
-        algorithms = ALGORITHM_GROUPS[group]
+        group = st.selectbox("Algorithm Group", list(SOLVER_GROUPS.keys()), key="algo_group")
+        algorithms = SOLVER_GROUPS[group]
         algo_name = st.selectbox("Algorithm", algorithms, key="algo_name")
         render_algorithm_role_card(algo_name)
 

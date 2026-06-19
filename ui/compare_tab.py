@@ -18,7 +18,7 @@ from ui.academic_panels import (
     render_taxonomy_table,
 )
 from ui.components import render_comparison_table
-from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS, COMPARISON_TABLE, NOTES
+from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS, COMPARISON_TABLE, NOTES
 
 
 def render_compare_tab() -> None:
@@ -55,7 +55,7 @@ def render_compare_tab() -> None:
     st.markdown("Select algorithms to benchmark against the current start state.")
 
     selected_groups = st.multiselect(
-        "Algorithm Groups", list(ALGORITHM_GROUPS.keys()),
+        "Algorithm Groups", list(SOLVER_GROUPS.keys()),
         default=["Uninformed Search", "Informed Search"],
         key="compare_groups",
     )
@@ -64,8 +64,8 @@ def render_compare_tab() -> None:
     for g in selected_groups:
         algos = st.multiselect(
             f"Algorithms from {g}",
-            ALGORITHM_GROUPS[g],
-            default=ALGORITHM_GROUPS[g][:2],
+            SOLVER_GROUPS[g],
+            default=SOLVER_GROUPS[g][:2],
             key=f"compare_{g}",
         )
         selected_algos.extend(algos)

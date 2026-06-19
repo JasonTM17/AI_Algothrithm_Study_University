@@ -1018,6 +1018,14 @@ ALGORITHM_GROUPS = {
     "Adversarial/Stochastic": ["Minimax", "Alpha-Beta Pruning", "Expectimax"],
 }
 
+# Standard deterministic 15-puzzle pages use this subset. Extensions remain
+# available in the Advanced concept lab and in the full theory taxonomy.
+SOLVER_GROUPS = {
+    name: algorithms
+    for name, algorithms in ALGORITHM_GROUPS.items()
+    if name in {"Uninformed Search", "Informed Search", "Local Search"}
+}
+
 ALGORITHM_FN_MAP = {
     "BFS": "bfs", "DFS": "dfs", "UCS": "ucs", "IDS": "ids",
     "Greedy Best-First": "greedy_best_first", "A*": "a_star", "IDA*": "ida_star",
