@@ -63,6 +63,8 @@ def _apply_ai_replay_step(index: int) -> None:
     st.session_state.play_state = path[bounded_index]
     st.session_state.play_history = base_history + list(path[1:bounded_index + 1])
     st.session_state.play_moves = base_moves + bounded_index
+    if bounded_index > 0:
+        st.session_state.play_assisted = True
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
@@ -114,6 +116,8 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         st.session_state.play_history = [st.session_state.start_state]
     if "play_history" not in st.session_state:
         st.session_state.play_history = [st.session_state.play_state]
+    if "play_assisted" not in st.session_state:
+        st.session_state.play_assisted = False
 
     if "play_start_ref" not in st.session_state:
         st.session_state.play_start_ref = st.session_state.start_state
@@ -121,6 +125,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         st.session_state.play_state = st.session_state.start_state
         st.session_state.play_moves = 0
         st.session_state.play_history = [st.session_state.start_state]
+        st.session_state.play_assisted = False
         st.session_state.play_start_ref = st.session_state.start_state
         st.session_state.pop("play_optimal_result", None)
 
@@ -181,6 +186,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             st.session_state.play_state = st.session_state.start_state
             st.session_state.play_moves = 0
             st.session_state.play_history = [st.session_state.start_state]
+            st.session_state.play_assisted = False
             _clear_ai_replay()
             st.rerun()
 
@@ -215,10 +221,12 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     if proof_result:
         if proof_result.success and proof_result.optimality_proven:
             player_cert = validate_player_run(st.session_state.play_history, GOAL_STATE)
-            cert_cols = st.columns(3)
+            assisted = st.session_state.get("play_assisted", False)
+            cert_cols = st.columns(4)
             cert_cols[0].metric("Player Run", "Legal" if player_cert.is_legal else "Invalid")
             cert_cols[1].metric("Recorded Moves", player_cert.move_count)
             cert_cols[2].metric("Reached Goal", "Yes" if player_cert.reaches_goal else "No")
+            cert_cols[3].metric("Assistance", "AI-assisted" if assisted else "Unassisted")
             st.success(
                 "Optimality certificate verified: every move is legal and "
                 f"the proven solution cost is {proof_result.cost}."
@@ -237,11 +245,17 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                 score_cols[1].metric("Your Moves", score.player_moves)
                 score_cols[2].metric("Move Gap", f"{score.gap:+d}")
                 score_cols[3].metric("Efficiency", f"{score.efficiency_percent:.1f}%")
-                if score.is_optimal_play:
+                if score.is_optimal_play and not assisted:
                     st.success("Your completed run matches the proven optimal move count.")
+                elif score.is_optimal_play:
+                    st.info(
+                        "The completed AI-assisted run matches the optimal move count. "
+                        "This demonstrates the solver path, not unassisted player optimality."
+                    )
                 else:
                     st.warning(
-                        f"Your completed run is legal but {score.gap} move(s) longer than optimal."
+                        f"The completed {'AI-assisted' if assisted else 'unassisted'} run is legal "
+                        f"but {score.gap} move(s) longer than optimal."
                     )
         else:
             st.warning(f"No optimality certificate produced: {proof_result.message}")

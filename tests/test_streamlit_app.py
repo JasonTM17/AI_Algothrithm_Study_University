@@ -43,9 +43,28 @@ def test_ai_solver_replay_keeps_play_history_certifiable():
     cert = validate_player_run(app.session_state.play_history, GOAL_STATE)
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_moves == 1
+    assert app.session_state.play_assisted is True
     assert cert.is_legal
     assert cert.reaches_goal
     assert cert.actions == ("R",)
+    assert not app.exception
+
+
+def test_reset_clears_ai_assistance_disclosure():
+    app = AppTest.from_file("app.py", default_timeout=15).run()
+    app.session_state.start_state = ONE_MOVE
+    app.run()
+
+    app.button(key="btn_ai_solve").click().run()
+    app.button(key="btn_play_next").click().run()
+    assert app.session_state.play_assisted is True
+
+    reset_button = next(button for button in app.button if button.label == "Reset Play Board")
+    reset_button.click().run()
+
+    assert app.session_state.play_assisted is False
+    assert app.session_state.play_history == [ONE_MOVE]
+    assert app.session_state.play_moves == 0
     assert not app.exception
 
 
