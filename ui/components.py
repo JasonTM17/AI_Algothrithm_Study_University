@@ -529,6 +529,7 @@ def render_comparison_table(results: list):
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
             t("mc_runtime"): f"{r.runtime:.4f}",
+            "Seed / Mode": r.random_seed if r.random_seed is not None else "Deterministic",
             f"{t('compare_optimal_col')} (theory)": t("tc_yes") if r.is_optimal else t("tc_no"),
             f"{t('compare_complete_col')} (theory)": t("tc_yes") if r.is_complete else t("tc_no"),
             "Run optimality proven": t("tc_yes") if r.optimality_proven else t("tc_no"),

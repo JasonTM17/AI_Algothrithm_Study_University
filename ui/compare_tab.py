@@ -7,6 +7,7 @@ from core.academic_proofs import BENCHMARK_PRESETS
 from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable, scramble
+from core.randomness import resolve_run_seed
 from ui.academic_panels import (
     render_academic_header,
     render_benchmark_evidence,
@@ -92,6 +93,23 @@ def render_compare_tab() -> None:
         int(preset["timeout"]),
         key=f"compare_timeout_{preset_name}",
     )
+    fresh_benchmark_seeds = st.checkbox(
+        "Fresh stochastic seeds each benchmark",
+        value=True,
+        key="fresh_benchmark_seeds",
+        help=(
+            "Each stochastic algorithm receives a distinct recorded seed. "
+            "Disable this to reuse a fixed seed for a reproducible benchmark."
+        ),
+    )
+    fixed_benchmark_seed = st.number_input(
+        "Fixed benchmark seed",
+        0,
+        2**31 - 1,
+        int(preset["seed"]),
+        key=f"fixed_benchmark_seed_{preset_name}",
+        disabled=fresh_benchmark_seeds,
+    )
 
     if st.button("Run Benchmark", key="btn_benchmark", type="primary"):
         start = st.session_state.start_state
@@ -132,13 +150,25 @@ def render_compare_tab() -> None:
 
             progress = st.progress(0, text="Running benchmark...")
             total = len(selected_algos)
+            previous_seed = st.session_state.get("last_benchmark_random_seed")
+            benchmark_seeds: dict[str, int] = {}
 
             for i, algo in enumerate(selected_algos):
                 fn_name = ALGORITHM_FN_MAP.get(algo)
                 if fn_name and fn_name in solver_map:
                     try:
+                        run_seed = resolve_run_seed(
+                            fn_name,
+                            fresh_each_run=fresh_benchmark_seeds,
+                            manual_seed=int(fixed_benchmark_seed),
+                            previous_seed=previous_seed,
+                        )
                         kwargs = dict(start=start, goal=GOAL_STATE,
                                      timeout=float(timeout), action_order="LRUD")
+                        if run_seed is not None:
+                            kwargs["seed"] = run_seed
+                            benchmark_seeds[algo] = run_seed
+                            previous_seed = run_seed
                         # Only pass heuristic to algorithms that use it
                         if fn_name not in ("bfs", "dfs", "ucs", "ids", "and_or_search",
                                           "no_observation_search", "partially_observable_search",
@@ -164,6 +194,7 @@ def render_compare_tab() -> None:
                         elif fn_name in ("minimax", "alpha_beta_pruning", "expectimax"):
                             kwargs["depth"] = 3
                         result = solver_map[fn_name](**kwargs)
+                        result.random_seed = run_seed
                         st.session_state.benchmark_results.append(result)
                     except Exception as e:
                         st.session_state.benchmark_results.append(
@@ -171,10 +202,16 @@ def render_compare_tab() -> None:
                                         message=f"Error: {e}", runtime=0))
                 progress.progress((i + 1) / total, text=f"Done: {i+1}/{total}")
 
+            st.session_state["last_benchmark_random_seed"] = previous_seed
+            st.session_state["benchmark_run_seeds"] = benchmark_seeds
             progress.empty()
 
     render_comparison_table(st.session_state.benchmark_results)
     render_benchmark_evidence(st.session_state.benchmark_results)
+    benchmark_seeds = st.session_state.get("benchmark_run_seeds", {})
+    if benchmark_seeds:
+        seed_text = " · ".join(f"{name}: `{seed}`" for name, seed in benchmark_seeds.items())
+        st.caption(f"Recorded stochastic seeds — {seed_text}")
 
     # Static comparison table
     st.markdown("---")

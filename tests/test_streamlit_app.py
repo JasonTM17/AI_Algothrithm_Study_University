@@ -104,6 +104,28 @@ def test_stochastic_run_uses_a_fresh_recorded_seed_each_time():
     assert not app.exception
 
 
+def test_compare_records_distinct_seeds_for_stochastic_algorithms():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.run()
+    app.multiselect(key="compare_groups").set_value(["Local Search"]).run()
+    app.multiselect(key="compare_Local Search").set_value([
+        "Stochastic Hill Climbing",
+        "Simulated Annealing",
+    ]).run()
+
+    assert app.checkbox(key="fresh_benchmark_seeds").value is True
+    app.button(key="btn_benchmark").click().run()
+
+    seeds = app.session_state.benchmark_run_seeds
+    assert set(seeds) == {"Stochastic Hill Climbing", "Simulated Annealing"}
+    assert len(set(seeds.values())) == 2
+    assert all(result.random_seed is not None for result in app.session_state.benchmark_results)
+    assert not app.exception
+
+
 def test_graph_coloring_stays_hidden_until_selected():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
