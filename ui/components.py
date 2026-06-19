@@ -670,7 +670,7 @@ def render_search_tree(result, max_nodes: int = 40):
         "Every edge is backed by a legal puzzle action. Green nodes and edges "
         "show the verified solution path; the remaining nodes are explored evidence."
     )
-    st.graphviz_chart(search_tree_to_dot(result, max_nodes), use_container_width=True)
+    st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
     if len(result.search_tree_nodes) > max_nodes:
         st.caption(
             f"Showing {max_nodes}/{len(result.search_tree_nodes)} recorded nodes. "

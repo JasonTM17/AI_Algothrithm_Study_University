@@ -25,3 +25,32 @@ def test_challenge_mode_produces_verified_optimal_certificate():
     assert proof.optimality_proven
     assert proof.cost == 1
     assert not app.exception
+
+
+def test_standard_solver_run_renders_verified_search_evidence():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+    assert result.algorithm == "BFS"
+    assert result.success and result.path_verified
+    assert result.search_tree_edges
+    assert not app.exception
+
+
+def test_graph_coloring_stays_hidden_until_selected():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    assert not [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
+
+    app.selectbox(key="complex_mode_v2").set_value("Graph Coloring (Map CSP)").run()
+    maps = [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
+    assert maps
+    assert "12" in maps[0].value
+    assert not app.exception
