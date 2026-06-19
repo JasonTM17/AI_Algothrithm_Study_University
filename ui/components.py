@@ -281,7 +281,7 @@ def render_result_metrics(result):
     optimality_status = "proven for this run" if result.optimality_proven else "not proven for this run"
     st.caption(
         f"Run certificate: termination={result.termination_reason} · "
-        f"path={evidence_status} · optimality={optimality_status}. "
+        f"legal path={evidence_status} · optimality={optimality_status}. "
         f"Theoretical complete/optimal properties apply only when their assumptions and resource limits hold."
     )
 
@@ -629,7 +629,7 @@ def render_search_tree(result, max_nodes: int = 40):
     st.markdown(f"### {t('run_search_tree')}")
     st.caption(
         "Every edge is backed by a legal puzzle action. Green nodes and edges "
-        "show the verified solution path; the remaining nodes are explored evidence."
+        "show the verified legal result path; the remaining nodes are explored evidence."
     )
     st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
     if len(result.search_tree_nodes) > max_nodes:

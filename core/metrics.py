@@ -116,9 +116,27 @@ class SearchResult:
     def _verify_path_evidence(self) -> None:
         if not self.success or not self.path:
             return
-        from core.puzzle import validate_solution_path
-        self.path_verified, self.verification_message = validate_solution_path(
-            self.path, self.actions, self.path[-1]
+        from core.puzzle import _move_blank
+
+        if len(self.path) != len(self.actions) + 1:
+            self.path_verified = False
+            self.verification_message = "Path must contain exactly one more state than actions"
+            return
+        for index, action in enumerate(self.actions):
+            expected = _move_blank(self.path[index], action)
+            if expected is None:
+                self.path_verified = False
+                self.verification_message = f"Action {action} is illegal at step {index + 1}"
+                return
+            if expected != self.path[index + 1]:
+                self.path_verified = False
+                self.verification_message = (
+                    f"Recorded state does not match action {action} at step {index + 1}"
+                )
+                return
+        self.path_verified = True
+        self.verification_message = (
+            "Path is a legal state/action sequence ending at the algorithm-reported final state"
         )
 
     def _classify_run_outcome(self) -> None:
@@ -211,7 +229,7 @@ class SearchResult:
             "Optimal?": "Yes" if self.is_optimal else "No",
             "Heuristic?": "Yes" if self.uses_heuristic else "No",
             "Randomness?": "Yes" if self.uses_randomness else "No",
-            "Path Verified?": "Yes" if self.path_verified else "No",
+            "Legal Path?": "Yes" if self.path_verified else "No",
             "Run Termination": self.termination_reason,
             "Optimality Proven?": "Yes" if self.optimality_proven else "No",
         }

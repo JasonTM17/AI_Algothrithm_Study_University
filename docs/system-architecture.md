@@ -15,6 +15,6 @@ flowchart LR
 
 The standard solver lab accepts only deterministic 15-puzzle algorithms. Extension environments remain isolated in the Advanced concept lab and are not ranked against standard solvers.
 
-Every successful puzzle run contains a legal state/action path certificate. The search visualization draws an edge only when applying its recorded action to the parent produces the child state. Trace capture is bounded for browser responsiveness and reports truncation explicitly.
+Every successful puzzle run contains a legal state/action path certificate. Goal termination and optimality are reported as separate run fields so path legality is not confused with a proof of goal reachability or optimal cost. The search visualization draws an edge only when applying its recorded action to the parent produces the child state. Trace capture is bounded for browser responsiveness and reports truncation explicitly.
 
 Game-tree and stochastic demos expose selected variations or sample outcome paths for teaching. They do not claim to render the full evaluated tree in the main metrics, and their guarantees remain conditional on depth, timeout, action ordering, and environment assumptions.

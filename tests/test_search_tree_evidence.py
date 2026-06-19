@@ -2,7 +2,7 @@
 
 from algorithms.informed import a_star
 from algorithms.uninformed import bfs
-from core.metrics import search_tree_to_dot
+from core.metrics import SearchResult, search_tree_to_dot
 from core.puzzle import _move_blank
 
 
@@ -59,3 +59,20 @@ def test_resource_limit_does_not_claim_exhaustive_failure():
     assert result.termination_reason == "resource_limit"
     assert not result.exhaustive_failure
     assert not result.optimality_proven
+
+
+def test_path_certificate_is_legal_path_not_goal_claim():
+    child = _move_blank(START, "D")
+    result = SearchResult(
+        success=True,
+        algorithm="Certificate Probe",
+        path=[START, child],
+        actions=["D"],
+    )
+
+    assert child != START
+    assert result.path_verified
+    assert "legal state/action sequence" in result.verification_message
+    assert "reaches the goal" not in result.verification_message
+    assert result.summary_dict()["Legal Path?"] == "Yes"
+    assert "Path Verified?" not in result.summary_dict()
