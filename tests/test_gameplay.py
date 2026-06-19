@@ -55,6 +55,26 @@ def test_illegal_player_history_is_rejected():
     assert "Illegal transition" in cert.message
 
 
+def test_malformed_player_history_is_rejected_without_exception():
+    duplicate_tile_state = (1, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+    cert = validate_player_run([GOAL, duplicate_tile_state])
+
+    assert not cert.is_legal
+    assert not cert.reaches_goal
+    assert cert.final_state == duplicate_tile_state
+    assert "Invalid board state at player step 1" in cert.message
+
+
+def test_malformed_challenge_goal_is_rejected_without_exception():
+    malformed_goal = (1, 2, 3)
+    cert = validate_player_run([GOAL], goal=malformed_goal)
+
+    assert not cert.is_legal
+    assert not cert.reaches_goal
+    assert cert.actions == ()
+    assert "Invalid goal state" in cert.message
+
+
 def test_completed_score_cannot_beat_proven_optimum():
     with pytest.raises(ValueError):
         score_challenge(player_moves=0, optimal_moves=1)

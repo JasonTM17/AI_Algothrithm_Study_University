@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from core.puzzle import GOAL_STATE, _move_blank
+from core.puzzle import GOAL_STATE, _move_blank, validate_state
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,17 @@ def validate_player_run(
     goal: tuple[int, ...] = GOAL_STATE,
 ) -> PlayerRunCertificate:
     """Validate a player's recorded board history before comparing it to optimal play."""
+    try:
+        validate_state(goal)
+    except ValueError as exc:
+        return PlayerRunCertificate(
+            is_legal=False,
+            reaches_goal=False,
+            actions=(),
+            final_state=None,
+            message=f"Invalid goal state: {exc}",
+        )
+
     if not history:
         return PlayerRunCertificate(
             is_legal=False,
@@ -56,6 +67,18 @@ def validate_player_run(
         )
 
     actions: list[str] = []
+    for index, state in enumerate(history):
+        try:
+            validate_state(state)
+        except ValueError as exc:
+            return PlayerRunCertificate(
+                is_legal=False,
+                reaches_goal=False,
+                actions=tuple(actions),
+                final_state=state,
+                message=f"Invalid board state at player step {index}: {exc}",
+            )
+
     for index, (current, next_state) in enumerate(zip(history, history[1:]), start=1):
         action = _action_between(current, next_state)
         if action is None:
