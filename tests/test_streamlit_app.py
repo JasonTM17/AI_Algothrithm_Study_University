@@ -2,6 +2,9 @@
 
 from streamlit.testing.v1 import AppTest
 
+from algorithms.uninformed import bfs
+from ui.trace_tab import trace_rows
+
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 
@@ -53,4 +56,15 @@ def test_graph_coloring_stays_hidden_until_selected():
     maps = [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
     assert maps
     assert "12" in maps[0].value
+    assert not app.exception
+
+
+def test_trace_tab_exposes_csv_download():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Step Trace"
+    app.session_state["last_result"] = bfs(ONE_MOVE, timeout=5)
+    app.run()
+    rows = trace_rows(app.session_state["last_result"].trace)
+    assert rows and "Event" in rows[0]
     assert not app.exception
