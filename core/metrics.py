@@ -108,6 +108,11 @@ class SearchResult:
         if not self.search_tree_nodes:
             self._build_search_tree_evidence()
 
+    def refresh_certificate(self) -> None:
+        """Recompute derived evidence after an iterative wrapper sets guarantees."""
+        self._verify_path_evidence()
+        self._classify_run_outcome()
+
     def _verify_path_evidence(self) -> None:
         if not self.success or not self.path:
             return

@@ -286,6 +286,7 @@ def ids(
             result.is_complete = True
             result.is_optimal = True
             result.runtime = time.perf_counter() - t0
+            result.refresh_certificate()
             return result
 
         if result.message and "depth" not in result.message.lower():

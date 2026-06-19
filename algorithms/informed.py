@@ -265,6 +265,7 @@ def ida_star(
             result.is_optimal = True
             result.uses_heuristic = True
             result.runtime = time.perf_counter() - t0
+            result.refresh_certificate()
             return result
 
         if next_threshold == float("inf"):
