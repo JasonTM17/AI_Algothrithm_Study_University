@@ -32,3 +32,13 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert "digraph SearchTree" in dot
     assert "->" in dot
     assert 'color="#059669"' in dot
+    assert result.termination_reason == "goal"
+    assert result.optimality_proven
+
+
+def test_resource_limit_does_not_claim_exhaustive_failure():
+    result = bfs(START, max_nodes=1, timeout=5)
+    assert not result.success
+    assert result.termination_reason == "resource_limit"
+    assert not result.exhaustive_failure
+    assert not result.optimality_proven

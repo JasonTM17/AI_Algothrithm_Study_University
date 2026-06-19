@@ -87,6 +87,9 @@ class SearchResult:
     trace_total_events: int = 0
     path_verified: bool = False
     verification_message: str = ""
+    termination_reason: str = ""
+    optimality_proven: bool = False
+    exhaustive_failure: bool = False
 
     # Algorithm properties
     is_complete: bool = False
@@ -101,6 +104,7 @@ class SearchResult:
         self.trace_total_events = max(self.trace_total_events, len(self.trace))
         self.trace_truncated = self.trace_truncated or len(self.trace) >= 200
         self._verify_path_evidence()
+        self._classify_run_outcome()
         if not self.search_tree_nodes:
             self._build_search_tree_evidence()
 
@@ -110,6 +114,25 @@ class SearchResult:
         from core.puzzle import validate_solution_path
         self.path_verified, self.verification_message = validate_solution_path(
             self.path, self.actions, self.path[-1]
+        )
+
+    def _classify_run_outcome(self) -> None:
+        message = self.message.lower()
+        if self.success:
+            self.termination_reason = "goal"
+        elif "timeout" in message:
+            self.termination_reason = "timeout"
+        elif "node limit" in message or "max steps" in message:
+            self.termination_reason = "resource_limit"
+        elif "depth" in message or "threshold" in message or "horizon" in message:
+            self.termination_reason = "depth_limit"
+        elif "no solution" in message:
+            self.termination_reason = "exhausted"
+        else:
+            self.termination_reason = "stopped"
+        self.optimality_proven = bool(self.success and self.is_optimal and self.path_verified)
+        self.exhaustive_failure = bool(
+            not self.success and self.is_complete and self.termination_reason == "exhausted"
         )
 
     def _build_search_tree_evidence(self) -> None:
@@ -176,6 +199,8 @@ class SearchResult:
             "Heuristic?": "Yes" if self.uses_heuristic else "No",
             "Randomness?": "Yes" if self.uses_randomness else "No",
             "Path Verified?": "Yes" if self.path_verified else "No",
+            "Run Termination": self.termination_reason,
+            "Optimality Proven?": "Yes" if self.optimality_proven else "No",
         }
 
 

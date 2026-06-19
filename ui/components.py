@@ -277,6 +277,14 @@ def render_result_metrics(result):
     with col8:
         st.metric(t("mc_depth"), str(result.depth) if success else "-")
 
+    evidence_status = "verified" if result.path_verified else "not verified"
+    optimality_status = "proven for this run" if result.optimality_proven else "not proven for this run"
+    st.caption(
+        f"Run certificate: termination={result.termination_reason} · "
+        f"path={evidence_status} · optimality={optimality_status}. "
+        f"Theoretical complete/optimal properties apply only when their assumptions and resource limits hold."
+    )
+
     if result.message:
         msg_cls = "result-success" if success else "result-failure"
         st.markdown(f'<div class="{msg_cls}">{result.message}</div>', unsafe_allow_html=True)
