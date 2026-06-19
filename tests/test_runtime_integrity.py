@@ -28,10 +28,14 @@ def test_theory_import_has_key_algorithms():
 
 def test_search_tree_renderer_has_no_legacy_trace_fallback():
     components_source = (ROOT / "ui" / "components.py").read_text(encoding="utf-8")
+    hand_tracing_source = (ROOT / "ui" / "hand_tracing.py").read_text(encoding="utf-8")
 
     assert "_render_legacy_search_trace" not in components_source
     assert "search_tree_to_dot" in components_source
     assert "Every edge is backed by a legal puzzle action" in components_source
+    assert "hand_trace_tree_dot" in hand_tracing_source
+    assert "st.graphviz_chart" in hand_tracing_source
+    assert "Compatibility for tree display" not in hand_tracing_source
 
 
 def test_advanced_mode_function_kwargs_match_app_dispatch():

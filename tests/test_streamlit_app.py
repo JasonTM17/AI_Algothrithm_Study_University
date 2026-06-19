@@ -68,3 +68,22 @@ def test_trace_tab_exposes_csv_download():
     rows = trace_rows(app.session_state["last_result"].trace)
     assert rows and "Event" in rows[0]
     assert not app.exception
+
+
+def test_hand_tracing_builds_explicit_graph_edges():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Hand-Tracing Practice"
+    app.run()
+    app.button(key="btn_ht_generate").click().run()
+    app.button(key="btn_choose_0").click().run()
+
+    edges = app.session_state["ht_tree_edges"]
+    expanded = app.session_state["ht_expanded_node_ids"]
+    records = app.session_state["ht_node_records"]
+
+    assert edges
+    assert expanded == ["n0"]
+    assert "n0" in records
+    assert all(edge["parent"] in records and edge["child"] in records for edge in edges)
+    assert not app.exception

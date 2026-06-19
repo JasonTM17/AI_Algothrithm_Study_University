@@ -10,6 +10,74 @@ from ui.academic_panels import render_exam_path
 from ui.localization import LOC
 
 
+def _register_hand_trace_node(node: Node) -> str:
+    """Assign a stable display id to a hand-tracing node in session state."""
+    object_key = id(node)
+    node_ids = st.session_state.setdefault("ht_node_ids", {})
+    node_records = st.session_state.setdefault("ht_node_records", {})
+    if object_key not in node_ids:
+        node_id = f"n{len(node_ids)}"
+        node_ids[object_key] = node_id
+    node_id = node_ids[object_key]
+    node_records[node_id] = {
+        "state": node.state,
+        "g": node.g,
+        "h": node.h,
+        "f": node.f,
+        "depth": node.depth,
+    }
+    return node_id
+
+
+def _record_hand_trace_edge(parent: Node, child: Node, action: str) -> None:
+    """Record an auditable parent-child edge produced by a legal expansion."""
+    parent_id = _register_hand_trace_node(parent)
+    child_id = _register_hand_trace_node(child)
+    edges = st.session_state.setdefault("ht_tree_edges", [])
+    edge = {"parent": parent_id, "child": child_id, "action": action}
+    if edge not in edges:
+        edges.append(edge)
+
+
+def hand_trace_tree_dot() -> str:
+    """Serialize the practiced expansion tree to Graphviz DOT."""
+    node_records = st.session_state.get("ht_node_records", {})
+    expanded = set(st.session_state.get("ht_expanded_node_ids", []))
+    lines = [
+        "digraph HandTraceTree {",
+        "rankdir=TB;",
+        "graph [bgcolor=transparent];",
+        'node [shape=box style="rounded,filled" fontname="Arial" fontsize=9];',
+        'edge [fontname="Arial" fontsize=9 color="#64748B"];',
+    ]
+    for node_id, record in node_records.items():
+        state = record["state"]
+        rows = [state[i:i + 4] for i in range(0, 16, 4)]
+        grid = "\\n".join(" ".join("_" if value == 0 else str(value) for value in row) for row in rows)
+        label = (
+            f"{node_id} | d={record['depth']} g={record['g']} "
+            f"h={record['h']:.1f} f={record['f']:.1f}\\n{grid}"
+        )
+        fill = "#D1FAE5" if node_id in expanded else "#E0E7FF"
+        border = "#059669" if node_id in expanded else "#4F46E5"
+        lines.append(f'{node_id} [label="{label}" fillcolor="{fill}" color="{border}"];')
+    for edge in st.session_state.get("ht_tree_edges", []):
+        lines.append(f'{edge["parent"]} -> {edge["child"]} [label="{edge["action"]}"];')
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_hand_trace_tree() -> None:
+    """Render the explicit tree built from user-verified expansion steps."""
+    if not st.session_state.get("ht_node_records"):
+        st.info(t("tc_no_trace"))
+        return
+    st.caption(
+        "Green nodes were expanded by your choices; every edge is a generated child from a legal blank move."
+    )
+    st.graphviz_chart(hand_trace_tree_dot(), width="stretch")
+
+
 def t(key, **kwargs):
     global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     text = LOC[global_lang].get(key, key)
@@ -90,6 +158,11 @@ def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_dept
     st.session_state.ht_solved = False
     st.session_state.ht_feedback = None
     st.session_state.ht_feedback_type = None
+    st.session_state.ht_node_ids = {}
+    st.session_state.ht_node_records = {}
+    st.session_state.ht_tree_edges = []
+    st.session_state.ht_expanded_node_ids = []
+    _register_hand_trace_node(root_node)
 
 
 def render_hand_tracing_page():
@@ -213,12 +286,7 @@ def render_hand_tracing_page():
         
         # Display final search tree
         st.subheader(t("ht_tree_title"))
-        lines = []
-        for h in st.session_state.ht_history:
-            depth = h.get("depth", 0)
-            indent = "│  " * depth + "├─"
-            lines.append(f"{indent} Step {h.get('Bước', h.get('Step', 1))}: {h.get('Hành động', h.get('Action', 'Start'))} (f={h.get('f', 0)})")
-        st.code("\n".join(lines), language="")
+        render_hand_trace_tree()
         
         if st.button(t("ht_btn_new"), key="btn_new_after_solve", type="primary"):
             st.session_state.ht_active = False
@@ -270,6 +338,9 @@ def render_hand_tracing_page():
             # CORRECT CHOICE!
             st.session_state.ht_feedback_type = "success"
             st.session_state.ht_feedback = t("ht_expand_success", num=selected_idx+1)
+            chosen_id = _register_hand_trace_node(chosen_node)
+            if chosen_id not in st.session_state.ht_expanded_node_ids:
+                st.session_state.ht_expanded_node_ids.append(chosen_id)
             
             # Check if this node is Goal
             if chosen_node.state == GOAL_STATE:
@@ -284,10 +355,6 @@ def render_hand_tracing_page():
                     "Frontier size": len(frontier) - 1,
                     "Reached size": len(reached)
                 }
-                # Compatibility for tree display
-                hist_item["Bước"] = step_num + 1
-                hist_item["Hành động"] = chosen_node.action or t("dir_Start")
-                
                 st.session_state.ht_history.append(hist_item)
                 st.session_state.ht_solved = True
                 st.session_state.ht_frontier = []
@@ -324,6 +391,7 @@ def render_hand_tracing_page():
                 # Node is valid, create child
                 h_val = h_fn(ns) if algo in ["Greedy Best-First", "A*"] else 0.0
                 child = Node(state=ns, parent=chosen_node, action=action, g=new_g, depth=chosen_node.depth + 1, h=h_val)
+                _record_hand_trace_edge(chosen_node, child, action)
                 
                 st.session_state.ht_counter += 1
                 new_frontier.append((child, st.session_state.ht_counter))
@@ -344,10 +412,6 @@ def render_hand_tracing_page():
                 t("tc_frontier"): f"[{frontier_desc}]",
                 t("tc_reached"): reached_desc
             }
-            # Compatibility for tree display
-            hist_item["Bước"] = step_num + 1
-            hist_item["Hành động"] = chosen_node.action or t("dir_Start")
-            
             st.session_state.ht_history.append(hist_item)
             
             st.session_state.ht_frontier = new_frontier
@@ -415,5 +479,7 @@ def render_hand_tracing_page():
         st.subheader(t("ht_history_title"))
         df_history = pd.DataFrame(st.session_state.ht_history)
         # Drop columns not suitable for intermediate viewing
-        cols_to_show = [c for c in df_history.columns if c not in ["depth", "g", "h", "f", "Bước", "Hành động"]]
+        cols_to_show = [c for c in df_history.columns if c not in ["depth", "g", "h", "f"]]
         st.dataframe(df_history[cols_to_show], width="stretch", hide_index=True)
+        with st.expander(t("ht_tree_title"), expanded=False):
+            render_hand_trace_tree()

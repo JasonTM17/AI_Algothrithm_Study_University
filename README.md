@@ -59,7 +59,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
 - Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
-- Hand-tracing practice for oral/written exam preparation.
+- Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
 - Accessibility-oriented UI: focus states, reduced-motion support, responsive cards, and mobile sidebar safeguards.
 

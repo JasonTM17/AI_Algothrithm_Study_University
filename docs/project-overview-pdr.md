@@ -28,6 +28,7 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 - The browser app is the only supported product surface.
 - Every reported puzzle solution has a legal edge-by-edge path certificate.
 - Search visualization contains explicit parent/child edges rather than inferred indentation.
+- Hand-Tracing records the learner's chosen expansions as explicit parent/child graph edges.
 - Advanced game/chance demos return only a legal selected variation or sample outcome path, and label it separately from full-tree evidence or optimal puzzle certificates.
 - Challenge Mode compares player moves against an A* optimality certificate.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
