@@ -6,8 +6,6 @@ as a MAX vs MIN game where MIN tries to increase heuristic distance.
 """
 
 import time
-import random
-import math
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank
 from core.heuristics import get_heuristic, manhattan_distance
@@ -35,8 +33,13 @@ def minimax(
     h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
+    timed_out = [False]
 
     def minimax_search(state: tuple, depth_left: int, is_max: bool, path: list) -> tuple[float, list, list]:
+        if time.perf_counter() - t0 > timeout:
+            timed_out[0] = True
+            util = -h_fn(state)
+            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state))], []
         nodes_expanded[0] += 1
         if state == goal:
             return 1000.0, [("MAX" if is_max else "MIN", state, 1000.0, h_fn(state))], []
@@ -93,13 +96,14 @@ def minimax(
         ))
 
     # Format game tree as text
-    tree_lines = _format_game_tree(start, game_tree[:50], depth)
+    tree_lines = _format_principal_variation(game_tree[:50], depth)
 
     solved = start == goal
-    msg = f"Minimax (depth={depth})\nBest utility: {utility:.1f}\n"
+    status = "Timeout: partial depth-limited evaluation" if timed_out[0] else f"Completed depth {depth}"
+    msg = f"Minimax (depth={depth})\n{status}\nBest utility: {utility:.1f}\n"
     msg += f"This is a GAME model: MAX tries to solve, MIN tries to obstruct.\n"
     msg += f"Standard 15-puzzle has NO adversary — this is for illustration only.\n\n"
-    msg += f"Game Tree (truncated):\n{tree_lines}"
+    msg += f"Principal variation (not the full evaluated tree):\n{tree_lines}"
 
     return SearchResult(
         success=solved, algorithm="Minimax", group="Adversarial/Stochastic",
@@ -110,8 +114,8 @@ def minimax(
     )
 
 
-def _format_game_tree(start: tuple, tree: list, max_depth: int) -> str:
-    """Format game tree as text."""
+def _format_principal_variation(tree: list, max_depth: int) -> str:
+    """Format the selected root-to-leaf variation, not a full game tree."""
     lines = []
     for i, (node_type, state, util, h) in enumerate(tree[:30]):
         indent = "  " * min(i, max_depth)
@@ -133,8 +137,13 @@ def alpha_beta_pruning(
     trace: list[TraceStep] = []
     nodes_expanded = [0]
     pruned = [0]
+    timed_out = [False]
 
     def ab_search(state: tuple, depth_left: int, alpha: float, beta: float, is_max: bool) -> tuple[float, list, list]:
+        if time.perf_counter() - t0 > timeout:
+            timed_out[0] = True
+            util = -h_fn(state)
+            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state))], []
         nodes_expanded[0] += 1
 
         if state == goal:
@@ -203,14 +212,15 @@ def alpha_beta_pruning(
             utility=util, h=h,
             reason=f"{node_type}: utility={util:.1f}, h={h:.1f}"))
 
-    tree_text = _format_game_tree(start, game_tree[:50], depth)
+    tree_text = _format_principal_variation(game_tree[:50], depth)
 
-    msg = f"Alpha-Beta Pruning (depth={depth})\n"
+    status = "Timeout: partial depth-limited evaluation" if timed_out[0] else f"Completed depth {depth}"
+    msg = f"Alpha-Beta Pruning (depth={depth})\n{status}\n"
     msg += f"Best utility: {utility:.1f}\n"
     msg += f"Nodes expanded: {nodes_expanded[0]}\n"
-    msg += f"Branches pruned: {pruned[0]}\n"
-    msg += f"Alpha-Beta gives SAME result as Minimax but visits fewer nodes.\n\n"
-    msg += f"Game Tree (truncated):\n{tree_text}"
+    msg += f"Cutoff events: {pruned[0]}\n"
+    msg += "With identical ordering and a completed depth, Alpha-Beta preserves the Minimax root value.\n\n"
+    msg += f"Principal variation (not the full evaluated tree):\n{tree_text}"
 
     solved = start == goal
     return SearchResult(
@@ -234,10 +244,13 @@ def expectimax(
     executing correctly, with remaining probability split among other valid moves.
     """
     t0 = time.perf_counter()
+    if not 0.0 <= success_prob <= 1.0:
+        raise ValueError("success_prob must be between 0 and 1")
     h_fn = get_heuristic(heuristic, goal)
-    rng = random.Random(seed)
+    del seed
     trace: list[TraceStep] = []
     nodes_expanded = [0]
+    timed_out = [False]
 
     def get_outcomes(state: tuple, action: str) -> list[tuple[tuple, str, float]]:
         """Return (new_state, actual_action, probability) for stochastic action."""
@@ -264,6 +277,10 @@ def expectimax(
 
     def expectimax_search(state: tuple, depth_left: int, node_type: str = "MAX", action_taken: Optional[str] = None) -> tuple[float, list]:
         """Returns (expected_utility, tree_nodes)."""
+        if time.perf_counter() - t0 > timeout:
+            timed_out[0] = True
+            util = -h_fn(state)
+            return util, [(node_type, state, util, h_fn(state), 1.0)]
         nodes_expanded[0] += 1
 
         if state == goal:
@@ -343,14 +360,15 @@ def expectimax(
             prob_str = f", P={prob:.2f}" if prob and ntype == "CHANCE" else ""
             tree_text += f"{'  ' * min(i, depth)}{ntype}: h={h:.0f}, ev={util:.1f}{prob_str}\n"
 
-    msg = f"Expectimax (depth={depth}, success_prob={success_prob})\n"
+    status = "Timeout: partial depth-limited evaluation" if timed_out[0] else f"Completed depth {depth}"
+    msg = f"Expectimax (depth={depth}, success_prob={success_prob})\n{status}\n"
     msg += f"Expected utility from start: {utility:.1f}\n"
     msg += f"Nodes expanded: {nodes_expanded[0]}\n\n"
     msg += f"Comparison with Minimax:\n"
     msg += f"  Minimax: assumes WORST outcome (adversarial)\n"
     msg += f"  Expectimax: computes EXPECTED outcome (probabilistic)\n"
     msg += f"  Result differs when success_prob < 1.0\n\n"
-    msg += f"Game Tree (truncated):\n{tree_text}"
+    msg += f"Selected policy subtree (truncated, not the full evaluated tree):\n{tree_text}"
 
     # Determine actions based on the path taken in game tree
     # Since MAX starts at the root, the next node is CHANCE, and then the outcomes are MAX.

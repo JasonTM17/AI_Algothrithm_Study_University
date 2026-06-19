@@ -196,6 +196,18 @@ class TestExpectimax:
             probs = [s.probability for s in result.trace if s.probability is not None]
             assert len(probs) > 0
 
+    def test_rejects_invalid_probability(self):
+        with pytest.raises(ValueError):
+            expectimax(EASY_STATE, success_prob=1.1)
+
+
+@pytest.mark.parametrize("solver", [minimax, alpha_beta_pruning, expectimax])
+def test_game_models_honor_timeout_and_label_partial_evaluation(solver):
+    result = solver(EASY_STATE, depth=5, timeout=0.0)
+    assert "Timeout" in result.message
+    assert result.termination_reason == "timeout"
+    assert result.runtime < 1.0
+
 
 class TestSolvableGuard:
     """Ensure all solvers handle unsolvable states gracefully."""
