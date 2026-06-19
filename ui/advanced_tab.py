@@ -35,7 +35,9 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
     )
     render_extension_warning()
 
-    mode = st.radio("Mode", [
+    mode_prompt = "— Chọn thuật toán nâng cao —"
+    mode = st.selectbox("Thuật toán / Algorithm", [
+        mode_prompt,
         "Graph Coloring (Map CSP)",
         "CSP Definition & Propagation",
         "Backtracking & Min-Conflicts",
@@ -47,7 +49,14 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         "Minimax Game",
         "Alpha-Beta Pruning Game",
         "Expectimax (Stochastic)",
-    ], key="complex_mode")
+    ], key="complex_mode_v2")
+
+    if mode == mode_prompt:
+        st.info(
+            "Chọn một thuật toán ở danh sách phía trên để mở phần mô phỏng. "
+            "Bản đồ tô màu Thủ Đức chỉ được tải khi bạn chọn Graph Coloring."
+        )
+        return
 
     base_kw = dict(start=start, goal=GOAL_STATE)
     csp_search_kw = dict(**base_kw, timeout=30.0)
