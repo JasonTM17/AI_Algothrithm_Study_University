@@ -22,6 +22,7 @@ from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE
 from ui.academic_panels import render_academic_header, render_extension_warning
 from ui.components import render_result_metrics, render_trace_table
+from ui.map_coloring import render_coloring_map
 
 
 def render_advanced_tab(start: tuple[int, ...]) -> None:
@@ -53,23 +54,85 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
     search_kw = dict(**base_kw, timeout=30.0, action_order="LRUD")
 
     if mode == "Graph Coloring (Map CSP)":
-        st.subheader("Graph Coloring CSP")
+        st.subheader("Graph Coloring CSP — Bài toán tô màu bản đồ")
         st.info(
-            "This coloring demo uses a map/graph CSP. It is intentionally separate "
-            "from the 15-puzzle because tile sliding is better modeled as state-space search."
+            "Mỗi phường/bang là một biến; miền là tập màu; hai vùng giáp ranh không được "
+            "trùng màu. Đây là CSP bản đồ độc lập, không phải thuật toán giải 15-puzzle."
+        )
+        map_options = {
+            "Thủ Đức 2025 — 12 phường hiện hành": "thu-duc-2025",
+            "Australia — ví dụ kinh điển": "australia",
+        }
+        selected_map_label = st.selectbox(
+            "Bản đồ / Map dataset",
+            list(map_options),
+            key="graph_coloring_map",
+            help="Thủ Đức dùng địa giới 12 phường có hiệu lực từ 01/07/2025.",
         )
         selected_colors = st.multiselect(
-            "Available Colors",
+            "Màu được phép / Available colors",
             ["Red", "Green", "Blue", "Yellow"],
             default=["Red", "Green", "Blue"],
             key="graph_coloring_colors",
         )
-        colors = tuple(selected_colors) if selected_colors else ("Red", "Green", "Blue")
-        result = graph_coloring_demo(colors=colors)
+        result = graph_coloring_demo(
+            colors=tuple(selected_colors),
+            map_id=map_options[selected_map_label],
+        )
         render_result_metrics(result)
-        st.markdown(result.message)
-        if result.trace:
-            render_trace_table(result.trace)
+        metric_a, metric_b, metric_c = st.columns(3)
+        metric_a.metric("Color attempts", result.attempts)
+        metric_b.metric("Backtracks", result.backtracks)
+        metric_c.metric("Adjacency edges", sum(map(len, result.adjacency.values())) // 2)
+        if not selected_colors:
+            st.error("Hãy chọn ít nhất một màu. Thuật toán không tự thay thế lựa chọn của bạn.")
+        elif result.success:
+            st.success("Đã kiểm chứng: mọi phường/bang đều có màu và mọi cặp giáp ranh đều khác màu.")
+        else:
+            st.warning("Không tồn tại nghiệm với tập màu đã chọn. Hãy thêm màu hoặc xem các bước backtrack.")
+
+        if len(result.assignment_history) > 1:
+            palette_key = "_".join(selected_colors).lower()
+            step_index = st.slider(
+                "Bước chạy / Search step",
+                0,
+                len(result.assignment_history) - 1,
+                len(result.assignment_history) - 1,
+                key=f"graph_coloring_step_{result.map_id}_{palette_key}",
+            )
+        else:
+            step_index = 0
+            st.caption("Chưa có bước gán màu để hiển thị.")
+        render_coloring_map(
+            result,
+            result.assignment_history[step_index],
+            f"Step {step_index}/{len(result.assignment_history) - 1}: {result.history_labels[step_index]}",
+        )
+
+        rows = [
+            {
+                "Region": region,
+                "Color": result.assignment.get(region, "—"),
+                "Degree": len(neighbors),
+                "Adjacent regions": ", ".join(sorted(neighbors)) or "—",
+            }
+            for region, neighbors in result.adjacency.items()
+        ]
+        with st.expander("Bảng giáp ranh và nghiệm chi tiết", expanded=True):
+            st.dataframe(rows, width="stretch", hide_index=True)
+        with st.expander("Dấu vết MRV / forward checking"):
+            if result.trace:
+                render_trace_table(result.trace)
+            st.markdown(result.message)
+        if result.map_id == "thu-duc-2025":
+            metadata = result.source_metadata
+            st.caption(
+                "Hiệu lực 01/07/2025 · Nguồn pháp lý: "
+                f"[{metadata['legal_source']}]({metadata['legal_source_url']}) · "
+                f"Hình học: [{metadata['geometry_source']}]({metadata['geometry_source_url']}) "
+                f"@ `{metadata['geometry_source_commit'][:12]}` ({metadata['geometry_license']}). "
+                f"{metadata['disclaimer']}"
+            )
 
     elif mode == "CSP Definition & Propagation":
         t = st.number_input("Time Horizon", 1, 5, 3, key="csp_t")

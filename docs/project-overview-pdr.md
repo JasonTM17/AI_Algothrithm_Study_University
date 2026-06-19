@@ -21,7 +21,7 @@ The standard 15-puzzle environment is deterministic, fully observable, static, d
 - Stochastic/game demos: Minimax, Alpha-Beta, Expectimax.
 
 This distinction is required so the app stays academically truthful while still covering broad AI topics.
-Graph coloring is handled as its own map-coloring CSP demo because it is a natural CSP example, not a 15-puzzle solver.
+Graph coloring is handled as its own map-coloring CSP demo because it is a natural CSP example, not a 15-puzzle solver. The default dataset covers the 12 wards on the former Thu Duc City territory effective 2025-07-01; Australia remains available for comparison.
 
 ## Success Criteria
 

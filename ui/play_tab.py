@@ -90,7 +90,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                 show_numbers=st.session_state.get("show_numbers", True),
             )
         with col_preview:
-            st.markdown('<div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="image-preview-title">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
             if uploaded_img:
                 st.image(uploaded_img, width="stretch")
             elif "sample_select" in st.session_state:

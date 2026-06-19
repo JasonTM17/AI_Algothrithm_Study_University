@@ -22,6 +22,7 @@
 - `algorithms/local_search.py`: hill climbing variants, beam search, simulated annealing.
 - `algorithms/complex_env.py`: AND-OR, belief-state, partial-observation, LRTA* demos.
 - `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graph coloring, graphs.
+- `algorithms/map_coloring.py`: deterministic MRV/degree/forward-checking map CSP with structured trace data; its bundled asset contains the 12 Thu Duc 2025 ward geometries and audited adjacency graph.
 - `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos.
 
 ## Tests

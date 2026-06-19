@@ -17,6 +17,7 @@ from core.academic_proofs import (
 )
 from core.academic_report import build_grading_report
 from algorithms.csp import AUSTRALIA_GRAPH, graph_coloring_demo
+from algorithms.map_coloring import THU_DUC_2025_WARDS, load_map_definition
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
 from ui.localization import LOC
@@ -61,7 +62,7 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
 
 
 def test_graph_coloring_demo_is_separate_from_15_puzzle():
-    result = graph_coloring_demo()
+    result = graph_coloring_demo(map_id="australia")
     assignments = {}
     for line in result.message.splitlines():
         if line.startswith("- ") and ": " in line:
@@ -76,6 +77,49 @@ def test_graph_coloring_demo_is_separate_from_15_puzzle():
     for region, neighbors in AUSTRALIA_GRAPH.items():
         for neighbor in neighbors:
             assert assignments[region] != assignments[neighbor]
+
+
+def test_thu_duc_map_has_audited_wards_and_symmetric_adjacency():
+    definition = load_map_definition("thu-duc-2025")
+
+    assert set(definition.adjacency) == THU_DUC_2025_WARDS
+    assert len(definition.geojson["features"]) == 12
+    for region, neighbors in definition.adjacency.items():
+        assert region not in neighbors
+        assert neighbors
+        for neighbor in neighbors:
+            assert region in definition.adjacency[neighbor]
+
+
+def test_thu_duc_coloring_is_deterministic_and_valid_with_three_colors():
+    first = graph_coloring_demo(map_id="thu-duc-2025")
+    second = graph_coloring_demo(map_id="thu-duc-2025")
+
+    assert first.success
+    assert first.assignment == second.assignment
+    assert first.history_labels == second.history_labels
+    assert set(first.assignment) == THU_DUC_2025_WARDS
+    assert not first.validation_errors
+    for region, neighbors in first.adjacency.items():
+        for neighbor in neighbors:
+            assert first.assignment[region] != first.assignment[neighbor]
+
+
+def test_thu_duc_two_color_attempt_reports_no_solution():
+    result = graph_coloring_demo(colors=("Red", "Green"), map_id="thu-duc-2025")
+
+    assert not result.success
+    assert not result.assignment
+    assert result.backtracks > 0
+    assert "no valid solution" in result.message
+
+
+def test_graph_coloring_empty_palette_does_not_fall_back_to_defaults():
+    result = graph_coloring_demo(colors=(), map_id="thu-duc-2025")
+
+    assert not result.success
+    assert result.attempts == 0
+    assert result.assignment_history == [{}]
 
 
 def test_peas_table_has_complete_four_part_model():

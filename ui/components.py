@@ -123,7 +123,9 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                     if val == 0:
                         st.markdown(
                             '<div style="width:100%;aspect-ratio:1;border:1px dashed '
-                            'rgba(255,255,255,0.08);border-radius:12px;background:transparent;">'
+                            'rgba(214,196,166,0.14);border-radius:12px;'
+                            'background:radial-gradient(circle at 50% 45%, rgba(214,161,95,0.08), transparent 55%), #080b0a;'
+                            'box-shadow:inset 0 8px 16px rgba(0,0,0,0.74);">'
                             '</div>',
                             unsafe_allow_html=True,
                         )
@@ -131,23 +133,23 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                                   disabled=True, width="stretch")
                     elif val in image_tiles:
                         is_correct = highlight_correct and val == GOAL_STATE[idx]
-                        border_color = "#557c55" if is_correct else "#8b5a2b"
+                        border_color = "#697d5f" if is_correct else "#b8793e"
                         
                         number_badge = ""
                         if show_numbers:
                             number_badge = (
                                 f'<span style="position:absolute;top:6px;left:6px;z-index:9;'
-                                f'background:rgba(26,16,10,0.85);color:#f0e6dc;padding:2px 6px;'
+                                f'background:rgba(8,11,10,0.88);color:#f4efe5;padding:2px 6px;'
                                 f'border-radius:4px;font-size:11px;font-weight:700;line-height:1;'
-                                f'border:1px solid rgba(200,149,108,0.25);box-shadow:0 1px 3px rgba(0,0,0,0.4);'
+                                f'border:1px solid rgba(214,161,95,0.34);box-shadow:0 2px 6px rgba(4,7,6,0.45);'
                                 f'pointer-events:none;">{val}</span>'
                             )
                         
                         img_html = (
                             f'<div style="width:100%;aspect-ratio:1;border-radius:8px;'
                             f'overflow:hidden;border:4px solid {border_color};'
-                            f'box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.2);'
-                            f'cursor:pointer;position:relative;background:#1a100a;">'
+                            f'box-shadow:0 8px 18px rgba(4,7,6,0.52), inset 0 1px 2px rgba(255,255,255,0.18);'
+                            f'cursor:pointer;position:relative;background:#080b0a;">'
                             f'{number_badge}'
                             f'<img src="{image_tiles[val]}" style="width:100%;height:100%;'
                             f'object-fit:cover;" alt="tile{val}">'
@@ -155,12 +157,12 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                         )
                         if _is_adjacent_to_blank(state, idx) and on_click_fn:
                             direction = _get_slide_direction(state, idx)
-                            # Translate blank move direction to physical tile slide direction
-                            # Blank 'L' (left) means tile slides Right '▶'
-                            # Blank 'R' (right) means tile slides Left '◀'
-                            # Blank 'U' (up) means tile slides Down '▼'
-                            # Blank 'D' (down) means tile slides Up '▲'
-                            dir_labels = {"L": "Slide ▶", "R": "Slide ◀", "U": "Slide ▼", "D": "Slide ▲"}
+                            dir_labels = {
+                                "L": "Slide right",
+                                "R": "Slide left",
+                                "U": "Slide down",
+                                "D": "Slide up",
+                            }
                             label = dir_labels.get(direction, "Slide")
                             st.markdown(img_html, unsafe_allow_html=True)
                             st.button(label, key=f"{key_prefix}_hit_{val}_{r}_{c}",

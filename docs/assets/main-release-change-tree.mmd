@@ -1,0 +1,39 @@
+flowchart TD
+    A["master branch<br/>official grading line"]:::root
+
+    A --> B["Academic Dashboard UI"]:::ui
+    B --> B1["Play<br/>inspect state and solvability"]
+    B --> B2["Run Algorithm<br/>frontier, reached, trace"]
+    B --> B3["Compare<br/>methodology and ratios"]
+    B --> B4["Theory / PEAS<br/>proof cards and taxonomy"]
+    B --> B5["Hand-Tracing<br/>manual expansion practice"]
+
+    A --> C["AI Course Framing"]:::academic
+    C --> C1["Real solvers<br/>BFS, UCS, IDS, A*, IDA*"]
+    C --> C2["Contrast demos<br/>DFS, Greedy, local search"]
+    C --> C3["Illustrative extensions<br/>CSP, AND-OR, partial observation"]
+    C --> C4["Game / stochastic demos<br/>Minimax, Alpha-Beta, Expectimax"]
+
+    A --> D["CSP Boundary"]:::warning
+    D --> D1["15-puzzle CSP explanations<br/>educational reformulation"]
+    D --> D2["Graph coloring<br/>separate map-coloring CSP demo"]
+    D --> D3["No coloring claim<br/>for natural 15-puzzle solving"]
+
+    A --> E["Windows Lecturer App"]:::app
+    E --> E1["desktop_app.py<br/>native window or browser fallback"]
+    E --> E2["PyInstaller spec<br/>reproducible EXE folder"]
+    E --> E3["build-windows-exe.ps1<br/>one-command Windows build"]
+    E --> E4["Parent / child runtime<br/>window process + local server process"]
+
+    A --> F["Verification Pipeline"]:::verify
+    F --> F1["py_compile<br/>app, desktop, core, algorithms, ui"]
+    F --> F2["pytest<br/>runtime, solver, taxonomy, UI contracts"]
+    F --> F3["EXE smoke test<br/>HTTP 200 and tab loading"]
+    F --> F4["Git hygiene<br/>master default, secret scan, no dist artifacts"]
+
+    classDef root fill:#172033,stroke:#5f8cff,color:#ffffff,stroke-width:2px;
+    classDef ui fill:#e9f1ff,stroke:#5f8cff,color:#172033;
+    classDef academic fill:#eaf7f0,stroke:#2f9e63,color:#123524;
+    classDef warning fill:#fff3d6,stroke:#d19a00,color:#3b2b00;
+    classDef app fill:#f1ecff,stroke:#7c5cff,color:#251447;
+    classDef verify fill:#eef2f4,stroke:#61717a,color:#1d2b31;
