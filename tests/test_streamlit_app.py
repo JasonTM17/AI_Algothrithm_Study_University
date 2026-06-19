@@ -3,6 +3,8 @@
 from streamlit.testing.v1 import AppTest
 
 from algorithms.uninformed import bfs
+from core.gameplay import validate_player_run
+from core.puzzle import GOAL_STATE
 from ui.trace_tab import trace_rows
 
 
@@ -27,6 +29,23 @@ def test_challenge_mode_produces_verified_optimal_certificate():
     assert proof.path_verified
     assert proof.optimality_proven
     assert proof.cost == 1
+    assert not app.exception
+
+
+def test_ai_solver_replay_keeps_play_history_certifiable():
+    app = AppTest.from_file("app.py", default_timeout=15).run()
+    app.session_state.start_state = ONE_MOVE
+    app.run()
+
+    app.button(key="btn_ai_solve").click().run()
+    app.button(key="btn_play_next").click().run()
+
+    cert = validate_player_run(app.session_state.play_history, GOAL_STATE)
+    assert app.session_state.play_state == GOAL_STATE
+    assert app.session_state.play_moves == 1
+    assert cert.is_legal
+    assert cert.reaches_goal
+    assert cert.actions == ("R",)
     assert not app.exception
 
 

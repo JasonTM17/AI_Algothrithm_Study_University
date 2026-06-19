@@ -20,9 +20,49 @@ from ui.components import (
 def _handle_play_slide(direction: str) -> None:
     ns = _move_blank(st.session_state.play_state, direction)
     if ns:
+        _clear_ai_replay()
         st.session_state.play_state = ns
         st.session_state.play_moves += 1
         st.session_state.play_history.append(ns)
+
+
+def _clear_ai_replay() -> None:
+    """Clear stale solver replay state after manual play diverges."""
+    st.session_state.play_solution_path = None
+    st.session_state.play_solution_actions = None
+    st.session_state.play_solution_idx = 0
+    st.session_state.play_solution_res = None
+    st.session_state.play_solution_base_history = None
+    st.session_state.play_solution_base_moves = 0
+    st.session_state.play_auto_run = False
+
+
+def _store_ai_replay_result(result) -> None:
+    """Persist an AI solution together with the manual history it extends."""
+    st.session_state.play_solution_path = result.path
+    st.session_state.play_solution_actions = result.actions
+    st.session_state.play_solution_idx = 0
+    st.session_state.play_solution_res = result
+    st.session_state.play_solution_base_history = list(st.session_state.play_history)
+    st.session_state.play_solution_base_moves = st.session_state.play_moves
+
+
+def _apply_ai_replay_step(index: int) -> None:
+    """Move the board to a solver replay step while keeping challenge history truthful."""
+    path = st.session_state.play_solution_path
+    if not path:
+        return
+    bounded_index = max(0, min(index, len(path) - 1))
+    base_history = list(st.session_state.get("play_solution_base_history") or [path[0]])
+    base_moves = st.session_state.get("play_solution_base_moves", max(0, len(base_history) - 1))
+    if not base_history or base_history[-1] != path[0]:
+        base_history = [path[0]]
+        base_moves = 0
+
+    st.session_state.play_solution_idx = bounded_index
+    st.session_state.play_state = path[bounded_index]
+    st.session_state.play_history = base_history + list(path[1:bounded_index + 1])
+    st.session_state.play_moves = base_moves + bounded_index
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
@@ -141,10 +181,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             st.session_state.play_state = st.session_state.start_state
             st.session_state.play_moves = 0
             st.session_state.play_history = [st.session_state.start_state]
-            st.session_state.play_solution_path = None
-            st.session_state.play_solution_actions = None
-            st.session_state.play_solution_idx = 0
-            st.session_state.play_auto_run = False
+            _clear_ai_replay()
             st.rerun()
 
     # ── AI Auto-Solver ──────────────────────────────────────
@@ -155,6 +192,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             st.session_state.play_history.pop()
             st.session_state.play_state = st.session_state.play_history[-1]
             st.session_state.play_moves = max(0, st.session_state.play_moves - 1)
+            _clear_ai_replay()
             st.rerun()
 
     st.subheader("Academic Challenge Mode")
@@ -250,20 +288,14 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                         timeout=30.0,
                     )
                     if res.success:
-                        st.session_state.play_solution_path = res.path
-                        st.session_state.play_solution_actions = res.actions
-                        st.session_state.play_solution_idx = 0
-                        st.session_state.play_solution_res = res
+                        _store_ai_replay_result(res)
                         st.success(t("play_ai_solved_msg", steps=len(res.actions)))
                     else:
                         st.error(t("play_ai_error", error=res.message))
     with col_solve2:
         if st.session_state.play_solution_path:
             if st.button(t("play_ai_clear_btn"), key="btn_ai_clear"):
-                st.session_state.play_solution_path = None
-                st.session_state.play_solution_actions = None
-                st.session_state.play_solution_idx = 0
-                st.session_state.play_auto_run = False
+                _clear_ai_replay()
                 st.rerun()
 
     if st.session_state.play_solution_path:
@@ -276,16 +308,12 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         
         with col_ctrl1:
             if st.button(t("play_prev_step"), key="btn_play_prev", disabled=(idx == 0)):
-                st.session_state.play_solution_idx -= 1
-                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
-                st.session_state.play_moves = st.session_state.play_solution_idx
+                _apply_ai_replay_step(idx - 1)
                 st.rerun()
                 
         with col_ctrl2:
             if st.button(t("play_next_step"), key="btn_play_next", disabled=(idx >= len(st.session_state.play_solution_path) - 1)):
-                st.session_state.play_solution_idx += 1
-                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
-                st.session_state.play_moves = st.session_state.play_solution_idx
+                _apply_ai_replay_step(idx + 1)
                 st.rerun()
                 
         with col_ctrl3:
@@ -300,9 +328,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                     
         slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key="play_slider_val")
         if slider_val != idx:
-            st.session_state.play_solution_idx = slider_val
-            st.session_state.play_state = st.session_state.play_solution_path[slider_val]
-            st.session_state.play_moves = slider_val
+            _apply_ai_replay_step(slider_val)
             st.rerun()
                 
         if idx > 0 and idx <= len(res.actions):
@@ -319,9 +345,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         if st.session_state.get("play_auto_run", False):
             if idx < len(st.session_state.play_solution_path) - 1:
                 time.sleep(0.4)
-                st.session_state.play_solution_idx += 1
-                st.session_state.play_state = st.session_state.play_solution_path[st.session_state.play_solution_idx]
-                st.session_state.play_moves = st.session_state.play_solution_idx
+                _apply_ai_replay_step(idx + 1)
                 st.rerun()
             else:
                 st.session_state.play_auto_run = False
