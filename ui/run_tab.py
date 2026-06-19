@@ -19,6 +19,19 @@ from ui.components import (
 from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS
 
 
+def run_completion_notice(algo_name: str, result: SearchResult) -> tuple[str, str]:
+    """Return the UI notice level/text without overstating model success as a solution."""
+    if result.success and result.goal_reached:
+        return "success", f"{algo_name} found a solution!"
+    if result.success:
+        return (
+            "info",
+            f"{algo_name} produced a successful model result, "
+            "but it did not certify a standard path to the requested goal.",
+        )
+    return "warning", f"{algo_name}: {result.message}"
+
+
 def render_run_algorithm_tab() -> None:
     st.title("Run Algorithm")
     render_academic_header(
@@ -189,10 +202,8 @@ def render_run_algorithm_tab() -> None:
                             st.session_state["last_run_signature"] = run_signature
                             st.session_state.benchmark_results.append(result)
 
-                            if result.success:
-                                st.success(f"{algo_name} found a solution!")
-                            else:
-                                st.warning(f"{algo_name}: {result.message}")
+                            notice_level, notice_text = run_completion_notice(algo_name, result)
+                            getattr(st, notice_level)(notice_text)
                         except Exception as e:
                             st.error(f"Error running {algo_name}: {e}")
 

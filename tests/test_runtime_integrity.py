@@ -148,6 +148,32 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     assert a_star_kwargs["tie_breaker"] == "Min-g"
 
 
+def test_run_completion_notice_does_not_overstate_model_success():
+    from core.metrics import SearchResult
+    from core.puzzle import GOAL_STATE
+    from ui.run_tab import run_completion_notice
+
+    solved = SearchResult(
+        success=True,
+        algorithm="A*",
+        path=[GOAL_STATE],
+        actions=[],
+        goal_state=GOAL_STATE,
+    )
+    model_only = SearchResult(
+        success=True,
+        algorithm="CSP Definition",
+        message="CSP variables and constraints described.",
+    )
+    failed = SearchResult(success=False, algorithm="BFS", message="Node limit reached")
+
+    assert run_completion_notice("A*", solved) == ("success", "A* found a solution!")
+    model_level, model_text = run_completion_notice("CSP Definition", model_only)
+    assert model_level == "info"
+    assert "did not certify a standard path" in model_text
+    assert run_completion_notice("BFS", failed) == ("warning", "BFS: Node limit reached")
+
+
 def test_run_solver_solvability_guard_is_relative_to_goal():
     from core.metrics import SearchResult
     from core.puzzle import GOAL_STATE
