@@ -6,6 +6,7 @@ as a MAX vs MIN game where MIN tries to increase heuristic distance.
 """
 
 import time
+import random
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank
 from core.heuristics import get_heuristic, manhattan_distance
@@ -126,7 +127,8 @@ def minimax(
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Minimax", group="Adversarial/Stochastic",
-        path=selected_path, actions=actions, cost=len(actions), depth=len(actions),
+        path=selected_path, actions=actions, goal_state=goal,
+        cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
@@ -246,7 +248,8 @@ def alpha_beta_pruning(
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Alpha-Beta Pruning", group="Adversarial/Stochastic",
-        path=selected_path, actions=actions, cost=len(actions), depth=len(actions),
+        path=selected_path, actions=actions, goal_state=goal,
+        cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
@@ -268,7 +271,7 @@ def expectimax(
     if not 0.0 <= success_prob <= 1.0:
         raise ValueError("success_prob must be between 0 and 1")
     h_fn = get_heuristic(heuristic, goal)
-    del seed
+    rng = random.Random(seed)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
     timed_out = [False]
@@ -303,8 +306,9 @@ def expectimax(
         """Return expected utility, displayed subtree, and one legal sample path.
 
         The sample path is not a deterministic guarantee in a stochastic model; it
-        follows the highest-probability outcome at each chance node so the UI can
-        display a valid, auditable sequence without pretending it is the full tree.
+        samples one outcome according to its probability at each chance node so
+        the UI can display a seeded, auditable trajectory without pretending it
+        is the full stochastic policy.
         """
         if time.perf_counter() - t0 > timeout:
             timed_out[0] = True
@@ -361,17 +365,13 @@ def expectimax(
 
             expected_value = 0.0
             children_trees = []
-            sample_actions: list[str] = []
-            sample_key: tuple[float, float] | None = None
+            sample_candidates: list[tuple[float, str, list[str]]] = []
             for out_state, out_action, prob in outcomes:
                 # Call MAX recursively on the outcome state
                 val, tree, child_actions = expectimax_search(out_state, depth_left - 1, "MAX")
                 expected_value += prob * val
                 children_trees.extend(tree)
-                candidate_key = (prob, val)
-                if sample_key is None or candidate_key > sample_key:
-                    sample_key = candidate_key
-                    sample_actions = [out_action] + child_actions
+                sample_candidates.append((prob, out_action, child_actions))
 
                 if len(trace) < 200:
                     trace.append(TraceStep(
@@ -379,6 +379,18 @@ def expectimax(
                         node_type="CHANCE", utility=val, h=h_fn(out_state),
                         probability=prob,
                         reason=f"CHANCE: P({out_action})={prob:.2f}, ev={val:.1f}"))
+
+            draw = rng.random()
+            cumulative = 0.0
+            sample_actions: list[str] = []
+            for prob, out_action, child_actions in sample_candidates:
+                cumulative += prob
+                if draw <= cumulative:
+                    sample_actions = [out_action] + child_actions
+                    break
+            if not sample_actions and sample_candidates:
+                _, out_action, child_actions = sample_candidates[-1]
+                sample_actions = [out_action] + child_actions
 
             h = h_fn(state)
             node = ("CHANCE", state, expected_value, h, 1.0)
@@ -403,16 +415,17 @@ def expectimax(
     msg += f"  Minimax: assumes WORST outcome (adversarial)\n"
     msg += f"  Expectimax: computes EXPECTED outcome (probabilistic)\n"
     msg += f"  Result differs when success_prob < 1.0\n\n"
-    msg += "Returned actions follow one highest-probability sample outcome path, not the full stochastic policy.\n\n"
+    msg += "Returned actions are one seeded probability-sampled outcome path, not the full stochastic policy.\n\n"
     msg += f"Selected policy subtree (truncated, not the full evaluated tree):\n{tree_text}"
 
     selected_path = _path_from_actions(start, actions)
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Expectimax", group="Adversarial/Stochastic",
-        path=selected_path, actions=actions, cost=len(actions), depth=len(actions),
+        path=selected_path, actions=actions, goal_state=goal,
+        cost=len(actions), depth=len(actions), random_seed=seed,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
-        uses_adversary=True, uses_probability=True,
+        uses_adversary=True, uses_probability=True, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )

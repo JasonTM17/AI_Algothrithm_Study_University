@@ -232,12 +232,31 @@ class TestExpectimax:
         result = expectimax(EASY_STATE, depth=2, timeout=10, seed=42)
         assert result.algorithm == "Expectimax"
         assert result.uses_probability is True
+        assert result.uses_randomness is True
+        assert result.random_seed == 42
 
     def test_has_probability_trace(self):
         result = expectimax(EASY_STATE, depth=2, timeout=10, seed=42)
         if result.trace:
             probs = [s.probability for s in result.trace if s.probability is not None]
             assert len(probs) > 0
+
+    def test_seed_replays_the_same_sampled_outcome_path(self):
+        first = expectimax(EASY_STATE, depth=2, success_prob=0.5, timeout=10, seed=123)
+        second = expectimax(EASY_STATE, depth=2, success_prob=0.5, timeout=10, seed=123)
+
+        assert first.actions == second.actions
+        assert first.path == second.path
+        assert first.random_seed == second.random_seed == 123
+        assert "seeded probability-sampled outcome path" in first.message
+
+    def test_different_seeds_can_sample_different_outcome_paths(self):
+        sampled_paths = {
+            tuple(expectimax(EASY_STATE, depth=2, success_prob=0.5, timeout=10, seed=seed).actions)
+            for seed in range(20)
+        }
+
+        assert len(sampled_paths) > 1
 
     def test_rejects_invalid_probability(self):
         with pytest.raises(ValueError):
@@ -265,6 +284,8 @@ def test_game_models_return_legal_selected_variation_path(solver):
 
     assert len(result.path) == len(result.actions) + 1
     assert result.path == reconstructed
+    assert result.goal_state == GOAL_STATE
+    assert result.goal_reached is (current == GOAL_STATE)
     assert result.success is (current == GOAL_STATE)
     if result.success:
         assert result.path_verified
