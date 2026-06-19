@@ -3,10 +3,34 @@
 import time
 import heapq
 from typing import Callable, Optional
-from core.puzzle import PuzzleState, GOAL_STATE
+from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.node import Node, reconstruct_path, reconstruct_actions
 from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
+
+
+def _unsolvable_result(
+    algorithm: str,
+    t0: float,
+    is_complete: bool,
+    is_optimal: bool,
+) -> SearchResult:
+    """Return a fast, goal-relative parity rejection for impossible 15-puzzle pairs."""
+    return SearchResult(
+        success=False,
+        algorithm=algorithm,
+        group="Informed Search",
+        nodes_expanded=0,
+        nodes_generated=0,
+        max_frontier_size=0,
+        reached_size=0,
+        runtime=time.perf_counter() - t0,
+        message="Puzzle is not solvable relative to the selected goal.",
+        trace=[],
+        is_complete=is_complete,
+        is_optimal=is_optimal,
+        uses_heuristic=True,
+    )
 
 
 def greedy_best_first(
@@ -18,13 +42,16 @@ def greedy_best_first(
 ) -> SearchResult:
     """Greedy Best-First Search. Uses h(n) only, not optimal."""
     t0 = time.perf_counter()
-    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="Greedy Best-First", group="Informed Search",
                             path=[start], actions=[], cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=False, uses_heuristic=True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("Greedy Best-First", t0, False, False)
+
+    h_fn = get_heuristic(heuristic, goal)
 
     def make_item(cost, n, c):
         if tie_breaker == "LIFO":
@@ -117,13 +144,16 @@ def a_star(
 ) -> SearchResult:
     """A* Search. Optimal if heuristic is admissible and consistent."""
     t0 = time.perf_counter()
-    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="A*", group="Informed Search",
                             path=[start], actions=[], cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("A*", t0, True, True)
+
+    h_fn = get_heuristic(heuristic, goal)
 
     def make_item(cost, n, c):
         if tie_breaker == "LIFO":
@@ -219,13 +249,16 @@ def ida_star(
 ) -> SearchResult:
     """Iterative Deepening A*. Memory-efficient, optimal with admissible heuristic."""
     t0 = time.perf_counter()
-    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="IDA*", group="Informed Search",
                             path=[start], actions=[], cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("IDA*", t0, True, True)
+
+    h_fn = get_heuristic(heuristic, goal)
 
     threshold = h_fn(start)
     total_expanded = 0

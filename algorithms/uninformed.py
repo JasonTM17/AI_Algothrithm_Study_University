@@ -4,7 +4,7 @@ import time
 from collections import deque
 import heapq
 from typing import Optional
-from core.puzzle import PuzzleState, GOAL_STATE, _move_blank
+from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
 from core.node import Node, reconstruct_path, reconstruct_actions
 from core.heuristics import manhattan_distance
 from core.metrics import SearchResult, TraceStep
@@ -52,6 +52,33 @@ def _make_result(
     )
 
 
+def _unsolvable_result(
+    algorithm: str,
+    start: tuple[int, ...],
+    goal: tuple[int, ...],
+    t0: float,
+    is_complete: bool,
+    is_optimal: bool,
+) -> SearchResult:
+    """Return a fast, goal-relative parity rejection for impossible 15-puzzle pairs."""
+    return _make_result(
+        False,
+        algorithm,
+        None,
+        start,
+        goal,
+        0,
+        0,
+        0,
+        0,
+        t0,
+        [],
+        "Puzzle is not solvable relative to the selected goal.",
+        is_complete,
+        is_optimal,
+    )
+
+
 def bfs(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     max_nodes: int = 50000, timeout: float = 60.0,
@@ -61,6 +88,8 @@ def bfs(
     t0 = time.perf_counter()
     if start == goal:
         return _make_result(True, "BFS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("BFS", start, goal, t0, True, True)
 
     root = Node(state=start, g=0, depth=0)
     frontier: deque[Node] = deque([root])
@@ -120,6 +149,8 @@ def dfs(
     t0 = time.perf_counter()
     if start == goal:
         return _make_result(True, "DFS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, False)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("DFS", start, goal, t0, False, False)
 
     root = Node(state=start, g=0, depth=0)
     frontier: list[Node] = [root]
@@ -179,6 +210,8 @@ def ucs(
     t0 = time.perf_counter()
     if start == goal:
         return _make_result(True, "UCS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("UCS", start, goal, t0, True, True)
 
     def make_item(cost, n, c):
         if tie_breaker == "LIFO":
@@ -251,6 +284,8 @@ def ids(
     t0 = time.perf_counter()
     if start == goal:
         return _make_result(True, "IDS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, True)
+    if not is_solvable(start, goal):
+        return _unsolvable_result("IDS", start, goal, t0, True, True)
 
     total_expanded = 0
     total_generated = 0

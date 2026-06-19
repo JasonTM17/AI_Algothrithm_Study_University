@@ -1,7 +1,14 @@
 """Tests for all solver algorithms."""
 
 import pytest
-from core.puzzle import GOAL_STATE, TEACHING_PRESETS, _move_blank, is_solvable, validate_path
+from core.puzzle import (
+    GOAL_STATE,
+    TEACHING_PRESETS,
+    _move_blank,
+    is_solvable,
+    validate_path,
+    validate_solution_path,
+)
 from algorithms.uninformed import bfs, dfs, ucs, ids
 from algorithms.informed import greedy_best_first, a_star, ida_star
 from algorithms.local_search import (
@@ -13,6 +20,8 @@ from algorithms.adversarial import minimax, alpha_beta_pruning, expectimax
 
 EASY_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
 MEDIUM_STATE = (1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 7, 12, 13, 14, 11, 15)
+OPPOSITE_PARITY_GOAL = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+ONE_MOVE_CUSTOM_GOAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 
 
 def assert_valid_solution(start, result):
@@ -20,6 +29,14 @@ def assert_valid_solution(start, result):
         valid, message, final_state = validate_path(start, result.actions)
         assert valid, message
         assert final_state == GOAL_STATE
+
+
+def assert_valid_custom_goal_solution(start, goal, result):
+    if result.success:
+        assert result.path[0] == start
+        valid, message = validate_solution_path(result.path, result.actions, goal=goal)
+        assert valid, message
+        assert result.path[-1] == goal
 
 
 class TestBFS:
@@ -245,6 +262,45 @@ class TestSolvableGuard:
         result = a_star(GOAL_STATE, timeout=2)
         assert result.success is True
         assert_valid_solution(GOAL_STATE, result)
+
+
+TREE_SEARCH_SOLVERS = [
+    (bfs, {}),
+    (dfs, {"max_depth": 4}),
+    (ucs, {}),
+    (ids, {"max_depth": 4}),
+    (greedy_best_first, {}),
+    (a_star, {}),
+    (ida_star, {}),
+]
+
+
+@pytest.mark.parametrize("solver, kwargs", TREE_SEARCH_SOLVERS)
+def test_tree_search_rejects_pairs_unsolvable_relative_to_selected_goal(solver, kwargs):
+    result = solver(GOAL_STATE, goal=OPPOSITE_PARITY_GOAL, timeout=2, **kwargs)
+
+    assert result.success is False
+    assert result.nodes_expanded == 0
+    assert "selected goal" in result.message
+
+
+@pytest.mark.parametrize("solver, kwargs", TREE_SEARCH_SOLVERS)
+def test_tree_search_accepts_custom_goal_even_when_not_standard_solvable(solver, kwargs):
+    result = solver(OPPOSITE_PARITY_GOAL, goal=OPPOSITE_PARITY_GOAL, timeout=2, **kwargs)
+
+    assert result.success is True
+    assert result.actions == []
+    assert result.path == [OPPOSITE_PARITY_GOAL]
+    assert_valid_custom_goal_solution(OPPOSITE_PARITY_GOAL, OPPOSITE_PARITY_GOAL, result)
+
+
+@pytest.mark.parametrize("solver, kwargs", TREE_SEARCH_SOLVERS)
+def test_tree_search_solves_one_move_custom_goal(solver, kwargs):
+    result = solver(GOAL_STATE, goal=ONE_MOVE_CUSTOM_GOAL, timeout=5, **kwargs)
+
+    assert result.success is True
+    assert result.actions == ["L"]
+    assert_valid_custom_goal_solution(GOAL_STATE, ONE_MOVE_CUSTOM_GOAL, result)
 
 
 def test_a_star_matches_bfs_and_ids_on_shallow_puzzle():
