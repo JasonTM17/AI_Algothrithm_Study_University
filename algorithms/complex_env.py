@@ -222,23 +222,26 @@ def no_observation_search(
                 success=True, algorithm="No Observation Search", group="Complex Environments",
                 path=representative_path if representative_path_valid else [],
                 actions=actions_taken if representative_path_valid else [],
-                cost=len(actions_taken), depth=len(actions_taken),
+                goal_state=goal, cost=len(actions_taken), depth=len(actions_taken),
+                random_seed=seed,
                 nodes_expanded=step + 1, nodes_generated=step + 1,
                 runtime=time.perf_counter() - t0,
                 message=("All belief states reached goal. Returned path, when present, is the "
                          "representative trajectory from the original start state."),
-                trace=trace, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+                trace=trace, uses_randomness=True,
+                is_complete=False, is_optimal=False, suitable_for_puzzle=False,
             )
 
     return SearchResult(
         success=False, algorithm="No Observation Search", group="Complex Environments",
         path=representative_path if representative_path_valid else [],
         actions=actions_taken if representative_path_valid else [],
-        depth=len(actions_taken),
+        goal_state=goal, depth=len(actions_taken), random_seed=seed,
         nodes_expanded=max_steps, nodes_generated=max_steps,
         runtime=time.perf_counter() - t0,
         message=f"Belief size={len(belief)} after {max_steps} steps. No observation is harder than standard search.",
-        trace=trace, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+        trace=trace, uses_randomness=True,
+        is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
 
 
@@ -277,9 +280,23 @@ def partially_observable_search(
             belief.add(s)
 
     actual_state = start
+    actual_path = [start]
+    actual_actions: list[str] = []
     trace: list[TraceStep] = []
     trace.append(TraceStep(step=0, state=actual_state, observation=observe(actual_state),
                            belief_size=len(belief), reason=f"Initial belief={len(belief)}"))
+
+    if actual_state == goal:
+        return SearchResult(
+            success=True, algorithm="Partially Observable Search", group="Complex Environments",
+            path=actual_path, actions=actual_actions, goal_state=goal,
+            cost=0, depth=0, random_seed=seed,
+            nodes_expanded=0, nodes_generated=0,
+            runtime=time.perf_counter() - t0,
+            message="Actual state already at goal",
+            trace=trace, uses_randomness=True,
+            is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+        )
 
     for step in range(max_steps):
         if time.perf_counter() - t0 > timeout:
@@ -295,6 +312,8 @@ def partially_observable_search(
         ns = _move_blank(actual_state, action)
         if ns is not None:
             actual_state = ns
+            actual_actions.append(action)
+            actual_path.append(actual_state)
 
         # Get observation
         obs = observe(actual_state)
@@ -324,19 +343,24 @@ def partially_observable_search(
         if actual_state == goal:
             return SearchResult(
                 success=True, algorithm="Partially Observable Search", group="Complex Environments",
-                path=[], actions=[], cost=0, depth=0,
+                path=actual_path, actions=actual_actions, goal_state=goal,
+                cost=len(actual_actions), depth=len(actual_actions), random_seed=seed,
                 nodes_expanded=step + 1, nodes_generated=step + 1,
                 runtime=time.perf_counter() - t0,
                 message="Actual state reached goal",
-                trace=trace, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+                trace=trace, uses_randomness=True,
+                is_complete=False, is_optimal=False, suitable_for_puzzle=False,
             )
 
     return SearchResult(
         success=False, algorithm="Partially Observable Search", group="Complex Environments",
+        path=actual_path, actions=actual_actions, goal_state=goal,
+        depth=len(actual_actions), random_seed=seed,
         nodes_expanded=max_steps, nodes_generated=max_steps,
         runtime=time.perf_counter() - t0,
         message=f"Belief={len(belief)} after {max_steps} steps. Partial observation narrows belief via filtering.",
-        trace=trace, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+        trace=trace, uses_randomness=True,
+        is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
 
 

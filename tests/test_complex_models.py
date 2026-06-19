@@ -43,7 +43,71 @@ def test_no_observation_binds_heuristic_to_custom_goal():
     assert result.success
     assert result.actions == ["L"]
     assert result.path[-1] == custom_goal
+    assert result.goal_state == custom_goal
+    assert result.random_seed is None
+    assert result.uses_randomness
     assert result.path_verified
+
+
+def test_no_observation_records_seed_for_reproducible_belief_generation():
+    first = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        seed=123,
+    )
+    second = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        seed=123,
+    )
+
+    assert first.random_seed == second.random_seed == 123
+    assert first.actions == second.actions
+    assert first.path == second.path
+    assert first.goal_state == GOAL_STATE
+    assert first.path_verified
+
+
+def test_partially_observable_search_returns_certified_actual_trajectory():
+    result = partially_observable_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        action_order="RULD",
+        seed=42,
+    )
+
+    assert result.success
+    assert result.actions == ["R"]
+    assert result.path == [ONE_MOVE, GOAL_STATE]
+    assert result.goal_state == GOAL_STATE
+    assert result.random_seed == 42
+    assert result.uses_randomness
+    assert result.path_verified
+    assert result.goal_reached
+
+
+def test_partially_observable_search_certifies_start_at_goal():
+    result = partially_observable_search(
+        GOAL_STATE,
+        num_belief_states=1,
+        max_steps=0,
+        timeout=5,
+        seed=99,
+    )
+
+    assert result.success
+    assert result.actions == []
+    assert result.path == [GOAL_STATE]
+    assert result.goal_state == GOAL_STATE
+    assert result.random_seed == 99
+    assert result.path_verified
+    assert result.goal_reached
 
 
 @pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])

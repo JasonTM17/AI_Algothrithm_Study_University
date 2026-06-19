@@ -11,7 +11,6 @@ RANDOMIZED_SOLVERS = frozenset({
     "random_restart_hill_climbing",
     "simulated_annealing",
     "min_conflicts",
-    "and_or_search",
     "no_observation_search",
     "partially_observable_search",
     "expectimax",
