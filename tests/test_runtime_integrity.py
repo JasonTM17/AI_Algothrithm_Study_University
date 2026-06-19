@@ -123,4 +123,3 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     assert a_star_kwargs["heuristic"] == "Manhattan Distance"
     assert a_star_kwargs["tie_breaker"] == "Min-g"
 
-

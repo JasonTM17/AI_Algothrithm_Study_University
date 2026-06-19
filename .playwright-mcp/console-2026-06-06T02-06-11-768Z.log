@@ -1,4 +1,0 @@
-[  123341ms] [WARNING] WebSocket onclose @ http://localhost:8501/static/js/index.3bHSf9gi.js:146
-[  125659ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8501/_stcore/health:0
-[  125660ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8501/_stcore/host-config:0
-[  125925ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8501/_stcore/health:0
