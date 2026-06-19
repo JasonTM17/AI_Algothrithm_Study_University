@@ -84,6 +84,10 @@ def render_run_algorithm_tab() -> None:
             extra_params["depth"] = max_depth
             extra_params["success_prob"] = st.slider("Success Probability", 0.1, 1.0, 0.8, key="success_prob")
 
+    run_signature = (tuple(st.session_state.start_state), algo_name, heuristic, tie_breaker, action_order)
+    if st.session_state.get("last_run_signature") != run_signature:
+        st.session_state.pop("last_result", None)
+
     if st.button("Run", key="btn_run", type="primary"):
         start = st.session_state.start_state
         if not is_solvable(start):
@@ -148,6 +152,7 @@ def render_run_algorithm_tab() -> None:
                             result = solver_fn(**kwargs)
 
                             st.session_state["last_result"] = result
+                            st.session_state["last_run_signature"] = run_signature
                             st.session_state.benchmark_results.append(result)
 
                             if result.success:

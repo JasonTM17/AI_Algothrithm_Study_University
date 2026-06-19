@@ -448,18 +448,19 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
     # Show current state
     render_puzzle_board(path[current_step])
 
-    if current_step < len(actions):
-        action_display = actions[current_step] if current_step > 0 else "Start"
-        direction_map = {
-            "L": t("dir_L").split(" ")[0],
-            "R": t("dir_R").split(" ")[0],
-            "U": t("dir_U").split(" ")[0],
-            "D": t("dir_D").split(" ")[0]
-        }
-        display = direction_map.get(action_display, action_display)
-        st.caption(f"Step {current_step}/{len(path)-1}: {display}")
+    direction_map = {
+        "L": t("dir_L").split(" ")[0],
+        "R": t("dir_R").split(" ")[0],
+        "U": t("dir_U").split(" ")[0],
+        "D": t("dir_D").split(" ")[0],
+    }
+    if current_step == 0:
+        action_display = "Start"
     else:
-        st.caption(f"Step {current_step}/{len(path)-1}: {t('anim_goal')}")
+        action_display = actions[current_step - 1]
+    display = direction_map.get(action_display, action_display)
+    goal_suffix = f" · {t('anim_goal')}" if current_step == len(path) - 1 else ""
+    st.caption(f"Step {current_step}/{len(path)-1}: {display}{goal_suffix}")
 
     # Navigation buttons
     col1, col2, col3 = st.columns(3)
