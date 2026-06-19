@@ -30,7 +30,7 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 - Search visualization contains explicit parent/child edges rather than inferred indentation.
 - Hand-Tracing records the learner's chosen expansions as explicit parent/child graph edges.
 - Advanced game/chance demos return only a legal selected variation or sample outcome path, and label it separately from full-tree evidence or optimal puzzle certificates.
-- Challenge Mode compares player moves against an A* optimality certificate.
+- Challenge Mode first certifies the recorded player history as a legal trajectory, then compares completed solutions against an A* optimality certificate.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.
 - Theory/PEAS includes an Exam Defense guide and downloadable grading report.

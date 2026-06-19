@@ -53,7 +53,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 
 ## Main Features
 
-- Interactive board, image puzzle, Undo, and optimality challenge mode.
+- Interactive board, image puzzle, Undo, and optimality challenge mode with separate player-run legality and A* optimality certificates.
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph whose edges are checked against legal moves.
 - Benchmark comparison with methodology panels and academic evidence metrics.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.

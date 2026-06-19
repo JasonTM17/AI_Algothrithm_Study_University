@@ -5,7 +5,7 @@ import time
 import streamlit as st
 
 from algorithms.informed import a_star
-from core.gameplay import score_challenge
+from core.gameplay import score_challenge, validate_player_run
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable, _move_blank
 from ui.academic_panels import render_academic_header, render_exam_path
@@ -160,7 +160,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     st.subheader("Academic Challenge Mode")
     st.caption(
         "A* with admissible Linear Conflict proves the optimal distance. "
-        "Your legal moves are then scored against that certificate."
+        "Your recorded play history is certified step-by-step, then scored only after it reaches the goal."
     )
     if st.button("Prove Optimal Move Count", key="btn_prove_optimal"):
         with st.spinner("Computing an optimal certificate..."):
@@ -176,16 +176,35 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     proof_result = st.session_state.get("play_optimal_result")
     if proof_result:
         if proof_result.success and proof_result.optimality_proven:
-            score = score_challenge(st.session_state.play_moves, len(proof_result.actions))
-            score_cols = st.columns(4)
-            score_cols[0].metric("Optimal Moves", score.optimal_moves)
-            score_cols[1].metric("Your Moves", score.player_moves)
-            score_cols[2].metric("Move Gap", f"{score.gap:+d}")
-            score_cols[3].metric("Efficiency", f"{score.efficiency_percent:.1f}%")
+            player_cert = validate_player_run(st.session_state.play_history, GOAL_STATE)
+            cert_cols = st.columns(3)
+            cert_cols[0].metric("Player Run", "Legal" if player_cert.is_legal else "Invalid")
+            cert_cols[1].metric("Recorded Moves", player_cert.move_count)
+            cert_cols[2].metric("Reached Goal", "Yes" if player_cert.reaches_goal else "No")
             st.success(
                 "Optimality certificate verified: every move is legal and "
                 f"the proven solution cost is {proof_result.cost}."
             )
+            if not player_cert.is_legal:
+                st.error(f"Player-run certificate failed: {player_cert.message}")
+            elif not player_cert.reaches_goal:
+                st.info(
+                    "Player-run certificate verified, but the current run is still in progress. "
+                    "Finish the puzzle before comparing your move count with the optimum."
+                )
+            else:
+                score = score_challenge(player_cert.move_count, len(proof_result.actions))
+                score_cols = st.columns(4)
+                score_cols[0].metric("Optimal Moves", score.optimal_moves)
+                score_cols[1].metric("Your Moves", score.player_moves)
+                score_cols[2].metric("Move Gap", f"{score.gap:+d}")
+                score_cols[3].metric("Efficiency", f"{score.efficiency_percent:.1f}%")
+                if score.is_optimal_play:
+                    st.success("Your completed run matches the proven optimal move count.")
+                else:
+                    st.warning(
+                        f"Your completed run is legal but {score.gap} move(s) longer than optimal."
+                    )
         else:
             st.warning(f"No optimality certificate produced: {proof_result.message}")
 
