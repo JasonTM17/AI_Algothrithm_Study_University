@@ -13,6 +13,12 @@ def _get_h_fn(heuristic: str, goal: tuple[int, ...]):
     return get_heuristic(heuristic, goal)
 
 
+def _local_result(goal: tuple[int, ...], **kwargs) -> SearchResult:
+    """Build a local-search result with explicit selected-goal context."""
+    result = SearchResult(goal_state=goal, **kwargs)
+    return result
+
+
 def simple_hill_climbing(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     heuristic: str = "Manhattan Distance",
@@ -32,14 +38,14 @@ def simple_hill_climbing(
 
     for i in range(max_iterations):
         if time.perf_counter() - t0 > timeout:
-            return SearchResult(success=False, algorithm="Simple Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Simple Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 uses_heuristic=True, uses_randomness=False,
                                 is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
         if current == goal:
-            return SearchResult(success=True, algorithm="Simple Hill Climbing", group="Local Search",
+            return _local_result(goal, success=True, algorithm="Simple Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
@@ -69,7 +75,7 @@ def simple_hill_climbing(
             if len(trace) < 200:
                 trace.append(TraceStep(step=i, state=current, current_h=current_h, h=current_h,
                                        reason=f"Stuck at local optimum h={current_h:.1f}"))
-            return SearchResult(success=False, algorithm="Simple Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Simple Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0,
@@ -77,7 +83,7 @@ def simple_hill_climbing(
                                 uses_heuristic=True, uses_randomness=False,
                                 is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
-    return SearchResult(success=False, algorithm="Simple Hill Climbing", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Simple Hill Climbing", group="Local Search",
                         path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                         runtime=time.perf_counter() - t0, message="Max iterations reached", trace=trace,
                         uses_heuristic=True, uses_randomness=False,
@@ -102,13 +108,13 @@ def steepest_ascent_hill_climbing(
 
     for i in range(max_iterations):
         if time.perf_counter() - t0 > timeout:
-            return SearchResult(success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
         if current == goal:
-            return SearchResult(success=True, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
+            return _local_result(goal, success=True, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
@@ -137,14 +143,14 @@ def steepest_ascent_hill_climbing(
             if len(trace) < 200:
                 trace.append(TraceStep(step=i, state=current, current_h=current_h, h=current_h,
                                        reason=f"Stuck: no neighbor better than h={current_h:.1f}"))
-            return SearchResult(success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0,
                                 message=f"Stuck at local optimum h={current_h:.1f}", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
-    return SearchResult(success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Steepest-Ascent Hill Climbing", group="Local Search",
                         path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                         runtime=time.perf_counter() - t0, message="Max iterations reached", trace=trace,
                         uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -169,14 +175,14 @@ def stochastic_hill_climbing(
 
     for i in range(max_iterations):
         if time.perf_counter() - t0 > timeout:
-            return SearchResult(success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 uses_heuristic=True, uses_randomness=True,
                                 is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
         if current == goal:
-            return SearchResult(success=True, algorithm="Stochastic Hill Climbing", group="Local Search",
+            return _local_result(goal, success=True, algorithm="Stochastic Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
@@ -202,7 +208,7 @@ def stochastic_hill_climbing(
             if len(trace) < 200:
                 trace.append(TraceStep(step=i, state=current, current_h=current_h,
                                        reason=f"Stuck: no better neighbor, h={current_h:.1f}"))
-            return SearchResult(success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
                                 path=path, actions=actions_taken, depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0,
@@ -210,7 +216,7 @@ def stochastic_hill_climbing(
                                 uses_heuristic=True, uses_randomness=True,
                                 is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
-    return SearchResult(success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Stochastic Hill Climbing", group="Local Search",
                         path=path, actions=actions_taken, nodes_expanded=nodes_expanded,
                         runtime=time.perf_counter() - t0, message="Max iterations reached", trace=trace,
                         uses_heuristic=True, uses_randomness=True,
@@ -260,7 +266,7 @@ def random_restart_hill_climbing(
 
             if current == goal:
                 msg = f"Goal reached after legal random-walk restart {restart}"
-                return SearchResult(success=True, algorithm="Random-Restart Hill Climbing", group="Local Search",
+                return _local_result(goal, success=True, algorithm="Random-Restart Hill Climbing", group="Local Search",
                                     path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                     nodes_expanded=total_expanded, nodes_generated=total_expanded,
                                     runtime=time.perf_counter() - t0, message=msg, trace=trace,
@@ -290,7 +296,7 @@ def random_restart_hill_climbing(
             if current_h < best_h:
                 best_path, best_actions, best_h = path, actions_taken, current_h
 
-    return SearchResult(success=False, algorithm="Random-Restart Hill Climbing", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Random-Restart Hill Climbing", group="Local Search",
                         path=best_path, actions=best_actions, depth=len(best_actions),
                         nodes_expanded=total_expanded, nodes_generated=total_expanded,
                         runtime=time.perf_counter() - t0,
@@ -315,7 +321,7 @@ def local_beam_search(
 
     for i in range(max_iterations):
         if time.perf_counter() - t0 > timeout:
-            return SearchResult(success=False, algorithm="Local Beam Search", group="Local Search",
+            return _local_result(goal, success=False, algorithm="Local Beam Search", group="Local Search",
                                 nodes_expanded=nodes_expanded, runtime=time.perf_counter() - t0,
                                 message="Timeout", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -324,7 +330,7 @@ def local_beam_search(
         for _, state in beam:
             if state == goal:
                 path, actions = best_path[state]
-                return SearchResult(success=True, algorithm="Local Beam Search", group="Local Search",
+                return _local_result(goal, success=True, algorithm="Local Beam Search", group="Local Search",
                                     path=path, actions=actions, cost=len(actions), depth=len(actions),
                                     nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                     runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
@@ -365,7 +371,7 @@ def local_beam_search(
                                    reason=f"Beam iteration, best h={beam[0][0]:.1f}, width={len(beam)}"))
 
     best_state = min(beam, key=lambda x: x[0])
-    return SearchResult(success=False, algorithm="Local Beam Search", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Local Beam Search", group="Local Search",
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                         runtime=time.perf_counter() - t0,
                         message=f"Best h={best_state[0]:.1f}", trace=trace,
@@ -410,7 +416,7 @@ def simulated_annealing(
             temp = min_temp
 
         if current == goal:
-            return SearchResult(success=True, algorithm="Simulated Annealing", group="Local Search",
+            return _local_result(goal, success=True, algorithm="Simulated Annealing", group="Local Search",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
@@ -454,14 +460,14 @@ def simulated_annealing(
                                    accepted=accepted, reason=f"T={temp:.2f}, δ={delta:.1f}, {'accept' if accepted else 'reject'}"))
 
     if best == goal:
-        return SearchResult(success=True, algorithm="Simulated Annealing", group="Local Search",
+        return _local_result(goal, success=True, algorithm="Simulated Annealing", group="Local Search",
                             path=best_path, actions=best_actions, cost=len(best_actions), depth=len(best_actions),
                             nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                             runtime=time.perf_counter() - t0, message="Goal reached", trace=trace,
                             uses_heuristic=True, uses_randomness=True,
                             is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
-    return SearchResult(success=False, algorithm="Simulated Annealing", group="Local Search",
+    return _local_result(goal, success=False, algorithm="Simulated Annealing", group="Local Search",
                         path=best_path, actions=best_actions, depth=len(best_actions),
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                         runtime=time.perf_counter() - t0,

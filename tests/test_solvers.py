@@ -158,10 +158,36 @@ class TestHillClimbing:
         custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
         result = simple_hill_climbing(GOAL_STATE, goal=custom_goal, timeout=5)
         assert result.success
+        assert result.goal_state == custom_goal
+        assert result.goal_reached
+        assert result.path_verified
         assert result.cost == 1
         valid, message, final_state = validate_path(GOAL_STATE, result.actions)
         assert not valid  # validate_path intentionally targets the standard goal.
         assert final_state == custom_goal
+
+
+@pytest.mark.parametrize("solver, kwargs", [
+    (simple_hill_climbing, {}),
+    (steepest_ascent_hill_climbing, {}),
+    (stochastic_hill_climbing, {"seed": 1}),
+    (random_restart_hill_climbing, {"seed": 1}),
+    (local_beam_search, {"beam_width": 2}),
+    (simulated_annealing, {"seed": 1}),
+])
+def test_local_search_results_report_the_selected_custom_goal(solver, kwargs):
+    result = solver(
+        OPPOSITE_PARITY_GOAL,
+        goal=OPPOSITE_PARITY_GOAL,
+        max_iterations=5,
+        timeout=2,
+        **kwargs,
+    )
+
+    assert result.success
+    assert result.goal_state == OPPOSITE_PARITY_GOAL
+    assert result.goal_reached
+    assert result.path_verified
 
 
 class TestSimulatedAnnealing:
@@ -338,7 +364,9 @@ def test_hill_climbing_stuck_teaching_preset():
     assert result.success is False
     assert len(result.actions) == 4
     assert result.path_verified
+    assert result.goal_state == GOAL_STATE
     assert not result.goal_reached
+    assert "does not match the requested goal" in result.verification_message
     assert "Stuck at local optimum h=4.0" in result.message
 
 
