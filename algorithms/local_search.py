@@ -5,12 +5,12 @@ import random
 import math
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE
-from core.heuristics import HEURISTICS, manhattan_distance
+from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 
 
-def _get_h_fn(heuristic: str):
-    return HEURISTICS.get(heuristic, manhattan_distance)
+def _get_h_fn(heuristic: str, goal: tuple[int, ...]):
+    return get_heuristic(heuristic, goal)
 
 
 def simple_hill_climbing(
@@ -22,7 +22,7 @@ def simple_hill_climbing(
 ) -> SearchResult:
     """Simple Hill Climbing: pick first better neighbor."""
     t0 = time.perf_counter()
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
     current = start
     current_h = h_fn(current)
     trace: list[TraceStep] = []
@@ -92,7 +92,7 @@ def steepest_ascent_hill_climbing(
 ) -> SearchResult:
     """Steepest-Ascent Hill Climbing: pick the best neighbor."""
     t0 = time.perf_counter()
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
     current = start
     current_h = h_fn(current)
     trace: list[TraceStep] = []
@@ -159,7 +159,7 @@ def stochastic_hill_climbing(
     """Stochastic Hill Climbing: randomly pick among better neighbors."""
     t0 = time.perf_counter()
     rng = random.Random(seed)
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
     current = start
     current_h = h_fn(current)
     trace: list[TraceStep] = []
@@ -227,7 +227,7 @@ def random_restart_hill_climbing(
     """Random-Restart Hill Climbing using legal random walks from the input."""
     t0 = time.perf_counter()
     rng = random.Random(seed)
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
 
     best_path = [start]
     best_actions: list[str] = []
@@ -307,7 +307,7 @@ def local_beam_search(
 ) -> SearchResult:
     """Local Beam Search: keep k best states, expand all neighbors."""
     t0 = time.perf_counter()
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
     beam = [(h_fn(start), start)]
     best_path = {start: ([start], [])}
     nodes_expanded = 0
@@ -386,7 +386,7 @@ def simulated_annealing(
     """Simulated Annealing: accept worse moves with decreasing probability."""
     t0 = time.perf_counter()
     rng = random.Random(seed)
-    h_fn = _get_h_fn(heuristic)
+    h_fn = _get_h_fn(heuristic, goal)
 
     current = start
     current_h = h_fn(current)

@@ -10,7 +10,7 @@ import random
 import math
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank
-from core.heuristics import manhattan_distance, HEURISTICS
+from core.heuristics import get_heuristic, manhattan_distance
 from core.metrics import SearchResult, TraceStep
 
 
@@ -18,7 +18,7 @@ def _utility(state: tuple[int, ...], goal: tuple[int, ...], solved_bonus: float 
     """Utility function: +solved_bonus for goal, -Manhattan otherwise."""
     if state == goal:
         return solved_bonus
-    return -manhattan_distance(state)
+    return -manhattan_distance(state, goal)
 
 
 def minimax(
@@ -32,7 +32,7 @@ def minimax(
     MIN: adversary, wants to maximize heuristic (minimize utility).
     """
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
 
@@ -129,7 +129,7 @@ def alpha_beta_pruning(
 ) -> SearchResult:
     """Alpha-Beta Pruning: same as Minimax but prunes branches that can't affect outcome."""
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
     pruned = [0]
@@ -234,7 +234,7 @@ def expectimax(
     executing correctly, with remaining probability split among other valid moves.
     """
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
     rng = random.Random(seed)
     trace: list[TraceStep] = []
     nodes_expanded = [0]

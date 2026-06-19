@@ -8,7 +8,7 @@ import time
 import random
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable, scramble
-from core.heuristics import manhattan_distance, HEURISTICS
+from core.heuristics import get_heuristic, manhattan_distance
 from core.metrics import SearchResult, TraceStep
 
 
@@ -321,7 +321,7 @@ def online_search_lrta(
     with lowest estimated cost (g + H), then updates H(current).
     """
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
 
     H: dict[tuple, float] = {}
     current = start

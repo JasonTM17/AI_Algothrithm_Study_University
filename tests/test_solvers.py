@@ -137,6 +137,15 @@ class TestHillClimbing:
         result = local_beam_search(EASY_STATE, beam_width=3, timeout=10)
         assert result.algorithm == "Local Beam Search"
 
+    def test_custom_goal_is_used_by_local_heuristic(self):
+        custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+        result = simple_hill_climbing(GOAL_STATE, goal=custom_goal, timeout=5)
+        assert result.success
+        assert result.cost == 1
+        valid, message, final_state = validate_path(GOAL_STATE, result.actions)
+        assert not valid  # validate_path intentionally targets the standard goal.
+        assert final_state == custom_goal
+
 
 class TestSimulatedAnnealing:
     def test_returns_result(self):
