@@ -5,6 +5,7 @@ import time
 import streamlit as st
 
 from algorithms.informed import a_star
+from core.gameplay import score_challenge
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable, _move_blank
 from ui.academic_panels import render_academic_header, render_exam_path
@@ -21,6 +22,7 @@ def _handle_play_slide(direction: str) -> None:
     if ns:
         st.session_state.play_state = ns
         st.session_state.play_moves += 1
+        st.session_state.play_history.append(ns)
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
@@ -69,13 +71,18 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     if "play_state" not in st.session_state:
         st.session_state.play_state = st.session_state.start_state
         st.session_state.play_moves = 0
+        st.session_state.play_history = [st.session_state.start_state]
+    if "play_history" not in st.session_state:
+        st.session_state.play_history = [st.session_state.play_state]
 
     if "play_start_ref" not in st.session_state:
         st.session_state.play_start_ref = st.session_state.start_state
     if st.session_state.play_start_ref != st.session_state.start_state:
         st.session_state.play_state = st.session_state.start_state
         st.session_state.play_moves = 0
+        st.session_state.play_history = [st.session_state.start_state]
         st.session_state.play_start_ref = st.session_state.start_state
+        st.session_state.pop("play_optimal_result", None)
 
     has_image = "image_tiles" in st.session_state and st.session_state.image_tiles
     if has_image:
@@ -133,6 +140,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         if st.button("Reset Play Board"):
             st.session_state.play_state = st.session_state.start_state
             st.session_state.play_moves = 0
+            st.session_state.play_history = [st.session_state.start_state]
             st.session_state.play_solution_path = None
             st.session_state.play_solution_actions = None
             st.session_state.play_solution_idx = 0
@@ -142,6 +150,47 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     # ── AI Auto-Solver ──────────────────────────────────────
     st.markdown("---")
     
+    with col_reset2:
+        if st.button("Undo Last Move", disabled=len(st.session_state.play_history) <= 1):
+            st.session_state.play_history.pop()
+            st.session_state.play_state = st.session_state.play_history[-1]
+            st.session_state.play_moves = max(0, st.session_state.play_moves - 1)
+            st.rerun()
+
+    st.subheader("Academic Challenge Mode")
+    st.caption(
+        "A* with admissible Linear Conflict proves the optimal distance. "
+        "Your legal moves are then scored against that certificate."
+    )
+    if st.button("Prove Optimal Move Count", key="btn_prove_optimal"):
+        with st.spinner("Computing an optimal certificate..."):
+            proof_result = a_star(
+                start=st.session_state.play_start_ref,
+                goal=GOAL_STATE,
+                heuristic="Linear Conflict",
+                timeout=30.0,
+                max_nodes=300000,
+            )
+        st.session_state.play_optimal_result = proof_result
+
+    proof_result = st.session_state.get("play_optimal_result")
+    if proof_result:
+        if proof_result.success and proof_result.optimality_proven:
+            score = score_challenge(st.session_state.play_moves, len(proof_result.actions))
+            score_cols = st.columns(4)
+            score_cols[0].metric("Optimal Moves", score.optimal_moves)
+            score_cols[1].metric("Your Moves", score.player_moves)
+            score_cols[2].metric("Move Gap", f"{score.gap:+d}")
+            score_cols[3].metric("Efficiency", f"{score.efficiency_percent:.1f}%")
+            st.success(
+                "Optimality certificate verified: every move is legal and "
+                f"the proven solution cost is {proof_result.cost}."
+            )
+        else:
+            st.warning(f"No optimality certificate produced: {proof_result.message}")
+
+    st.markdown("---")
+
     # Premium AI Solver Card
     ai_title = t("play_ai_solver")
     ai_desc = t("play_ai_desc")
