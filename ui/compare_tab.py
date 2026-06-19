@@ -123,6 +123,24 @@ def render_compare_tab() -> None:
         disabled=fresh_benchmark_seeds,
     )
 
+    benchmark_signature = (
+        tuple(st.session_state.start_state),
+        preset_name,
+        tuple(selected_groups),
+        tuple(selected_algos),
+        heuristic,
+        int(max_nodes),
+        int(timeout),
+        fresh_benchmark_seeds,
+        int(fixed_benchmark_seed),
+    )
+    if (
+        "last_benchmark_signature" in st.session_state
+        and st.session_state.last_benchmark_signature != benchmark_signature
+    ):
+        st.session_state.benchmark_results = []
+        st.session_state["benchmark_run_seeds"] = {}
+
     if st.button("Run Benchmark", key="btn_benchmark", type="primary"):
         start = st.session_state.start_state
         if not is_solvable(start):
@@ -204,6 +222,7 @@ def render_compare_tab() -> None:
 
             st.session_state["last_benchmark_random_seed"] = previous_seed
             st.session_state["benchmark_run_seeds"] = benchmark_seeds
+            st.session_state["last_benchmark_signature"] = benchmark_signature
             progress.empty()
 
     render_comparison_table(st.session_state.benchmark_results)

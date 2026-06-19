@@ -2,6 +2,7 @@
 
 from streamlit.testing.v1 import AppTest
 
+from core.academic_proofs import BENCHMARK_PRESETS
 from algorithms.uninformed import bfs
 from core.gameplay import validate_player_run
 from core.puzzle import GOAL_STATE
@@ -144,6 +145,27 @@ def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     assert set(seeds) == {"Stochastic Hill Climbing", "Simulated Annealing"}
     assert len(set(seeds.values())) == 2
     assert all(result.random_seed is not None for result in app.session_state.benchmark_results)
+    assert not app.exception
+
+
+def test_compare_results_clear_when_benchmark_limits_change():
+    preset_name = next(iter(BENCHMARK_PRESETS))
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.run()
+    app.multiselect(key="compare_groups").set_value(["Local Search"]).run()
+    app.multiselect(key="compare_Local Search").set_value(["Simple Hill Climbing"]).run()
+    app.button(key="btn_benchmark").click().run()
+
+    assert app.session_state.benchmark_results
+
+    max_nodes_key = f"compare_max_nodes_{preset_name}"
+    app.number_input(key=max_nodes_key).set_value(BENCHMARK_PRESETS[preset_name]["max_nodes"] + 1000).run()
+
+    assert app.session_state.benchmark_results == []
+    assert app.session_state.benchmark_run_seeds == {}
     assert not app.exception
 
 
