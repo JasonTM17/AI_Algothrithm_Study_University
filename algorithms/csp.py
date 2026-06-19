@@ -364,7 +364,7 @@ def min_conflicts(
             trial = list(current)
             trial[pos], trial[other] = trial[other], trial[pos]
             # Check solvable
-            if not is_solvable(tuple(trial)):
+            if not is_solvable(tuple(trial), goal):
                 continue
             new_conflicts = sum(1 for j, v in enumerate(trial) if v != goal[j])
             if new_conflicts < best_conflicts:

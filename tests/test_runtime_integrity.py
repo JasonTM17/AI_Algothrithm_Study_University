@@ -147,3 +147,21 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     assert a_star_kwargs["heuristic"] == "Manhattan Distance"
     assert a_star_kwargs["tie_breaker"] == "Min-g"
 
+
+def test_run_solver_solvability_guard_is_relative_to_goal():
+    from core.metrics import SearchResult
+    from core.puzzle import GOAL_STATE
+    from core.utils import run_solver
+
+    swapped_goal = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+
+    def echo_solver(start, goal, timeout=1.0):
+        return SearchResult(success=True, algorithm="Echo", path=[start], actions=[])
+
+    blocked = run_solver(echo_solver, GOAL_STATE, goal=swapped_goal, timeout=1)
+    allowed = run_solver(echo_solver, swapped_goal, goal=swapped_goal, timeout=1)
+
+    assert not blocked.success
+    assert "not solvable" in blocked.message
+    assert allowed.success
+

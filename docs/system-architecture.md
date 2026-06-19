@@ -20,3 +20,5 @@ Every successful puzzle run contains a legal state/action path certificate. Goal
 Game-tree and stochastic demos expose selected variations or sample outcome paths for teaching. They do not claim to render the full evaluated tree in the main metrics, and their guarantees remain conditional on depth, timeout, action ordering, and environment assumptions.
 
 All heuristic-driven solvers and demos bind their heuristic to the run's requested goal state. This keeps custom-goal experiments academically consistent with the standard-goal classroom flow.
+
+Solvability checks are also goal-relative: two board permutations are considered mutually reachable only when their 4x4 parity classes match.

@@ -14,7 +14,7 @@ def run_solver(
     **kwargs,
 ) -> SearchResult:
     """Run a solver function with timeout and return SearchResult."""
-    if not is_solvable(start):
+    if not is_solvable(start, goal):
         return SearchResult(
             success=False,
             message="Puzzle is not solvable.",

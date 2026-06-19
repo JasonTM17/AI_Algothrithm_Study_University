@@ -91,22 +91,28 @@ class PuzzleState:
         return "\n".join(lines)
 
 
-def is_solvable(state: tuple[int, ...]) -> bool:
-    """Check if a 15-puzzle state is solvable.
-
-    For 4x4 puzzle with goal blank in bottom-right:
-    solvable iff (inversions + blank_row_from_bottom) is odd.
-    """
+def _parity_class(state: tuple[int, ...]) -> int:
+    """Return the invariant parity class preserved by legal 4x4 moves."""
     validate_state(state)
-    tiles = [t for t in state if t != 0]
+    tiles = [tile for tile in state if tile != 0]
     inversions = 0
-    for i in range(len(tiles)):
-        for j in range(i + 1, len(tiles)):
-            if tiles[i] > tiles[j]:
+    for left in range(len(tiles)):
+        for right in range(left + 1, len(tiles)):
+            if tiles[left] > tiles[right]:
                 inversions += 1
     blank_row = state.index(0) // 4
     blank_row_from_bottom = 4 - blank_row
-    return (inversions + blank_row_from_bottom) % 2 == 1
+    return (inversions + blank_row_from_bottom) % 2
+
+
+def is_solvable(state: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE) -> bool:
+    """Check if a 15-puzzle state can reach ``goal`` by legal blank slides.
+
+    For the standard bottom-right blank goal, the reachable parity class is
+    odd. For a custom goal, reachability requires matching the goal's class.
+    """
+    validate_state(goal)
+    return _parity_class(state) == _parity_class(goal)
 
 
 def scramble(goal: tuple[int, ...] = GOAL_STATE, depth: int = 10,

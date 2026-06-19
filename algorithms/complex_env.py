@@ -151,7 +151,7 @@ def no_observation_search(
     belief.add(start)
     while len(belief) < num_belief_states:
         s = scramble(depth=rng.randint(3, 8), seed=rng.randint(0, 999999))
-        if is_solvable(s) and s != goal:
+        if is_solvable(s, goal) and s != goal:
             belief.add(s)
 
     initial_belief = frozenset(belief)
@@ -273,7 +273,7 @@ def partially_observable_search(
     belief.add(start)
     while len(belief) < num_belief_states:
         s = scramble(depth=rng.randint(2, 6), seed=rng.randint(0, 999999))
-        if is_solvable(s) and s != goal:
+        if is_solvable(s, goal) and s != goal:
             belief.add(s)
 
     actual_state = start

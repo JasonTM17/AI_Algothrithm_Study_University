@@ -101,6 +101,14 @@ class TestIsSolvable:
         state = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
         assert is_solvable(state) is False
 
+    def test_solvability_is_relative_to_requested_goal(self):
+        swapped_goal = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+
+        assert is_solvable(GOAL_STATE)
+        assert not is_solvable(swapped_goal)
+        assert is_solvable(swapped_goal, goal=swapped_goal)
+        assert not is_solvable(GOAL_STATE, goal=swapped_goal)
+
 
 class TestScramble:
     def test_rejects_negative_depth(self):
