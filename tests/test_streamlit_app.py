@@ -110,6 +110,11 @@ def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Compare"
     app.run()
+    assert app.multiselect(key="compare_groups").options == [
+        "Uninformed Search",
+        "Informed Search",
+        "Local Search",
+    ]
     app.multiselect(key="compare_groups").set_value(["Local Search"]).run()
     app.multiselect(key="compare_Local Search").set_value([
         "Stochastic Hill Climbing",

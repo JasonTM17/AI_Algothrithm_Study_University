@@ -22,6 +22,13 @@ from ui.components import render_comparison_table
 from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS, COMPARISON_TABLE, NOTES
 
 
+BENCHMARK_GROUPS = (
+    "Uninformed Search",
+    "Informed Search",
+    "Local Search",
+)
+
+
 def render_compare_tab() -> None:
     st.title("Compare Algorithms")
     render_academic_header(
@@ -54,9 +61,14 @@ def render_compare_tab() -> None:
         )
 
     st.markdown("Select algorithms to benchmark against the current start state.")
+    st.caption(
+        "Standard rankings include real solvers and local-search contrast cases only. "
+        "CSP, uncertainty, online, and game/chance models remain in Concept Lab because "
+        "their success criteria and environment assumptions are not directly comparable."
+    )
 
     selected_groups = st.multiselect(
-        "Algorithm Groups", list(SOLVER_GROUPS.keys()),
+        "Algorithm Groups", list(BENCHMARK_GROUPS),
         default=["Uninformed Search", "Informed Search"],
         key="compare_groups",
     )
@@ -119,9 +131,6 @@ def render_compare_tab() -> None:
             import algorithms.uninformed as u
             import algorithms.informed as inf
             import algorithms.local_search as ls
-            import algorithms.complex_env as ce
-            import algorithms.csp as csp_mod
-            import algorithms.adversarial as adv
 
             solver_map = {
                 "bfs": lambda **kw: u.bfs(**kw, max_nodes=max_nodes),
@@ -137,13 +146,6 @@ def render_compare_tab() -> None:
                 "random_restart_hill_climbing": ls.random_restart_hill_climbing,
                 "local_beam_search": ls.local_beam_search,
                 "simulated_annealing": ls.simulated_annealing,
-                "and_or_search": ce.and_or_search,
-                "no_observation_search": ce.no_observation_search,
-                "partially_observable_search": ce.partially_observable_search,
-                "online_search_lrta": ce.online_search_lrta,
-                "minimax": adv.minimax,
-                "alpha_beta_pruning": adv.alpha_beta_pruning,
-                "expectimax": adv.expectimax,
             }
 
             st.session_state.benchmark_results = []
@@ -169,20 +171,11 @@ def render_compare_tab() -> None:
                             kwargs["seed"] = run_seed
                             benchmark_seeds[algo] = run_seed
                             previous_seed = run_seed
-                        # Only pass heuristic to algorithms that use it
-                        if fn_name not in ("bfs", "dfs", "ucs", "ids", "and_or_search",
-                                          "no_observation_search", "partially_observable_search",
-                                          "csp_definition", "constraint_propagation",
-                                          "path_consistency", "global_constraints",
-                                          "backtracking_search", "min_conflicts",
-                                          "solve_csp_constraint_graphs",
-                                          "minimax", "alpha_beta_pruning", "expectimax"):
-                            pass  # heuristic handled per-algorithm below
                         if fn_name in ("simple_hill_climbing", "steepest_ascent_hill_climbing",
-                                       "stochastic_hill_climbing", "local_beam_search",
+                                       "stochastic_hill_climbing", "random_restart_hill_climbing",
+                                       "local_beam_search",
                                        "simulated_annealing", "greedy_best_first", "a_star",
-                                       "ida_star", "online_search_lrta",
-                                       "minimax", "alpha_beta_pruning", "expectimax"):
+                                       "ida_star"):
                             kwargs["heuristic"] = heuristic
                         if fn_name in ("simple_hill_climbing", "steepest_ascent_hill_climbing",
                                        "stochastic_hill_climbing", "local_beam_search",
@@ -191,8 +184,6 @@ def render_compare_tab() -> None:
                         elif fn_name == "random_restart_hill_climbing":
                             kwargs["max_iterations"] = 5000
                             kwargs["max_restarts"] = 20
-                        elif fn_name in ("minimax", "alpha_beta_pruning", "expectimax"):
-                            kwargs["depth"] = 3
                         result = solver_map[fn_name](**kwargs)
                         result.random_seed = run_seed
                         st.session_state.benchmark_results.append(result)
@@ -200,6 +191,15 @@ def render_compare_tab() -> None:
                         st.session_state.benchmark_results.append(
                             SearchResult(success=False, algorithm=algo, group="",
                                         message=f"Error: {e}", runtime=0))
+                else:
+                    st.session_state.benchmark_results.append(
+                        SearchResult(
+                            success=False,
+                            algorithm=algo,
+                            group="",
+                            message="Algorithm is not eligible for the standard benchmark.",
+                        )
+                    )
                 progress.progress((i + 1) / total, text=f"Done: {i+1}/{total}")
 
             st.session_state["last_benchmark_random_seed"] = previous_seed
