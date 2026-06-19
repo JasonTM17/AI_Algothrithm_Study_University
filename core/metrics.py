@@ -80,6 +80,7 @@ class SearchResult:
     max_frontier_size: int = 0
     reached_size: int = 0
     runtime: float = 0.0
+    random_seed: Optional[int] = None
     message: str = ""
     trace: list[TraceStep] = field(default_factory=list)
     search_tree_nodes: list[SearchTreeNode] = field(default_factory=list)
@@ -247,6 +248,7 @@ class SearchResult:
             "Max Frontier": self.max_frontier_size,
             "Reached Size": self.reached_size,
             "Runtime (s)": f"{self.runtime:.4f}",
+            "Random Seed": self.random_seed if self.random_seed is not None else "Deterministic",
             "Complete?": "Yes" if self.is_complete else "No",
             "Optimal?": "Yes" if self.is_optimal else "No",
             "Heuristic?": "Yes" if self.uses_heuristic else "No",

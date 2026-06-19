@@ -61,6 +61,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
 - Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
+- Stochastic demos use a fresh recorded seed by default, while deterministic solvers remain reproducible under the same state, action order, and tie-breaker.
 - Accessibility-oriented UI: focus states, reduced-motion support, responsive cards, and mobile sidebar safeguards.
 
 ## Project Structure

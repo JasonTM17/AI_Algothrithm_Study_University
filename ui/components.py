@@ -444,11 +444,14 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
                 st.rerun()
 
     with col_speed:
-        speed = st.selectbox(
-            t("anim_speed"), [0.1, 0.3, 0.5, 1.0, 2.0], index=2,
-            format_func=lambda x: t("anim_per_step", sec=x),
-            key=speed_key
+        speed_options = {
+            t("anim_per_step", sec=value): value
+            for value in (0.1, 0.3, 0.5, 1.0, 2.0)
+        }
+        speed_label = st.selectbox(
+            t("anim_speed"), list(speed_options), index=2, key=speed_key,
         )
+        speed = speed_options[speed_label]
 
     current_step = st.slider(
         t("play_curr_step"), 0, len(path) - 1, 0, key=f"{key}_slider"

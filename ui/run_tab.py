@@ -5,6 +5,7 @@ import streamlit as st
 from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable
+from core.randomness import is_randomized_solver, resolve_run_seed
 from core.solver_dispatch import build_solver_kwargs
 from ui.academic_panels import render_academic_header, render_algorithm_role_card, render_exam_path
 from ui.components import (
@@ -33,6 +34,7 @@ def render_run_algorithm_tab() -> None:
         group = st.selectbox("Algorithm Group", list(SOLVER_GROUPS.keys()), key="algo_group")
         algorithms = SOLVER_GROUPS[group]
         algo_name = st.selectbox("Algorithm", algorithms, key="algo_name")
+        selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
         render_algorithm_role_card(algo_name)
 
         # Only show heuristic for algorithms that use it
@@ -64,12 +66,29 @@ def render_run_algorithm_tab() -> None:
 
         # Extra params for specific algorithms
         extra_params = {}
+        fresh_seed_each_run = False
+        manual_seed = 42
         if "Hill Climbing" in algo_name or "Beam" in algo_name:
             max_iter = st.number_input("Max Iterations", 100, 100000, 10000, key="max_iter")
             extra_params["max_iterations"] = max_iter
-        if algo_name in ["Stochastic Hill Climbing", "Random-Restart Hill Climbing", "Simulated Annealing"]:
-            seed_val = st.number_input("Random Seed", 0, 99999, 42, key="seed_val")
-            extra_params["seed"] = seed_val if seed_val > 0 else None
+        if is_randomized_solver(selected_fn_name):
+            fresh_seed_each_run = st.checkbox(
+                "Fresh random seed each run",
+                value=True,
+                key="fresh_seed_each_run",
+                help=(
+                    "Enabled: each run samples a new stochastic trajectory. "
+                    "Disabled: reuse a fixed seed for reproducible academic comparison."
+                ),
+            )
+            manual_seed = st.number_input(
+                "Fixed Random Seed",
+                0,
+                2**31 - 1,
+                42,
+                key="seed_val",
+                disabled=fresh_seed_each_run,
+            )
         if algo_name == "Random-Restart Hill Climbing":
             extra_params["max_restarts"] = st.number_input("Max Restarts", 1, 100, 20, key="max_restarts")
         if algo_name == "Local Beam Search":
@@ -84,7 +103,10 @@ def render_run_algorithm_tab() -> None:
             extra_params["depth"] = max_depth
             extra_params["success_prob"] = st.slider("Success Probability", 0.1, 1.0, 0.8, key="success_prob")
 
-    run_signature = (tuple(st.session_state.start_state), algo_name, heuristic, tie_breaker, action_order)
+    run_signature = (
+        tuple(st.session_state.start_state), algo_name, heuristic,
+        tie_breaker, action_order, fresh_seed_each_run, manual_seed,
+    )
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
 
@@ -93,7 +115,7 @@ def render_run_algorithm_tab() -> None:
         if not is_solvable(start):
             st.error("Current state is NOT solvable. Please generate a solvable state.")
         else:
-            fn_name = ALGORITHM_FN_MAP.get(algo_name)
+            fn_name = selected_fn_name
             if fn_name is None:
                 st.error(f"Algorithm {algo_name} not found.")
             else:
@@ -134,6 +156,14 @@ def render_run_algorithm_tab() -> None:
                 if solver_fn is None:
                     st.error(f"Solver function {fn_name} not found.")
                 else:
+                    run_seed = resolve_run_seed(
+                        fn_name,
+                        fresh_each_run=fresh_seed_each_run,
+                        manual_seed=int(manual_seed),
+                        previous_seed=st.session_state.get("last_random_seed"),
+                    )
+                    if run_seed is not None:
+                        extra_params["seed"] = run_seed
                     kwargs = build_solver_kwargs(
                         fn_name,
                         start=start,
@@ -150,6 +180,9 @@ def render_run_algorithm_tab() -> None:
                     with st.spinner(f"Running {algo_name}..."):
                         try:
                             result = solver_fn(**kwargs)
+                            result.random_seed = run_seed
+                            if run_seed is not None:
+                                st.session_state["last_random_seed"] = run_seed
 
                             st.session_state["last_result"] = result
                             st.session_state["last_run_signature"] = run_signature
@@ -166,6 +199,15 @@ def render_run_algorithm_tab() -> None:
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
+        if result.random_seed is None:
+            st.caption(
+                "Deterministic run: identical state, parameters, action order, and tie-breaker "
+                "may legitimately produce the same path as another optimal algorithm."
+            )
+        else:
+            st.caption(
+                f"Randomized run seed: `{result.random_seed}`. Save this seed to reproduce this exact run."
+            )
         render_algorithm_evaluation(result.algorithm)
 
         if result.success and result.path:

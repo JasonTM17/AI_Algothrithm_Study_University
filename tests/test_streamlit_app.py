@@ -83,6 +83,27 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert not app.exception
 
 
+def test_stochastic_run_uses_a_fresh_recorded_seed_each_time():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.selectbox(key="algo_group").set_value("Local Search").run()
+    app.selectbox(key="algo_name").set_value("Stochastic Hill Climbing").run()
+
+    assert app.checkbox(key="fresh_seed_each_run").value is True
+    app.button(key="btn_run").click().run()
+    first_seed = app.session_state.last_result.random_seed
+    app.button(key="btn_run").click().run()
+    second_seed = app.session_state.last_result.random_seed
+
+    assert first_seed is not None
+    assert second_seed is not None
+    assert first_seed != second_seed
+    assert not app.exception
+
+
 def test_graph_coloring_stays_hidden_until_selected():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
