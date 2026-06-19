@@ -606,7 +606,7 @@ def render_algorithm_info(algo_name: str, theory: dict):
         st.code(pseudocode, language="python")
 
 
-def render_search_tree(trace: list, max_nodes: int = 30):
+def _render_legacy_search_trace(trace: list, max_nodes: int = 30):
     """Render search tree as indented text with matrix states."""
     global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     if not trace:
@@ -646,6 +646,29 @@ def render_search_tree(trace: list, max_nodes: int = 30):
     st.code("\n".join(lines), language="")
     if len(trace) > max_nodes:
         st.caption(f"Đang hiển thị {max_nodes} trên tổng số {len(trace)} nodes" if global_lang == "Tiếng Việt" else f"Showing first {max_nodes} of {len(trace)} nodes")
+
+
+def render_search_tree(result, max_nodes: int = 40):
+    """Render only verified parent-child transitions as a directed graph."""
+    from core.metrics import search_tree_to_dot
+
+    if not result.search_tree_nodes or not result.search_tree_edges:
+        st.info(t("tc_no_trace"))
+        return
+
+    st.markdown(f"### {t('run_search_tree')}")
+    st.caption(
+        "Every edge is backed by a legal puzzle action. Green nodes and edges "
+        "show the verified solution path; the remaining nodes are explored evidence."
+    )
+    st.graphviz_chart(search_tree_to_dot(result, max_nodes), use_container_width=True)
+    if len(result.search_tree_nodes) > max_nodes:
+        st.caption(
+            f"Showing {max_nodes}/{len(result.search_tree_nodes)} recorded nodes. "
+            "The visualization is bounded to keep the web page responsive."
+        )
+    if result.trace_truncated:
+        st.warning("Trace display reached its capture limit; run metrics still cover the solver run.")
 
 
 def process_uploaded_image(image_file, grid_size: int = 4):

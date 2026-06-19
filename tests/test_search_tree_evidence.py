@@ -1,0 +1,34 @@
+"""Tests for auditable solution and search-tree evidence."""
+
+from algorithms.informed import a_star
+from algorithms.uninformed import bfs
+from core.metrics import search_tree_to_dot
+from core.puzzle import _move_blank
+
+
+START = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
+
+
+def assert_tree_is_legal(result):
+    nodes = {node.node_id: node for node in result.search_tree_nodes}
+    assert result.path_verified, result.verification_message
+    assert result.search_tree_edges
+    for edge in result.search_tree_edges:
+        parent = nodes[edge.parent_id]
+        child = nodes[edge.child_id]
+        assert _move_blank(parent.state, edge.action) == child.state
+        if edge.on_solution_path:
+            assert parent.on_solution_path and child.on_solution_path
+
+
+def test_bfs_exposes_real_parent_child_edges():
+    assert_tree_is_legal(bfs(START, timeout=5))
+
+
+def test_a_star_exposes_real_parent_child_edges_and_dot():
+    result = a_star(START, timeout=5)
+    assert_tree_is_legal(result)
+    dot = search_tree_to_dot(result)
+    assert "digraph SearchTree" in dot
+    assert "->" in dot
+    assert 'color="#059669"' in dot

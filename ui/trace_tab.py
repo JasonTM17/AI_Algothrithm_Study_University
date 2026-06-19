@@ -24,7 +24,7 @@ def render_step_trace_tab() -> None:
 
             st.markdown("---")
             st.subheader("Search Tree")
-            render_search_tree(result.trace, max_nodes=30)
+            render_search_tree(result, max_nodes=40)
 
             if st.button("Export Trace as CSV"):
                 import io

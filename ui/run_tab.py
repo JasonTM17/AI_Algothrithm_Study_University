@@ -173,5 +173,5 @@ def render_run_algorithm_tab() -> None:
             st.subheader("Node / Frontier / Reached Detail")
             render_search_detail_table(result.trace)
             st.subheader("Search Tree")
-            render_search_tree(result.trace)
+            render_search_tree(result)
 
