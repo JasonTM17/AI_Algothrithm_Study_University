@@ -26,11 +26,12 @@ Use a tactile solver-laboratory dashboard style:
 - Keep Advanced modes explicitly labeled as extensions.
 - Preserve mobile usability: no horizontal scroll, readable cards, and sidebar labels that wrap.
 - Keep input/control text at least 16px on mobile to avoid forced zoom.
-- Treat launcher/app mode as the recommended classroom entrypoint; keep Streamlit web mode as the developer fallback.
+- Treat the Streamlit browser app as the single classroom entrypoint; do not reintroduce desktop launchers.
 
 ## Content Rules
 
 - Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
+- For game/chance demos, label returned actions as selected variation or sample outcome paths, not full game trees or optimal puzzle certificates.
 - Present graph coloring through map coloring or another graph game, never as a direct 15-puzzle algorithm.
 - Default graph coloring to the offline Thu Duc 2025 map; show source attribution, the selected palette, adjacency evidence, partial assignments, and backtracking without implying legal-map authority.
 - When an algorithm is not optimal or not complete, state that directly.

@@ -591,8 +591,8 @@ THEORY["Minimax"] = {
     "application_en": "15-puzzle is NOT a 2-player game. Simulation: MAX = solver, MIN = adversary trying to move MAX away from the goal.",
     "suitable": "KHÔNG phù hợp cho 15-puzzle chuẩn. Chỉ minh họa khái niệm game tree.",
     "suitable_en": "NOT suitable for standard 15-puzzle. Only for illustrating game tree concepts.",
-    "pros": ["Optimal trong game 2 người zero-sum", "Complete với evaluation function"],
-    "pros_en": ["Optimal in 2-player zero-sum games", "Complete with evaluation function"],
+    "pros": ["Tối ưu nếu duyệt hết cây game hữu hạn", "Rõ vai trò MAX/MIN và evaluation function"],
+    "pros_en": ["Optimal when the finite game tree is searched completely", "Makes MAX/MIN roles and evaluation functions explicit"],
     "cons": ["O(b^m) thời gian", "Không phải thuật toán chuẩn cho 15-puzzle", "MIN không có ý nghĩa cho puzzle"],
     "cons_en": ["O(b^m) time complexity", "Not a standard solver for 15-puzzle", "MIN has no physical meaning in puzzle"],
     "complexity": "Thời gian: O(b^m), Bộ nhớ: O(b×m) với depth-first.",
@@ -614,8 +614,8 @@ THEORY["Alpha-Beta"] = {
     "idea_en": "Alpha: best value MAX can guarantee. Beta: best value MIN can guarantee. Prune when alpha >= beta.",
     "data_structure": "Giống Minimax + alpha/beta bounds.",
     "data_structure_en": "Same as Minimax with alpha/beta bounds.",
-    "formula": "Alpha-beta: if alpha ≥ beta → PRUNE. Result = same as Minimax but faster.",
-    "formula_en": "Alpha-beta: if alpha >= beta -> PRUNE. Result is mathematically identical to Minimax but faster.",
+    "formula": "Alpha-beta: if alpha ≥ beta → PRUNE. Với cùng cây hữu hạn được duyệt đủ, giá trị root giống Minimax.",
+    "formula_en": "Alpha-beta: if alpha >= beta -> PRUNE. On the same fully evaluated finite tree, the root value matches Minimax.",
     "pseudocode": """Alpha-Beta(state, depth, alpha, beta, isMax):
   if terminal or depth == 0: return evaluate(state)
   if isMax:
@@ -632,22 +632,22 @@ THEORY["Alpha-Beta"] = {
       beta = min(beta, value)
       if alpha ≥ beta: break  # alpha cutoff
     return value""",
-    "application": "Cùng game tree với Minimax nhưng duyệt ít node hơn. Kết quả GIỐNG HỆT Minimax.",
-    "application_en": "Traverses same game tree as Minimax but visits fewer nodes. Yields IDENTICAL results.",
+    "application": "Cùng mô hình game tree với Minimax nhưng có thể duyệt ít node hơn. Nếu không timeout và cùng depth/order, giá trị root giống Minimax.",
+    "application_en": "Uses the same game-tree model as Minimax but can visit fewer nodes. Without timeout and with the same depth/order, the root value matches Minimax.",
     "suitable": "Không phù hợp cho 15-puzzle chuẩn. Minh họa pruning technique.",
     "suitable_en": "NOT suitable for standard 15-puzzle. Illustrates pruning techniques.",
-    "pros": ["Kết quả giống Minimax", "Duyệt ít node hơn", "Tối ưu khi node được sắp xếp tốt"],
-    "pros_en": ["Identical outcome to Minimax", "Visits fewer nodes", "Optimal when moves are well ordered"],
+    "pros": ["Giữ giá trị root của Minimax khi duyệt đủ", "Duyệt ít node hơn", "Hiệu quả nhất khi node được sắp xếp tốt"],
+    "pros_en": ["Preserves the Minimax root value when the depth is fully searched", "Visits fewer nodes", "Most efficient when moves are well ordered"],
     "cons": ["Worst case vẫn O(b^m)", "Không phải thuật toán cho 15-puzzle", "Cần good move ordering"],
     "cons_en": ["Worst case remains O(b^m)", "Not a solver for 15-puzzle", "Requires good move ordering"],
     "complexity": "Best: O(b^(m/2)), Worst: O(b^m) giống Minimax. Average: significantly better.",
     "complexity_en": "Best: O(b^(m/2)), Worst: O(b^m) same as Minimax. Average is significantly better.",
     "bad_example": "Với bad move ordering, Alpha-Beta duyệt gần bằng Minimax.",
     "bad_example_en": "With bad move ordering, Alpha-Beta pruning evaluates almost as many nodes as Minimax.",
-    "comparison": "Alpha-Beta = Minimax + pruning. Kết quả giống hệt. Node duyệt ít hơn (đặc biệt khi sắp xếp nước đi tốt).",
-    "comparison_en": "Alpha-Beta = Minimax + pruning. Same result, fewer nodes visited (especially with good move ordering).",
-    "exam_tips": "Alpha-beta pruning ⇒ kết quả GIỐNG Minimax, node duyệt ÍT HƠN. Alpha = best for MAX, Beta = best for MIN. Cắt khi α ≥ β.",
-    "exam_tips_en": "Alpha-beta pruning yields IDENTICAL results to Minimax with FEWER node expansions. Alpha = best for MAX, Beta = best for MIN. Prune when α >= β.",
+    "comparison": "Alpha-Beta = Minimax + pruning. Khi duyệt đủ cùng depth/order thì giá trị root giống Minimax; timeout hoặc depth khác chỉ là đánh giá xấp xỉ.",
+    "comparison_en": "Alpha-Beta = Minimax + pruning. With the same fully searched depth/order, the root value matches Minimax; timeout or different depth makes it approximate evidence.",
+    "exam_tips": "Alpha-beta pruning ⇒ giữ giá trị root của Minimax nếu cây được duyệt đủ, thường duyệt ÍT HƠN. Alpha = best for MAX, Beta = best for MIN. Cắt khi α ≥ β.",
+    "exam_tips_en": "Alpha-beta pruning preserves the Minimax root value if the tree is fully searched, usually with FEWER node expansions. Alpha = best for MAX, Beta = best for MIN. Prune when α >= β.",
 }
 
 THEORY["Expectimax"] = {

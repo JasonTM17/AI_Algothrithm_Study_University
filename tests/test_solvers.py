@@ -1,7 +1,7 @@
 """Tests for all solver algorithms."""
 
 import pytest
-from core.puzzle import GOAL_STATE, TEACHING_PRESETS, is_solvable, validate_path
+from core.puzzle import GOAL_STATE, TEACHING_PRESETS, _move_blank, is_solvable, validate_path
 from algorithms.uninformed import bfs, dfs, ucs, ids
 from algorithms.informed import greedy_best_first, a_star, ida_star
 from algorithms.local_search import (
@@ -207,6 +207,24 @@ def test_game_models_honor_timeout_and_label_partial_evaluation(solver):
     assert "Timeout" in result.message
     assert result.termination_reason == "timeout"
     assert result.runtime < 1.0
+
+
+@pytest.mark.parametrize("solver", [minimax, alpha_beta_pruning, expectimax])
+def test_game_models_return_legal_selected_variation_path(solver):
+    result = solver(EASY_STATE, depth=2, timeout=10)
+    current = EASY_STATE
+    reconstructed = [current]
+    for action in result.actions:
+        next_state = _move_blank(current, action)
+        assert next_state is not None
+        reconstructed.append(next_state)
+        current = next_state
+
+    assert len(result.path) == len(result.actions) + 1
+    assert result.path == reconstructed
+    assert result.success is (current == GOAL_STATE)
+    if result.success:
+        assert result.path_verified
 
 
 class TestSolvableGuard:

@@ -23,13 +23,13 @@
 - `algorithms/complex_env.py`: AND-OR, belief-state, partial-observation, LRTA* demos.
 - `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graph coloring, graphs.
 - `algorithms/map_coloring.py`: deterministic MRV/degree/forward-checking map CSP with structured trace data; its bundled asset contains the 12 Thu Duc 2025 ward geometries and audited adjacency graph.
-- `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos.
+- `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos; returned actions form a legal selected variation/sample path with explicit caveats that these are not standard 15-puzzle optimality certificates.
 
 ## Tests
 
 - `tests/test_puzzle.py`: puzzle mechanics and solvability.
 - `tests/test_heuristics.py`: heuristic correctness.
-- `tests/test_solvers.py`: solver behavior, path validation, teaching preset regressions.
+- `tests/test_solvers.py`: solver behavior, path validation, teaching preset regressions, and legal selected-path checks for game/chance demos.
 - `tests/test_runtime_integrity.py`: compile/import and dispatch regressions.
 - `tests/test_academic.py`: taxonomy, PEAS, rubric, exam path, report, and UI contract completeness.
 - `tests/test_search_tree_evidence.py`: legal parent/child edges and run certificates.

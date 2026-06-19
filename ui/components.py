@@ -618,48 +618,6 @@ def render_algorithm_info(algo_name: str, theory: dict):
         st.code(pseudocode, language="python")
 
 
-def _render_legacy_search_trace(trace: list, max_nodes: int = 30):
-    """Render search tree as indented text with matrix states."""
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
-    if not trace:
-        st.info(t("tc_no_trace"))
-        return
-
-    st.markdown(f"### {t('run_search_tree')}")
-    st.caption("Mỗi node hiển thị cấu hình lưới 4×4, các giá trị g/h/f và hành động." if global_lang == "Tiếng Việt" else "Each node shows the 4×4 puzzle grid, g/h/f values, and action taken.")
-
-    has_detail = any(
-        hasattr(s, 'node_state') and s.node_state is not None
-        for s in trace[:max_nodes]
-    )
-
-    lines = []
-    disp_count = min(len(trace), max_nodes)
-
-    for i in range(disp_count):
-        step = trace[i]
-        depth = step.g if step.g > 0 else (step.depth if hasattr(step, 'depth') else i)
-        indent = "│  " * min(depth, 6) + ("├─" if i < disp_count - 1 else "└─")
-        action_str = step.action or "Start"
-        state = step.node_state if (has_detail and step.node_state) else step.state
-        grid = " ".join(f"{v:2d}" if v != 0 else "__" for v in state)
-        parts = [f"Step {step.step}", action_str, f"[{grid}]"]
-        if step.h > 0 or step.step == 0:
-            parts.append(f"h={step.h:.1f}")
-        if step.f > 0:
-            parts.append(f"f={step.f:.1f}")
-        parts.append(f"g={step.g}")
-        if step.frontier_size > 0:
-            parts.append(f"F={step.frontier_size}")
-        if step.reached_size > 0:
-            parts.append(f"R={step.reached_size}")
-        lines.append(f"{indent} {' | '.join(parts)}")
-
-    st.code("\n".join(lines), language="")
-    if len(trace) > max_nodes:
-        st.caption(f"Đang hiển thị {max_nodes} trên tổng số {len(trace)} nodes" if global_lang == "Tiếng Việt" else f"Showing first {max_nodes} of {len(trace)} nodes")
-
-
 def render_search_tree(result, max_nodes: int = 40):
     """Render only verified parent-child transitions as a directed graph."""
     from core.metrics import search_tree_to_dot

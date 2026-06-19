@@ -16,6 +16,7 @@ from core.academic_proofs import (
     PROOF_CARDS,
 )
 from core.academic_report import build_grading_report
+from core.theory import THEORY
 from algorithms.csp import AUSTRALIA_GRAPH, graph_coloring_demo
 from algorithms.map_coloring import THU_DUC_2025_WARDS, load_map_definition
 from core.puzzle import GOAL_STATE, is_solvable, scramble
@@ -259,6 +260,20 @@ def test_academic_grading_report_contains_required_sections():
         assert section in report
     assert "educational extensions" in report
     assert "python -m pytest tests/ -q" in report
+
+
+def test_game_tree_theory_states_resource_bound_caveats():
+    alpha_beta = THEORY["Alpha-Beta"]
+    minimax = THEORY["Minimax"]
+    combined_alpha_beta_text = " ".join(
+        str(value) for value in alpha_beta.values()
+    )
+
+    assert "fully searched" in alpha_beta["comparison_en"]
+    assert "timeout" in alpha_beta["comparison_en"]
+    assert "finite game tree is searched completely" in minimax["pros_en"][0]
+    assert "Yields IDENTICAL results" not in combined_alpha_beta_text
+    assert "Complete with evaluation function" not in " ".join(str(value) for value in minimax.values())
 
 
 def test_primary_labels_do_not_use_decorative_emoji():
