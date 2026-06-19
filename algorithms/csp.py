@@ -8,7 +8,7 @@ import time
 import random
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
-from core.heuristics import manhattan_distance
+from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 from algorithms.map_coloring import AUSTRALIA_GRAPH, MapColoringResult, graph_coloring_demo
 
@@ -226,7 +226,7 @@ def backtracking_search(
     checking. Graph coloring is the project's genuine CSP implementation.
     """
     t0 = time.perf_counter()
-    h_fn = manhattan_distance
+    h_fn = get_heuristic("Manhattan Distance", goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="Backtracking Search", group="CSP",

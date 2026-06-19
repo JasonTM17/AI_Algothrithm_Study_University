@@ -8,7 +8,7 @@ import time
 import random
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable, scramble
-from core.heuristics import get_heuristic, manhattan_distance
+from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 
 
@@ -145,7 +145,7 @@ def no_observation_search(
     """
     t0 = time.perf_counter()
     rng = random.Random(seed)
-    h_fn = manhattan_distance
+    h_fn = get_heuristic("Manhattan Distance", goal)
 
     belief = set()
     belief.add(start)
@@ -155,6 +155,10 @@ def no_observation_search(
             belief.add(s)
 
     initial_belief = frozenset(belief)
+    representative = start
+    representative_path = [start]
+    actions_taken: list[str] = []
+    representative_path_valid = True
     trace: list[TraceStep] = []
     trace.append(TraceStep(step=0, state=start, reason=f"Initial belief size={len(belief)}",
                            belief_size=len(belief)))
@@ -187,6 +191,15 @@ def no_observation_search(
 
         if best_action is None:
             break
+        actions_taken.append(best_action)
+        if representative_path_valid:
+            next_representative = _move_blank(representative, best_action)
+            if next_representative is None:
+                representative_path_valid = False
+                representative_path = []
+            else:
+                representative = next_representative
+                representative_path.append(representative)
 
         # Apply best_action to all states in belief to get new belief
         new_belief = set()
@@ -207,15 +220,21 @@ def no_observation_search(
         if all(s == goal for s in belief):
             return SearchResult(
                 success=True, algorithm="No Observation Search", group="Complex Environments",
-                path=[], actions=[], cost=0, depth=0,
+                path=representative_path if representative_path_valid else [],
+                actions=actions_taken if representative_path_valid else [],
+                cost=len(actions_taken), depth=len(actions_taken),
                 nodes_expanded=step + 1, nodes_generated=step + 1,
                 runtime=time.perf_counter() - t0,
-                message="All belief states reached goal",
+                message=("All belief states reached goal. Returned path, when present, is the "
+                         "representative trajectory from the original start state."),
                 trace=trace, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
             )
 
     return SearchResult(
         success=False, algorithm="No Observation Search", group="Complex Environments",
+        path=representative_path if representative_path_valid else [],
+        actions=actions_taken if representative_path_valid else [],
+        depth=len(actions_taken),
         nodes_expanded=max_steps, nodes_generated=max_steps,
         runtime=time.perf_counter() - t0,
         message=f"Belief size={len(belief)} after {max_steps} steps. No observation is harder than standard search.",
@@ -236,7 +255,7 @@ def partially_observable_search(
     """
     t0 = time.perf_counter()
     rng = random.Random(seed)
-    h_fn = manhattan_distance
+    h_fn = get_heuristic("Manhattan Distance", goal)
 
     def observe(state: tuple) -> str:
         """Partial observation: blank position + adjacent tiles."""

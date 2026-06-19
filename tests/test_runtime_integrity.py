@@ -102,6 +102,18 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     assert not planning_result.is_optimal
     assert "not MRV/forward checking" in planning_result.message
 
+    custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+    custom_planning_result = backtracking_search(
+        start=GOAL_STATE,
+        goal=custom_goal,
+        timeout=1.0,
+        max_steps=50,
+    )
+    assert custom_planning_result.success
+    assert custom_planning_result.actions == ["L"]
+    assert custom_planning_result.path[-1] == custom_goal
+    assert custom_planning_result.path_verified
+
 
 def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     from core.puzzle import GOAL_STATE
