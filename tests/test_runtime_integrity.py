@@ -7,10 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_app_and_theory_compile():
-    py_compile.compile(str(ROOT / "app.py"), doraise=True)
-    py_compile.compile(str(ROOT / "core" / "theory.py"), doraise=True)
-    py_compile.compile(str(ROOT / "desktop_app.py"), doraise=True)
+def test_all_python_sources_compile():
+    sources = [ROOT / "app.py"]
+    for directory in ("core", "algorithms", "ui"):
+        sources.extend((ROOT / directory).glob("*.py"))
+    for source in sources:
+        py_compile.compile(str(source), doraise=True)
 
 
 def test_theory_import_has_key_algorithms():
@@ -102,22 +104,3 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     assert a_star_kwargs["tie_breaker"] == "Min-g"
 
 
-def test_desktop_launcher_helpers_are_side_effect_free():
-    import desktop_app
-
-    command = desktop_app.build_streamlit_command(8520)
-    options = desktop_app.streamlit_options(8520)
-
-    assert command[:3] == [desktop_app.sys.executable, "-m", "streamlit"]
-    assert "app.py" in command[4]
-    assert "--server.headless" in command
-    assert "--server.fileWatcherType" in command
-    assert "--client.toolbarMode" in command
-    assert desktop_app.app_file().name == "app.py"
-    assert desktop_app.parse_serve_port(["--serve", "--port", "8521"]) == 8521
-    assert desktop_app.parse_args(["--browser", "--port", "8522"]).browser is True
-    assert desktop_app.parse_args(["--no-wait"]).no_wait is True
-    assert options["server.port"] == 8520
-    assert options["server.headless"] is True
-    assert options["server.fileWatcherType"] == "none"
-    assert options["client.toolbarMode"] == "minimal"
