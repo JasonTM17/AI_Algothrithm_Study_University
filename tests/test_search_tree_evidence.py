@@ -76,3 +76,14 @@ def test_path_certificate_is_legal_path_not_goal_claim():
     assert "reaches the goal" not in result.verification_message
     assert result.summary_dict()["Legal Path?"] == "Yes"
     assert "Path Verified?" not in result.summary_dict()
+
+
+def test_explicit_termination_reason_is_preserved():
+    result = SearchResult(
+        success=True,
+        algorithm="Contextual Success",
+        termination_reason="valid_coloring",
+    )
+
+    assert result.termination_reason == "valid_coloring"
+    assert not result.optimality_proven

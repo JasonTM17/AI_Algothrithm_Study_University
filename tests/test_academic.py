@@ -80,6 +80,7 @@ def test_graph_coloring_demo_is_separate_from_15_puzzle():
                 assignments[key] = value
 
     assert result.success
+    assert result.termination_reason == "valid_coloring"
     assert result.suitable_for_puzzle is False
     assert "not a natural 15-puzzle solver" in result.message
     assert set(assignments) == set(AUSTRALIA_GRAPH)
@@ -105,6 +106,7 @@ def test_thu_duc_coloring_is_deterministic_and_valid_with_three_colors():
     second = graph_coloring_demo(map_id="thu-duc-2025")
 
     assert first.success
+    assert first.termination_reason == "valid_coloring"
     assert first.assignment == second.assignment
     assert first.history_labels == second.history_labels
     assert set(first.assignment) == THU_DUC_2025_WARDS
@@ -118,6 +120,7 @@ def test_thu_duc_two_color_attempt_reports_no_solution():
     result = graph_coloring_demo(colors=("Red", "Green"), map_id="thu-duc-2025")
 
     assert not result.success
+    assert result.termination_reason == "exhausted"
     assert not result.assignment
     assert result.backtracks > 0
     assert "no valid solution" in result.message
@@ -127,6 +130,7 @@ def test_graph_coloring_empty_palette_does_not_fall_back_to_defaults():
     result = graph_coloring_demo(colors=(), map_id="thu-duc-2025")
 
     assert not result.success
+    assert result.termination_reason == "empty_palette"
     assert result.attempts == 0
     assert result.assignment_history == [{}]
 

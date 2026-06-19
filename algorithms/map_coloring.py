@@ -217,6 +217,7 @@ def graph_coloring_demo(
         max_frontier_size=max_depth,
         reached_size=len(assignment),
         runtime=time.perf_counter() - started,
+        termination_reason="valid_coloring" if solved else ("empty_palette" if not palette else "exhausted"),
         message=message,
         trace=trace[:240],
         suitable_for_puzzle=False,

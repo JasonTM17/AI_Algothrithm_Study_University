@@ -262,7 +262,7 @@ def backtracking_search(
 
             ps = PuzzleState(state)
             neighbors = ps.get_neighbors("LRUD")
-            # MRV: try neighbors closer to goal first
+            # Heuristic value ordering: try neighbors closer to goal first.
             neighbors.sort(key=lambda x: h_fn(x[0]))
 
             for ns, action, cost in neighbors:

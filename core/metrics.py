@@ -141,18 +141,19 @@ class SearchResult:
 
     def _classify_run_outcome(self) -> None:
         message = self.message.lower()
-        if self.success:
-            self.termination_reason = "goal"
-        elif "timeout" in message:
-            self.termination_reason = "timeout"
-        elif "node limit" in message or "max steps" in message:
-            self.termination_reason = "resource_limit"
-        elif "depth" in message or "threshold" in message or "horizon" in message:
-            self.termination_reason = "depth_limit"
-        elif "no solution" in message:
-            self.termination_reason = "exhausted"
-        else:
-            self.termination_reason = "stopped"
+        if not self.termination_reason:
+            if self.success:
+                self.termination_reason = "goal"
+            elif "timeout" in message:
+                self.termination_reason = "timeout"
+            elif "node limit" in message or "max steps" in message:
+                self.termination_reason = "resource_limit"
+            elif "depth" in message or "threshold" in message or "horizon" in message:
+                self.termination_reason = "depth_limit"
+            elif "no solution" in message:
+                self.termination_reason = "exhausted"
+            else:
+                self.termination_reason = "stopped"
         self.optimality_proven = bool(self.success and self.is_optimal and self.path_verified)
         self.exhaustive_failure = bool(
             not self.success and self.is_complete and self.termination_reason == "exhausted"
