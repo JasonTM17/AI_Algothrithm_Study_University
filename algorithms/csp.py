@@ -219,7 +219,12 @@ def backtracking_search(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     max_steps: int = 5000, timeout: float = 30.0,
 ) -> SearchResult:
-    """Backtracking search for CSP planning with MRV, forward checking."""
+    """Illustrate bounded transition-CSP planning with depth-first backtracking.
+
+    The state representation is not an explicit variable/domain CSP, so this
+    demo uses heuristic value ordering rather than claiming MRV or forward
+    checking. Graph coloring is the project's genuine CSP implementation.
+    """
     t0 = time.perf_counter()
     h_fn = manhattan_distance
 
@@ -234,7 +239,11 @@ def backtracking_search(
     max_t = min(h + 5, 15)  # Don't search too deep
 
     trace: list[TraceStep] = []
-    trace.append(TraceStep(step=0, state=start, reason=f"Backtracking with T=0..{max_t}, h(start)={h}"))
+    trace.append(TraceStep(
+        step=0, state=start,
+        reason=f"Bounded transition planning: T=1..{max_t}, heuristic value ordering, h(start)={h}",
+    ))
+    total_steps = 0
 
     for T in range(1, max_t + 1):
         if time.perf_counter() - t0 > timeout:
@@ -279,21 +288,25 @@ def backtracking_search(
             return False
 
         steps_count = [0]
-        if backtrack(start, 0, steps_count):
+        solved = backtrack(start, 0, steps_count)
+        total_steps += steps_count[0]
+        if solved:
             return SearchResult(
                 success=True, algorithm="Backtracking Search", group="CSP",
                 path=list(path), actions=list(actions), cost=len(actions), depth=len(actions),
-                nodes_expanded=steps_count[0], nodes_generated=steps_count[0],
+                nodes_expanded=total_steps, nodes_generated=total_steps,
                 runtime=time.perf_counter() - t0,
-                message=f"Found solution with T={T}, {len(actions)} steps",
-                trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=True,
+                message=(f"Bounded transition-planning demo found a path with T={T}. "
+                         "This run uses heuristic value ordering, not MRV/forward checking."),
+                trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False,
             )
 
     return SearchResult(
         success=False, algorithm="Backtracking Search", group="CSP",
-        nodes_expanded=0, nodes_generated=0,
+        nodes_expanded=total_steps, nodes_generated=total_steps,
         runtime=time.perf_counter() - t0,
-        message=f"No solution found within T={max_t}. CSP planning is not the standard approach for 15-puzzle.",
+        message=(f"No path found within bounded horizon T={max_t}. This is not a proof of "
+                 "unsolvability; graph search is the standard 15-puzzle formulation."),
         trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False,
     )
 

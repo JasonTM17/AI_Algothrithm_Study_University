@@ -80,6 +80,16 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     assert not min_conflicts_result.success
     assert "not a 15-puzzle solution" in min_conflicts_result.message
 
+    planning_result = backtracking_search(
+        start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
+        goal=GOAL_STATE,
+        timeout=1.0,
+        max_steps=50,
+    )
+    assert planning_result.success and planning_result.path_verified
+    assert not planning_result.is_optimal
+    assert "not MRV/forward checking" in planning_result.message
+
 
 def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     from core.puzzle import GOAL_STATE

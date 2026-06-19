@@ -153,13 +153,15 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         st.markdown(result2.message)
 
     elif mode == "Backtracking & Min-Conflicts":
-        st.subheader("Backtracking Search")
+        st.subheader("Bounded Transition-CSP Planning")
+        st.info("Illustrative depth-first planning with heuristic value ordering; not an MRV/forward-checking CSP solver.")
         result = backtracking_search(**csp_search_kw, max_steps=5000)
         render_result_metrics(result)
         if result.trace:
             render_trace_table(result.trace)
         st.markdown("---")
-        st.subheader("Min-Conflicts")
+        st.subheader("Min-Conflicts Tile-Placement Contrast")
+        st.warning("This contrast may swap arbitrary positions, so it cannot certify a legal 15-puzzle path.")
         seed = st.number_input("Seed", 0, 99999, 42, key="mc_seed")
         result2 = min_conflicts(**csp_search_kw, max_iterations=10000, seed=seed)
         render_result_metrics(result2)

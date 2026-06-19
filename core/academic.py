@@ -48,7 +48,7 @@ ALGORITHM_TAXONOMY: dict[str, AlgorithmTaxonomy] = {
     "Constraint Propagation": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Pruning aid, not a solver alone.", "Explain AC-style domain reduction."),
     "Path Consistency": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Consistency concept, not a natural solver.", "Useful for comparing arc/path/global consistency."),
     "Global Constraints": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Constraint modeling concept.", "AllDifferent is valid but CSP planning is large."),
-    "Backtracking Search": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete under bounded horizon/limits.", "Demonstrates CSP planning with MRV-style ordering."),
+    "Backtracking Search": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete under bounded horizon/limits.", "Bounded transition-planning illustration with heuristic value ordering; it does not implement MRV/forward checking."),
     "Min-Conflicts": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete or optimal here.", "Better for N-Queens than transition-heavy 15-puzzle."),
     "Constraint Graphs": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Analysis artifact.", "Use to visualize why CSP planning grows quickly."),
     "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial", "Game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MAX/MIN is an educational extension."),
