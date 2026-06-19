@@ -48,6 +48,7 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert "digraph SearchTree" in dot
     assert "->" in dot
     assert 'color="#059669"' in dot
+    assert "h=-" in dot  # Root heuristic was not captured; the renderer never invents it.
     assert result.termination_reason == "goal"
     assert result.optimality_proven
 
