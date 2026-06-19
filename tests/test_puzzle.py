@@ -3,7 +3,7 @@
 import pytest
 from core.puzzle import (
     PuzzleState, GOAL_STATE, is_solvable, scramble,
-    parse_state, validate_path, _move_blank, _blank_rc,
+    parse_state, validate_path, validate_solution_path, _move_blank, _blank_rc,
 )
 
 
@@ -18,6 +18,11 @@ class TestGoalState:
 
 
 class TestPuzzleState:
+    @pytest.mark.parametrize("state", [tuple(range(15)), (0,) * 16, tuple(range(1, 17))])
+    def test_rejects_malformed_permutations(self, state):
+        with pytest.raises(ValueError):
+            PuzzleState(state)
+
     def test_get_neighbors_goal(self):
         ps = PuzzleState(GOAL_STATE)
         neighbors = ps.get_neighbors()
@@ -98,6 +103,10 @@ class TestIsSolvable:
 
 
 class TestScramble:
+    def test_rejects_negative_depth(self):
+        with pytest.raises(ValueError):
+            scramble(depth=-1)
+
     def test_scramble_preserves_solvability(self):
         for seed_val in range(10):
             state = scramble(depth=20, seed=seed_val)
@@ -160,3 +169,21 @@ class TestValidatePath:
         state = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
         success, msg, path = validate_path(state, ["L"])
         assert success is False
+
+
+class TestSolutionPathValidation:
+    def test_accepts_real_transition_sequence(self):
+        start = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+        valid, message = validate_solution_path([start, GOAL_STATE], ["R"])
+        assert valid, message
+
+    def test_rejects_state_not_produced_by_action(self):
+        start = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+        valid, message = validate_solution_path([start, GOAL_STATE], ["L"])
+        assert not valid
+        assert "does not match" in message
+
+    def test_rejects_mismatched_lengths(self):
+        valid, message = validate_solution_path([GOAL_STATE], ["R"])
+        assert not valid
+        assert "one more state" in message

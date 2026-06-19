@@ -11,6 +11,14 @@ for _i, _v in enumerate(GOAL_STATE):
 
 ACTIONS = ("L", "R", "U", "D")
 
+
+def validate_state(state: tuple[int, ...]) -> None:
+    """Raise ``ValueError`` unless state is a permutation of tiles 0..15."""
+    if len(state) != 16:
+        raise ValueError("State must have exactly 16 elements")
+    if set(state) != set(range(16)):
+        raise ValueError("State must contain each tile from 0 to 15 exactly once")
+
 TEACHING_PRESETS: dict[str, dict[str, object]] = {
     "Greedy suboptimal: A*=15, Greedy=17": {
         "state": (6, 1, 4, 8, 0, 2, 7, 3, 5, 10, 11, 12, 9, 13, 14, 15),
@@ -50,8 +58,7 @@ class PuzzleState:
     """Represents a 15-puzzle state with core operations."""
 
     def __init__(self, state: tuple[int, ...]):
-        if len(state) != 16:
-            raise ValueError("State must have exactly 16 elements")
+        validate_state(state)
         self.state = state
         self.blank = state.index(0)
 
@@ -90,6 +97,7 @@ def is_solvable(state: tuple[int, ...]) -> bool:
     For 4x4 puzzle with goal blank in bottom-right:
     solvable iff (inversions + blank_row_from_bottom) is odd.
     """
+    validate_state(state)
     tiles = [t for t in state if t != 0]
     inversions = 0
     for i in range(len(tiles)):
@@ -104,6 +112,9 @@ def is_solvable(state: tuple[int, ...]) -> bool:
 def scramble(goal: tuple[int, ...] = GOAL_STATE, depth: int = 10,
              seed: Optional[int] = None, action_order: str = "LRUD") -> tuple[int, ...]:
     """Generate a solvable puzzle by scrambling from goal state."""
+    validate_state(goal)
+    if depth < 0:
+        raise ValueError("Scramble depth must be non-negative")
     rng = random.Random(seed)
     state = goal
     last_action = None
@@ -129,12 +140,28 @@ def parse_state(text: str) -> tuple[int, ...]:
     Example: '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 0'
     """
     nums = [int(x) for x in text.replace("\n", " ").replace(",", " ").split() if x.strip()]
-    if len(nums) != 16:
-        raise ValueError(f"Expected 16 values, got {len(nums)}")
-    if set(nums) != set(range(16)):
-        raise ValueError("Values must be 0-15, each exactly once")
     result = tuple(nums)
+    validate_state(result)
     return result
+
+
+def validate_solution_path(
+    path: list[tuple[int, ...]], actions: list[str], goal: tuple[int, ...] = GOAL_STATE,
+) -> tuple[bool, str]:
+    """Validate every recorded edge, action count, and final state."""
+    if not path:
+        return False, "Solution path is empty"
+    if len(path) != len(actions) + 1:
+        return False, "A solution path must contain exactly one more state than actions"
+    for index, action in enumerate(actions):
+        expected = _move_blank(path[index], action)
+        if expected is None:
+            return False, f"Action {action} is illegal at step {index + 1}"
+        if expected != path[index + 1]:
+            return False, f"Recorded state does not match action {action} at step {index + 1}"
+    if path[-1] != goal:
+        return False, "Final state does not match the requested goal"
+    return True, "Solution path is a legal sequence and reaches the goal"
 
 
 def validate_path(start: tuple[int, ...], actions: list[str]) -> tuple[bool, str, Optional[tuple[int, ...]]]:
