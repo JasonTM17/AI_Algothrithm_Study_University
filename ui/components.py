@@ -2,6 +2,7 @@
 
 import streamlit as st
 import pandas as pd
+from core.comparison import compact_action_path, shared_verified_paths, unique_verified_path_count
 from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.utils import format_state_grid
 from ui.styles import STYLES, GROUP_COLORS
@@ -525,6 +526,7 @@ def render_comparison_table(results: list):
             t("run_algo"): r.algorithm,
             t("mc_status"): t("mc_solved") if r.success else t("mc_failed"),
             t("mc_path_len"): len(r.actions) if r.success else "-",
+            "Action Path": compact_action_path(r.actions) if r.success else "-",
             t("mc_cost"): r.cost if r.success else "-",
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
@@ -551,6 +553,20 @@ def render_comparison_table(results: list):
         st.markdown(f"- {t('compare_shortest', algo=shortest.algorithm, steps=len(shortest.actions))}")
         if max_mem.algorithm != min(successful, key=lambda x: x.nodes_expanded).algorithm:
             st.markdown(f"- {t('compare_most_memory', algo=max_mem.algorithm, nodes=max_mem.nodes_expanded)}")
+
+        verified_count = len([r for r in successful if r.path_verified])
+        unique_count = unique_verified_path_count(successful)
+        st.caption(
+            f"Verified path evidence: {unique_count} unique trajectory/trajectories "
+            f"across {verified_count} certified successful run(s)."
+        )
+        for algorithms in shared_verified_paths(successful):
+            st.info(
+                "Shared verified solution path: " + ", ".join(algorithms) + ". "
+                "This can be academically correct: with unit-cost moves and the same action order, "
+                "multiple optimal algorithms may select the same optimal solution while expanding "
+                "different frontiers and using different memory."
+            )
 
 
 def render_algorithm_info(algo_name: str, theory: dict):

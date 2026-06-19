@@ -55,7 +55,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 
 - Interactive board, image puzzle, Undo, and optimality challenge mode with separate player-run legality, AI-assistance disclosure, and A* optimality certificates.
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph whose edges are checked against legal moves.
-- Benchmark comparison with methodology panels and academic evidence metrics.
+- Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
 - Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
