@@ -3,7 +3,7 @@
 from algorithms.informed import a_star
 from algorithms.uninformed import bfs
 from core.metrics import SearchResult, search_tree_to_dot
-from core.puzzle import _move_blank
+from core.puzzle import GOAL_STATE, _move_blank
 
 
 START = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
@@ -50,6 +50,8 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert 'color="#059669"' in dot
     assert "h=-" in dot  # Root heuristic was not captured; the renderer never invents it.
     assert result.termination_reason == "goal"
+    assert result.goal_state == GOAL_STATE
+    assert result.goal_reached
     assert result.optimality_proven
 
 
@@ -76,6 +78,24 @@ def test_path_certificate_is_legal_path_not_goal_claim():
     assert "reaches the goal" not in result.verification_message
     assert result.summary_dict()["Legal Path?"] == "Yes"
     assert "Path Verified?" not in result.summary_dict()
+
+
+def test_optimality_certificate_requires_reported_goal_match():
+    child = _move_blank(START, "D")
+    result = SearchResult(
+        success=True,
+        algorithm="Bad Proof Probe",
+        path=[START, child],
+        actions=["D"],
+        goal_state=START,
+        is_optimal=True,
+    )
+
+    assert result.path_verified
+    assert not result.goal_reached
+    assert not result.optimality_proven
+    assert "does not match the requested goal" in result.verification_message
+    assert result.summary_dict()["Reached Goal?"] == "No"
 
 
 def test_explicit_termination_reason_is_preserved():

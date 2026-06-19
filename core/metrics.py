@@ -72,6 +72,7 @@ class SearchResult:
     group: str = ""
     path: list[tuple[int, ...]] = field(default_factory=list)
     actions: list[str] = field(default_factory=list)
+    goal_state: Optional[tuple[int, ...]] = None
     cost: int = 0
     depth: int = 0
     nodes_expanded: int = 0
@@ -86,6 +87,7 @@ class SearchResult:
     trace_truncated: bool = False
     trace_total_events: int = 0
     path_verified: bool = False
+    goal_reached: bool = False
     verification_message: str = ""
     termination_reason: str = ""
     optimality_proven: bool = False
@@ -114,6 +116,9 @@ class SearchResult:
         self._classify_run_outcome()
 
     def _verify_path_evidence(self) -> None:
+        self.path_verified = False
+        self.goal_reached = False
+        self.verification_message = ""
         if not self.success or not self.path:
             return
         from core.puzzle import _move_blank
@@ -134,9 +139,12 @@ class SearchResult:
                     f"Recorded state does not match action {action} at step {index + 1}"
                 )
                 return
+        self.goal_reached = self.goal_state is None or self.path[-1] == self.goal_state
         self.path_verified = True
         self.verification_message = (
-            "Path is a legal state/action sequence ending at the algorithm-reported final state"
+            "Path is a legal state/action sequence ending at the requested goal"
+            if self.goal_reached
+            else "Path is legal, but its final state does not match the requested goal"
         )
 
     def _classify_run_outcome(self) -> None:
@@ -154,7 +162,13 @@ class SearchResult:
                 self.termination_reason = "exhausted"
             else:
                 self.termination_reason = "stopped"
-        self.optimality_proven = bool(self.success and self.is_optimal and self.path_verified)
+        self.optimality_proven = bool(
+            self.success
+            and self.is_optimal
+            and self.path_verified
+            and self.goal_reached
+            and self.termination_reason == "goal"
+        )
         self.exhaustive_failure = bool(
             not self.success and self.is_complete and self.termination_reason == "exhausted"
         )
@@ -231,6 +245,7 @@ class SearchResult:
             "Heuristic?": "Yes" if self.uses_heuristic else "No",
             "Randomness?": "Yes" if self.uses_randomness else "No",
             "Legal Path?": "Yes" if self.path_verified else "No",
+            "Reached Goal?": "Yes" if self.goal_reached else "No",
             "Run Termination": self.termination_reason,
             "Optimality Proven?": "Yes" if self.optimality_proven else "No",
         }

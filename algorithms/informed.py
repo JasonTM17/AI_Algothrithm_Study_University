@@ -45,7 +45,7 @@ def greedy_best_first(
 
     if start == goal:
         return SearchResult(success=True, algorithm="Greedy Best-First", group="Informed Search",
-                            path=[start], actions=[], cost=0, depth=0,
+                            path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=False, uses_heuristic=True)
     if not is_solvable(start, goal):
@@ -94,6 +94,7 @@ def greedy_best_first(
         if node.state == goal:
             return SearchResult(success=True, algorithm="Greedy Best-First", group="Informed Search",
                                 path=reconstruct_path(node), actions=reconstruct_actions(node),
+                                goal_state=goal,
                                 cost=node.g, depth=node.depth,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(reached),
@@ -147,7 +148,7 @@ def a_star(
 
     if start == goal:
         return SearchResult(success=True, algorithm="A*", group="Informed Search",
-                            path=[start], actions=[], cost=0, depth=0,
+                            path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
     if not is_solvable(start, goal):
@@ -195,6 +196,7 @@ def a_star(
         if node.state == goal:
             return SearchResult(success=True, algorithm="A*", group="Informed Search",
                                 path=reconstruct_path(node), actions=reconstruct_actions(node),
+                                goal_state=goal,
                                 cost=node.g, depth=node.depth,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(best_g),
@@ -252,7 +254,7 @@ def ida_star(
 
     if start == goal:
         return SearchResult(success=True, algorithm="IDA*", group="Informed Search",
-                            path=[start], actions=[], cost=0, depth=0,
+                            path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
     if not is_solvable(start, goal):
@@ -297,6 +299,7 @@ def ida_star(
             result.is_complete = True
             result.is_optimal = True
             result.uses_heuristic = True
+            result.goal_state = goal
             result.runtime = time.perf_counter() - t0
             result.refresh_certificate()
             return result

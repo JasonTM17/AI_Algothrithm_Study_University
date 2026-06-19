@@ -28,7 +28,7 @@ def _make_result(
             actions = reconstruct_actions(node)
             return SearchResult(
                 success=True, algorithm=algorithm, group="Uninformed Search",
-                path=path, actions=actions, cost=node.g, depth=node.depth,
+                path=path, actions=actions, goal_state=goal, cost=node.g, depth=node.depth,
                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                 max_frontier_size=max_frontier, reached_size=reached_size,
                 runtime=elapsed, message=message, trace=trace,
@@ -37,7 +37,7 @@ def _make_result(
         else:
             return SearchResult(
                 success=True, algorithm=algorithm, group="Uninformed Search",
-                path=[start], actions=[], cost=0, depth=0,
+                path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                 max_frontier_size=max_frontier, reached_size=reached_size,
                 runtime=elapsed, message=message, trace=trace,
@@ -320,6 +320,7 @@ def ids(
             result.group = "Uninformed Search"
             result.is_complete = True
             result.is_optimal = True
+            result.goal_state = goal
             result.runtime = time.perf_counter() - t0
             result.refresh_certificate()
             return result
