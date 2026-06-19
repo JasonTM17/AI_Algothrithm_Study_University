@@ -243,3 +243,22 @@ def test_hill_climbing_stuck_teaching_preset():
     assert result.success is False
     assert len(result.actions) == 4
     assert "Stuck at local optimum h=4.0" in result.message
+
+
+def test_random_restart_never_returns_a_path_from_an_unrelated_state():
+    result = random_restart_hill_climbing(
+        EASY_STATE, max_iterations=20, max_restarts=4, timeout=5, seed=7,
+    )
+    if result.path:
+        assert result.path[0] == EASY_STATE
+        assert len(result.path) == len(result.actions) + 1
+    if result.success:
+        assert result.path_verified
+
+
+def test_simulated_annealing_keeps_the_original_path_prefix():
+    result = simulated_annealing(
+        EASY_STATE, max_iterations=1200, timeout=5, seed=11,
+    )
+    assert result.path[0] == EASY_STATE
+    assert len(result.path) == len(result.actions) + 1

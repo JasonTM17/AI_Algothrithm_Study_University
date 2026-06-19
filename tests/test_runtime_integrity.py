@@ -70,6 +70,16 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
         result = call()
         assert result.algorithm
 
+    min_conflicts_result = min_conflicts(
+        start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
+        goal=GOAL_STATE,
+        timeout=1.0,
+        max_iterations=50,
+        seed=1,
+    )
+    assert not min_conflicts_result.success
+    assert "not a 15-puzzle solution" in min_conflicts_result.message
+
 
 def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
     from core.puzzle import GOAL_STATE

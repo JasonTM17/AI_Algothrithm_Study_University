@@ -303,7 +303,7 @@ def min_conflicts(
     max_iterations: int = 10000, timeout: float = 30.0,
     seed: Optional[int] = None,
 ) -> SearchResult:
-    """Min-conflicts algorithm for CSP planning."""
+    """Tile-placement min-conflicts concept demo, not a legal move planner."""
     t0 = time.perf_counter()
     rng = random.Random(seed)
 
@@ -330,11 +330,12 @@ def min_conflicts(
         conflicts = [idx for idx in range(16) if current[idx] != goal[idx]]
         if not conflicts:
             return SearchResult(
-                success=True, algorithm="Min-Conflicts", group="CSP",
-                path=[start, tuple(current)], actions=[], cost=0, depth=0,
+                success=False, algorithm="Min-Conflicts", group="CSP",
+                path=[], actions=[], cost=0, depth=0,
                 nodes_expanded=i, nodes_generated=i,
                 runtime=time.perf_counter() - t0,
-                message=f"Solved after {i} iterations",
+                message=(f"Tile-placement assignment reached the goal after {i} swaps, but this is not "
+                         "a 15-puzzle solution because arbitrary swaps are not legal blank moves."),
                 trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False)
 
         # Pick a conflicting position

@@ -224,8 +224,7 @@ def random_restart_hill_climbing(
     timeout: float = 60.0, seed: Optional[int] = None,
     action_order: str = "LRUD",
 ) -> SearchResult:
-    """Random-Restart Hill Climbing: restart from random solvable states when stuck."""
-    from core.puzzle import scramble, is_solvable
+    """Random-Restart Hill Climbing using legal random walks from the input."""
     t0 = time.perf_counter()
     rng = random.Random(seed)
     h_fn = _get_h_fn(heuristic)
@@ -240,19 +239,27 @@ def random_restart_hill_climbing(
         if time.perf_counter() - t0 > timeout:
             break
 
-        current = start if restart == 0 else scramble(depth=rng.randint(10, 25), seed=rng.randint(0, 999999))
-        current_h = h_fn(current)
-        path = [current]
+        current = start
+        path = [start]
         actions_taken: list[str] = []
+        if restart > 0:
+            previous_action = None
+            opposites = {"L": "R", "R": "L", "U": "D", "D": "U"}
+            for _ in range(rng.randint(10, 25)):
+                candidates = PuzzleState(current).get_neighbors(action_order)
+                filtered = [item for item in candidates if item[1] != opposites.get(previous_action)]
+                ns, action, _ = rng.choice(filtered or candidates)
+                current = ns
+                path.append(current)
+                actions_taken.append(action)
+        current_h = h_fn(current)
 
         for i in range(max_iterations):
             if time.perf_counter() - t0 > timeout:
                 break
 
             if current == goal:
-                msg = f"Goal reached (restart {restart})"
-                if restart > 0:
-                    msg += ". Note: Restart was needed; the returned path starts from the restart's scrambled state, not the original start state."
+                msg = f"Goal reached after legal random-walk restart {restart}"
                 return SearchResult(success=True, algorithm="Random-Restart Hill Climbing", group="Local Search",
                                     path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                     nodes_expanded=total_expanded, nodes_generated=total_expanded,
@@ -445,10 +452,6 @@ def simulated_annealing(
                                    current_h=current_h, candidate_h=nh,
                                    temperature=round(temp, 4), probability=round(probability, 4) if delta >= 0 else 1.0,
                                    accepted=accepted, reason=f"T={temp:.2f}, δ={delta:.1f}, {'accept' if accepted else 'reject'}"))
-
-        if len(path) > 1000:
-            path = path[-500:]
-            actions_taken = actions_taken[-500:]
 
     if best == goal:
         return SearchResult(success=True, algorithm="Simulated Annealing", group="Local Search",
