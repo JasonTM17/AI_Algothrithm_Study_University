@@ -178,9 +178,9 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
 
     elif mode == "AND-OR Search (Nondeterministic)":
         d = st.number_input("Max Depth", 1, 15, 5, key="andor_depth")
-        p = st.slider("Nondeterministic Probability", 0.1, 0.5, 0.3, key="andor_prob")
-        seed = st.number_input("Seed", 0, 99999, 42, key="andor_seed")
-        result = and_or_search(max_depth=d, nondet_prob=p, seed=seed, **search_kw)
+        p = st.slider("Deflection outcome support", 0.0, 1.0, 0.3, key="andor_prob")
+        st.caption("At 0, only the intended outcome exists. Above 0, every modeled deflection is possible; AND-OR does not weight branches by probability.")
+        result = and_or_search(max_depth=d, nondet_prob=p, **search_kw)
         st.markdown(result.message)
 
     elif mode == "No Observation (Belief State)":

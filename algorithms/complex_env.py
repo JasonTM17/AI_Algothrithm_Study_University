@@ -25,8 +25,14 @@ def and_or_search(
     Returns a conditional plan (IF-THEN structure), not a simple path.
     """
     t0 = time.perf_counter()
-    rng = random.Random(seed)
-    h_fn = manhattan_distance
+    if not 0.0 <= nondet_prob <= 1.0:
+        raise ValueError("nondet_prob must be between 0 and 1")
+    # AND-OR search reasons about possible outcomes, not their probability
+    # magnitudes. ``nondet_prob`` controls whether deflection outcomes exist.
+    del seed
+    h_fn = get_heuristic("Manhattan Distance", goal)
+    nodes_expanded = [0]
+    nodes_generated = [1]
 
     def get_outcomes(state: tuple, action: str) -> list[tuple[tuple, str, str]]:
         """Return (new_state, actual_action, type) for action + possible deflections."""
@@ -34,6 +40,9 @@ def and_or_search(
         ns = _move_blank(state, action)
         if ns is not None:
             results.append((ns, action, "intended"))
+
+        if nondet_prob == 0.0:
+            return results
 
         blank_idx = state.index(0)
         r, c = blank_idx // 4, blank_idx % 4
@@ -47,6 +56,7 @@ def and_or_search(
         return results
 
     def or_search(state: tuple, depth: int, visited: set) -> Optional[dict]:
+        nodes_expanded[0] += 1
         if state == goal:
             return {"type": "goal"}
         if depth <= 0 or state in visited:
@@ -57,6 +67,7 @@ def and_or_search(
         visited.add(state)
         for action in action_order:
             outcomes = get_outcomes(state, action)
+            nodes_generated[0] += len(outcomes)
             if not outcomes:
                 continue
             and_result = and_search(outcomes, depth - 1, visited)
@@ -104,19 +115,20 @@ def and_or_search(
         return SearchResult(
             success=True, algorithm="AND-OR Search", group="Complex Environments",
             path=[start], actions=[], cost=0, depth=0,
-            nodes_expanded=0, nodes_generated=0,
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
             runtime=time.perf_counter() - t0,
-            message=f"Conditional plan found (depth limit={max_depth}):\n{plan_text}",
-            trace=trace, uses_heuristic=True, uses_probability=True,
+            message=(f"Conditional plan found (depth limit={max_depth}). AND-OR requires every "
+                     f"possible outcome to succeed; probability magnitudes do not rank plans.\n{plan_text}"),
+            trace=trace, uses_heuristic=True, uses_probability=False,
             is_complete=False, is_optimal=False, suitable_for_puzzle=False,
         )
 
     return SearchResult(
         success=False, algorithm="AND-OR Search", group="Complex Environments",
-        nodes_expanded=0, nodes_generated=0,
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0,
         message=f"No conditional plan found within depth {max_depth}",
-        trace=trace, uses_heuristic=True, uses_probability=True,
+        trace=trace, uses_heuristic=True, uses_probability=False,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
 
