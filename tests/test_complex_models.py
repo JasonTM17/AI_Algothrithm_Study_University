@@ -2,7 +2,7 @@
 
 import pytest
 
-from algorithms.complex_env import and_or_search, no_observation_search
+from algorithms.complex_env import and_or_search, no_observation_search, partially_observable_search
 from core.puzzle import GOAL_STATE
 
 
@@ -44,3 +44,19 @@ def test_no_observation_binds_heuristic_to_custom_goal():
     assert result.actions == ["L"]
     assert result.path[-1] == custom_goal
     assert result.path_verified
+
+
+@pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
+def test_belief_generators_scramble_from_custom_goal_parity(solver):
+    swapped_goal = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+    result = solver(
+        swapped_goal,
+        goal=swapped_goal,
+        num_belief_states=2,
+        max_steps=0,
+        timeout=1,
+        seed=7,
+    )
+
+    assert result.runtime < 1
+    assert result.nodes_expanded == 0

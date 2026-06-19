@@ -22,3 +22,5 @@ Game-tree and stochastic demos expose selected variations or sample outcome path
 All heuristic-driven solvers and demos bind their heuristic to the run's requested goal state. This keeps custom-goal experiments academically consistent with the standard-goal classroom flow.
 
 Solvability checks are also goal-relative: two board permutations are considered mutually reachable only when their 4x4 parity classes match.
+
+Belief-state demos generate auxiliary hidden states by scrambling from the requested goal, so custom-goal parity remains consistent even when the goal is not the standard board.
