@@ -1,0 +1,30 @@
+name: Web quality
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: python -m compileall -q app.py core algorithms ui
+      - run: python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65
+      - name: Streamlit health smoke test
+        shell: bash
+        run: |
+          streamlit run app.py --server.port 8510 --server.headless true > streamlit.log 2>&1 &
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8510/_stcore/health && exit 0
+            sleep 1
+          done
+          cat streamlit.log
+          exit 1

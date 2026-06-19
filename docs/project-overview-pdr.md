@@ -2,8 +2,7 @@
 
 ## Purpose
 
-This project is a Streamlit learning and demonstration app for an Artificial Intelligence final exam. It uses the 15-puzzle to teach state-space search, heuristics, PEAS, local search failure modes, CSP modeling, complex environments, and game-tree extensions.
-For lecturers, the project also provides a desktop-style launcher so the app can be opened without typing the Streamlit command.
+This project is a browser-based Streamlit learning and demonstration app for an Artificial Intelligence final exam. It uses the 15-puzzle to teach state-space search, heuristics, PEAS, local-search failure modes, CSP modeling, complex environments, and game-model extensions.
 
 ## Audience
 
@@ -26,11 +25,13 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 ## Success Criteria
 
 - The app runs without Streamlit runtime errors.
-- The desktop launcher starts the same local dashboard for lecturer use.
-- Algorithm paths are validated when solvers succeed.
+- The browser app is the only supported product surface.
+- Every reported puzzle solution has a legal edge-by-edge path certificate.
+- Search visualization contains explicit parent/child edges rather than inferred indentation.
+- Challenge Mode compares player moves against an A* optimality certificate.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.
 - Theory/PEAS includes an Exam Defense guide and downloadable grading report.
 - The five-step exam path is visible across the main grading workflow.
 - Mobile UI supports readable academic cards and a clickable sidebar.
-- Tests cover puzzle validity, heuristics, solver regressions, runtime import/compile, and academic taxonomy.
+- Tests cover puzzle validity, exact/admissible heuristics, solver regressions, tree edges, Streamlit integration, runtime compile, and academic taxonomy.

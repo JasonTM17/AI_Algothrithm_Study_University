@@ -9,38 +9,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Lecturer App Mode
-
-For classroom or grading use on Windows, there are two supported paths.
-
-### One-click source launcher
-
-Install dependencies once and launch the desktop-style app:
-
-```bash
-pip install -r requirements.txt
-start-15-puzzle-ai.bat
-```
-
-`desktop_app.py` starts Streamlit on a local port and opens it in a native app window when `pywebview` is available. If the native window backend is unavailable, it falls back to the default browser while keeping the same local app behavior.
-
-### Windows EXE build
-
-Build a lecturer-friendly executable folder:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\build-windows-exe.ps1
-```
-
-Then open:
-
-```text
-dist\15-Puzzle-AI\15-Puzzle-AI.exe
-```
-
-The EXE uses a parent/child launcher: the visible app process opens the native lecturer window, while a local child process serves Streamlit on `127.0.0.1`. The generated `dist/` folder is intentionally not committed because it is a large build artifact; rebuild it locally or publish it as a release asset.
-
-On Windows PowerShell, compile all Python files with:
+This repository ships one product: the browser-based Streamlit web app. On Windows PowerShell, verify all Python files with:
 
 ```powershell
 $files = @('app.py') + (Get-ChildItem core,algorithms,ui -Filter *.py | ForEach-Object { $_.FullName })
@@ -60,7 +29,7 @@ Use the app in this order when presenting to an instructor:
 | 4 | Theory/PEAS | Defend the agent model, proof cards, taxonomy, and PEAS. |
 | 5 | Hand-Tracing | Practice manual expansion order, tie-breaking, and trace verification. |
 
-See [docs/branch-and-release-tree.md](docs/branch-and-release-tree.md) for the release tree that connects the master branch, academic UI, CSP separation, EXE app mode, and verification pipeline.
+See [docs/branch-and-release-tree.md](docs/branch-and-release-tree.md) for the web release tree connecting the academic UI, solver evidence, concept-lab boundary, and verification pipeline.
 
 ## Academic Framing
 
@@ -84,11 +53,11 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 
 ## Main Features
 
-- Interactive board and image puzzle mode.
-- Single-algorithm runner with trace, metrics, frontier/reached detail, and search tree.
+- Interactive board, image puzzle, Undo, and optimality challenge mode.
+- Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph whose edges are checked against legal moves.
 - Benchmark comparison with methodology panels and academic evidence metrics.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
-- Advanced CSP, complex-environment, and game-tree demonstrations with warning labels.
+- Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
 - Hand-tracing practice for oral/written exam preparation.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
@@ -98,8 +67,6 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 
 ```text
 app.py                         Streamlit web entrypoint and tab router
-desktop_app.py                 Desktop-style launcher for lecturers
-start-15-puzzle-ai.bat         Windows one-click launcher
 core/                          puzzle logic, theory data, academic data, dispatch helpers
 algorithms/                    uninformed, informed, local, CSP, complex, adversarial algorithms
 ui/                            Streamlit tab modules, shared panels, components, styles
@@ -110,10 +77,12 @@ tests/                         solver, runtime, dispatch, UI/academic regression
 ## Verification
 
 ```bash
+pip install -r requirements-dev.txt
+python -m compileall -q app.py core algorithms ui
 python -m pytest tests/ -q
 ```
 
-Expected coverage includes puzzle mechanics, heuristic correctness, solver regressions, runtime compile/import, dispatch safety, taxonomy completeness, grading report content, and UI/UX contracts.
+Expected coverage includes exact heuristic checks, bounded admissibility/consistency checks, legal path and tree-edge evidence, solver regressions, Streamlit AppTest flows, dispatch safety, map coloring, and academic taxonomy.
 
 ## Notes For Grading
 

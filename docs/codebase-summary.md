@@ -3,7 +3,6 @@
 ## Entry Point
 
 - `app.py` is the Streamlit entrypoint and main tab router.
-- `desktop_app.py` starts the Streamlit server and opens a lecturer-friendly app window.
 - `ui/advanced_tab.py` renders CSP, complex-environment, and game-tree demos.
 - `ui/academic_panels.py` renders PEAS, taxonomy, rubric, exam path, grading summary, and academic warning panels.
 
@@ -11,7 +10,8 @@
 
 - `core/puzzle.py` contains puzzle state utilities, solvability, scramble, path validation, and teaching presets.
 - `core/heuristics.py` contains Misplaced Tiles, Manhattan Distance, and Linear Conflict.
-- `core/metrics.py` defines `SearchResult` and `TraceStep`.
+- `core/metrics.py` defines run certificates, trace events, and explicit search-graph nodes/edges.
+- `core/gameplay.py` scores legal player runs against a proven optimal distance.
 - `core/academic.py` defines academic taxonomy, PEAS data, and recommendation rubric.
 - `core/solver_dispatch.py` builds safe kwargs for UI solver calls.
 
@@ -32,3 +32,5 @@
 - `tests/test_solvers.py`: solver behavior, path validation, teaching preset regressions.
 - `tests/test_runtime_integrity.py`: compile/import and dispatch regressions.
 - `tests/test_academic.py`: taxonomy, PEAS, rubric, exam path, report, and UI contract completeness.
+- `tests/test_search_tree_evidence.py`: legal parent/child edges and run certificates.
+- `tests/test_streamlit_app.py`: browser-app flow through Streamlit AppTest.

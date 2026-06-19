@@ -19,16 +19,16 @@ flowchart TD
     D --> D2["Graph coloring<br/>separate map-coloring CSP demo"]
     D --> D3["No coloring claim<br/>for natural 15-puzzle solving"]
 
-    A --> E["Windows Lecturer App"]:::app
-    E --> E1["desktop_app.py<br/>native window or browser fallback"]
-    E --> E2["PyInstaller spec<br/>reproducible EXE folder"]
-    E --> E3["build-windows-exe.ps1<br/>one-command Windows build"]
-    E --> E4["Parent / child runtime<br/>window process + local server process"]
+    A --> E["Web Learning Lab"]:::app
+    E --> E1["Manual puzzle game<br/>legal clicks, undo, scoring"]
+    E --> E2["Optimality challenge<br/>A* + Linear Conflict certificate"]
+    E --> E3["Search evidence<br/>verified nodes and directed edges"]
+    E --> E4["Concept Lab<br/>separate extension environments"]
 
     A --> F["Verification Pipeline"]:::verify
-    F --> F1["py_compile<br/>app, desktop, core, algorithms, ui"]
-    F --> F2["pytest<br/>runtime, solver, taxonomy, UI contracts"]
-    F --> F3["EXE smoke test<br/>HTTP 200 and tab loading"]
+    F --> F1["compileall<br/>app, core, algorithms, ui"]
+    F --> F2["pytest<br/>heuristics, paths, trees, taxonomy"]
+    F --> F3["Streamlit AppTest + health<br/>interactive web flow"]
     F --> F4["Git hygiene<br/>master default, secret scan, no dist artifacts"]
 
     classDef root fill:#172033,stroke:#5f8cff,color:#ffffff,stroke-width:2px;
