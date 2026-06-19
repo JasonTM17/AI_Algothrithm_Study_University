@@ -74,10 +74,28 @@ def test_path_certificate_is_legal_path_not_goal_claim():
 
     assert child != START
     assert result.path_verified
+    assert not result.goal_reached
     assert "legal state/action sequence" in result.verification_message
     assert "reaches the goal" not in result.verification_message
     assert result.summary_dict()["Legal Path?"] == "Yes"
+    assert result.summary_dict()["Reached Goal?"] == "Not reported"
     assert "Path Verified?" not in result.summary_dict()
+
+
+def test_optimality_certificate_requires_a_reported_goal():
+    child = _move_blank(START, "D")
+    result = SearchResult(
+        success=True,
+        algorithm="Missing Goal Probe",
+        path=[START, child],
+        actions=["D"],
+        is_optimal=True,
+    )
+
+    assert result.path_verified
+    assert not result.goal_reached
+    assert not result.optimality_proven
+    assert "goal was not reported" in result.verification_message
 
 
 def test_optimality_certificate_requires_reported_goal_match():

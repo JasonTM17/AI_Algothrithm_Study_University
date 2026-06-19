@@ -139,13 +139,20 @@ class SearchResult:
                     f"Recorded state does not match action {action} at step {index + 1}"
                 )
                 return
-        self.goal_reached = self.goal_state is None or self.path[-1] == self.goal_state
+        self.goal_reached = self.goal_state is not None and self.path[-1] == self.goal_state
         self.path_verified = True
-        self.verification_message = (
-            "Path is a legal state/action sequence ending at the requested goal"
-            if self.goal_reached
-            else "Path is legal, but its final state does not match the requested goal"
-        )
+        if self.goal_state is None:
+            self.verification_message = (
+                "Path is a legal state/action sequence; requested goal was not reported"
+            )
+        elif self.goal_reached:
+            self.verification_message = (
+                "Path is a legal state/action sequence ending at the requested goal"
+            )
+        else:
+            self.verification_message = (
+                "Path is legal, but its final state does not match the requested goal"
+            )
 
     def _classify_run_outcome(self) -> None:
         message = self.message.lower()
@@ -245,7 +252,11 @@ class SearchResult:
             "Heuristic?": "Yes" if self.uses_heuristic else "No",
             "Randomness?": "Yes" if self.uses_randomness else "No",
             "Legal Path?": "Yes" if self.path_verified else "No",
-            "Reached Goal?": "Yes" if self.goal_reached else "No",
+            "Reached Goal?": (
+                "Not reported"
+                if self.goal_state is None
+                else ("Yes" if self.goal_reached else "No")
+            ),
             "Run Termination": self.termination_reason,
             "Optimality Proven?": "Yes" if self.optimality_proven else "No",
         }
