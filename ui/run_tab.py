@@ -210,9 +210,21 @@ def render_run_algorithm_tab() -> None:
             )
         render_algorithm_evaluation(result.algorithm)
 
-        if result.success and result.path:
-            st.subheader("Solution Path")
-            render_path_animation(result.path, result.actions, key="solution_path")
+        if result.path_verified and result.path:
+            if result.success and result.goal_reached:
+                st.subheader("Solution Path")
+            else:
+                st.subheader("Recorded Trajectory (not a solution)")
+                st.warning(
+                    "These moves are legal evidence of the algorithm's behavior, "
+                    "but the final state did not reach the requested goal."
+                )
+            render_path_animation(
+                result.path,
+                result.actions,
+                key="solution_path",
+                reaches_goal=result.goal_reached,
+            )
 
         if result.trace:
             st.subheader("Trace Steps")

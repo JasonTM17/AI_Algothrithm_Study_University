@@ -120,7 +120,7 @@ class SearchResult:
         self.path_verified = False
         self.goal_reached = False
         self.verification_message = ""
-        if not self.success or not self.path:
+        if not self.path:
             return
         from core.puzzle import _move_blank
 
@@ -188,7 +188,12 @@ class SearchResult:
             return isinstance(value, tuple) and len(value) == 16 and set(value) == set(range(16))
 
         states: dict[tuple[int, ...], SearchTreeNode] = {}
-        solution_states = set(self.path) if self.path and all(is_puzzle_state(s) for s in self.path) else set()
+        recorded_path = (
+            self.path
+            if self.path_verified and all(is_puzzle_state(state) for state in self.path)
+            else []
+        )
+        solution_states = set(recorded_path) if self.success and self.goal_reached else set()
 
         def add_node(
             state: tuple[int, ...], depth: int, g: float,
@@ -203,14 +208,17 @@ class SearchResult:
 
         edges: list[SearchTreeEdge] = []
         edge_keys: set[tuple[str, str, str]] = set()
-        if solution_states:
-            for index, state in enumerate(self.path):
+        if recorded_path:
+            for index, state in enumerate(recorded_path):
                 add_node(state, index, index, None, None)
                 if index:
-                    parent = states[self.path[index - 1]]
+                    parent = states[recorded_path[index - 1]]
                     child = states[state]
                     action = self.actions[index - 1]
-                    edges.append(SearchTreeEdge(parent.node_id, child.node_id, action, True))
+                    on_solution_path = bool(solution_states)
+                    edges.append(SearchTreeEdge(
+                        parent.node_id, child.node_id, action, on_solution_path,
+                    ))
                     edge_keys.add((parent.node_id, child.node_id, action))
 
         for event in self.trace:
@@ -241,7 +249,7 @@ class SearchResult:
             "Algorithm": self.algorithm,
             "Group": self.group,
             "Solved?": "Yes" if self.success else "No",
-            "Path Length": len(self.actions) if self.success else "-",
+            "Path Length": len(self.actions) if self.path_verified else "-",
             "Cost": self.cost if self.success else "-",
             "Nodes Expanded": self.nodes_expanded,
             "Nodes Generated": self.nodes_generated,

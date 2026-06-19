@@ -337,6 +337,8 @@ def test_hill_climbing_stuck_teaching_preset():
 
     assert result.success is False
     assert len(result.actions) == 4
+    assert result.path_verified
+    assert not result.goal_reached
     assert "Stuck at local optimum h=4.0" in result.message
 
 

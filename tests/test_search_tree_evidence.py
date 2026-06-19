@@ -63,6 +63,26 @@ def test_resource_limit_does_not_claim_exhaustive_failure():
     assert not result.optimality_proven
 
 
+def test_failed_run_can_certify_a_legal_partial_trajectory():
+    child = _move_blank(START, "D")
+    result = SearchResult(
+        success=False,
+        algorithm="Partial Trajectory Probe",
+        path=[START, child],
+        actions=["D"],
+        goal_state=GOAL_STATE,
+        message="Stopped before goal",
+    )
+
+    assert result.path_verified
+    assert not result.goal_reached
+    assert not result.optimality_proven
+    assert result.summary_dict()["Path Length"] == 1
+    assert len(result.search_tree_edges) == 1
+    assert not result.search_tree_edges[0].on_solution_path
+    assert all(not node.on_solution_path for node in result.search_tree_nodes)
+
+
 def test_path_certificate_is_legal_path_not_goal_claim():
     child = _move_blank(START, "D")
     result = SearchResult(

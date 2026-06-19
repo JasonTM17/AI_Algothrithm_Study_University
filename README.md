@@ -54,7 +54,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 ## Main Features
 
 - Interactive board, image puzzle, Undo, and optimality challenge mode with separate player-run legality, AI-assistance disclosure, and A* optimality certificates.
-- Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph whose edges are checked against legal moves.
+- Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph; even failed or stuck runs expose a certified legal partial trajectory without labeling it as a solution.
 - Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
 - Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.

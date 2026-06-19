@@ -262,7 +262,7 @@ def render_result_metrics(result):
     with col1:
         st.metric(t("mc_status"), f"{icon} {t('mc_solved') if success else t('mc_failed')}")
     with col2:
-        st.metric(t("mc_path_len"), str(len(result.actions)) if success else "-")
+        st.metric("Recorded Steps", str(len(result.actions)) if result.path_verified else "-")
     with col3:
         st.metric(t("mc_runtime"), f"{result.runtime:.4f}s")
     with col4:
@@ -416,8 +416,10 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
             st.caption(t("det_not_captured"))
 
 
-def render_path_animation(path: list[tuple], actions: list[str], key: str = "path"):
-    """Render path animation with auto-play, step slider, and speed control."""
+def render_path_animation(
+    path: list[tuple], actions: list[str], key: str = "path", *, reaches_goal: bool = True,
+):
+    """Render a recorded trajectory without inventing a goal claim for partial runs."""
     if not path or len(path) < 2:
         if path and len(path) == 1:
             render_puzzle_board(path[0])
@@ -472,7 +474,11 @@ def render_path_animation(path: list[tuple], actions: list[str], key: str = "pat
     else:
         action_display = actions[current_step - 1]
     display = direction_map.get(action_display, action_display)
-    goal_suffix = f" · {t('anim_goal')}" if current_step == len(path) - 1 else ""
+    goal_suffix = (
+        f" · {t('anim_goal')}"
+        if reaches_goal and current_step == len(path) - 1
+        else ""
+    )
     st.caption(f"Step {current_step}/{len(path)-1}: {display}{goal_suffix}")
 
     # Navigation buttons
@@ -525,8 +531,8 @@ def render_comparison_table(results: list):
             t("compare_group_col"): group_trans,
             t("run_algo"): r.algorithm,
             t("mc_status"): t("mc_solved") if r.success else t("mc_failed"),
-            t("mc_path_len"): len(r.actions) if r.success else "-",
-            "Action Path": compact_action_path(r.actions) if r.success else "-",
+            "Recorded Steps": len(r.actions) if r.path_verified else "-",
+            "Action Trajectory": compact_action_path(r.actions) if r.path_verified else "-",
             t("mc_cost"): r.cost if r.success else "-",
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
