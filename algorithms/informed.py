@@ -5,7 +5,7 @@ import heapq
 from typing import Callable, Optional
 from core.puzzle import PuzzleState, GOAL_STATE
 from core.node import Node, reconstruct_path, reconstruct_actions
-from core.heuristics import manhattan_distance, HEURISTICS
+from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 
 
@@ -18,7 +18,7 @@ def greedy_best_first(
 ) -> SearchResult:
     """Greedy Best-First Search. Uses h(n) only, not optimal."""
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="Greedy Best-First", group="Informed Search",
@@ -117,7 +117,7 @@ def a_star(
 ) -> SearchResult:
     """A* Search. Optimal if heuristic is admissible and consistent."""
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="A*", group="Informed Search",
@@ -219,7 +219,7 @@ def ida_star(
 ) -> SearchResult:
     """Iterative Deepening A*. Memory-efficient, optimal with admissible heuristic."""
     t0 = time.perf_counter()
-    h_fn = HEURISTICS.get(heuristic, manhattan_distance)
+    h_fn = get_heuristic(heuristic, goal)
 
     if start == goal:
         return SearchResult(success=True, algorithm="IDA*", group="Informed Search",
