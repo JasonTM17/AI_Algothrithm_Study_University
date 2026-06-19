@@ -194,6 +194,10 @@ class SearchResult:
             else []
         )
         solution_states = set(recorded_path) if self.success and self.goal_reached else set()
+        solution_edges = {
+            (recorded_path[index - 1], self.actions[index - 1], recorded_path[index])
+            for index in range(1, len(recorded_path))
+        } if solution_states else set()
 
         def add_node(
             state: tuple[int, ...], depth: int, g: float,
@@ -238,7 +242,7 @@ class SearchResult:
             if key not in edge_keys:
                 edges.append(SearchTreeEdge(
                     parent.node_id, child.node_id, event.action,
-                    parent_state in solution_states and child_state in solution_states,
+                    (parent_state, event.action, child_state) in solution_edges,
                 ))
                 edge_keys.add(key)
         self.search_tree_nodes = list(states.values())

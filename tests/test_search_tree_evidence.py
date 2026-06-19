@@ -2,11 +2,12 @@
 
 from algorithms.informed import a_star
 from algorithms.uninformed import bfs
-from core.metrics import SearchResult, search_tree_to_dot
+from core.metrics import SearchResult, TraceStep, search_tree_to_dot
 from core.puzzle import GOAL_STATE, _move_blank
 
 
 START = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
+ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 
 
 def assert_tree_is_legal(result):
@@ -53,6 +54,37 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert result.goal_state == GOAL_STATE
     assert result.goal_reached
     assert result.optimality_proven
+
+
+def test_solution_highlight_requires_exact_recorded_action_edge():
+    left_detour = _move_blank(ONE_MOVE, "L")
+    result = SearchResult(
+        success=True,
+        algorithm="Loop Highlight Probe",
+        path=[ONE_MOVE, left_detour, ONE_MOVE, GOAL_STATE],
+        actions=["L", "R", "R"],
+        goal_state=GOAL_STATE,
+        trace=[
+            TraceStep(
+                step=1,
+                node_state=GOAL_STATE,
+                state=ONE_MOVE,
+                action="L",
+                reason="Legal reverse edge between solution states, not a solution step.",
+            ),
+        ],
+    )
+
+    nodes = {node.node_id: node for node in result.search_tree_nodes}
+    reverse_edges = [
+        edge for edge in result.search_tree_edges
+        if nodes[edge.parent_id].state == GOAL_STATE and nodes[edge.child_id].state == ONE_MOVE
+    ]
+
+    assert result.path_verified
+    assert result.goal_reached
+    assert reverse_edges
+    assert all(not edge.on_solution_path for edge in reverse_edges)
 
 
 def test_resource_limit_does_not_claim_exhaustive_failure():
