@@ -40,7 +40,7 @@ def run_solver(
             message=f"Error: {e}",
             runtime=time.perf_counter() - t0,
         )
-    if result.runtime == 0:
+    if not result.runtime:
         result.runtime = time.perf_counter() - t0
     return result
 

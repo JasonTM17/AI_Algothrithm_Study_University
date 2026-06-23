@@ -192,7 +192,11 @@ def stochastic_hill_climbing(
         ps = PuzzleState(current)
         neighbors = ps.get_neighbors(action_order)
         nodes_expanded += 1
-        better = [(ns, a, h_fn(ns)) for ns, a, _ in neighbors if h_fn(ns) < current_h]
+        better = []
+        for ns, a, _ in neighbors:
+            nh = h_fn(ns)
+            if nh < current_h:
+                better.append((ns, a, nh))
 
         if better:
             ns, action, nh = rng.choice(better)
@@ -435,6 +439,7 @@ def simulated_annealing(
 
         accepted = False
         probability = 0.0
+        old_h = current_h
 
         if delta < 0:
             accepted = True
@@ -455,7 +460,7 @@ def simulated_annealing(
 
         if len(trace) < 300:
             trace.append(TraceStep(step=i, state=ns, action=action,
-                                   current_h=current_h, candidate_h=nh,
+                                   current_h=old_h, candidate_h=nh,
                                    temperature=round(temp, 4), probability=round(probability, 4) if delta >= 0 else 1.0,
                                    accepted=accepted, reason=f"T={temp:.2f}, δ={delta:.1f}, {'accept' if accepted else 'reject'}"))
 

@@ -19,10 +19,10 @@ def _img_to_tiles(img, grid_size=4, tile_px=100):
 
 def load_real_image_raw(filename):
     """Load a real image and crop to square from center."""
+    file_dir = os.path.dirname(os.path.abspath(__file__))
     base_paths = [
-        os.path.join("ui", "assets", filename),
-        os.path.join("assets", filename),
-        filename
+        os.path.join(file_dir, "assets", filename),
+        os.path.join(file_dir, "..", "assets", filename),
     ]
     img_path = None
     for p in base_paths:
@@ -50,9 +50,7 @@ def load_real_image(filename):
     img = load_real_image_raw(filename)
     if img:
         return _img_to_tiles(img, grid_size=4, tile_px=100)
-    # Default fallback to blank tiles if failed
-    fallback = Image.new("RGBA", (400, 400), (35, 27, 21, 255))
-    return _img_to_tiles(fallback, grid_size=4, tile_px=100)
+    return {}
 
 
 def cyberpunk_city():

@@ -21,7 +21,6 @@ def _utility(state: tuple[int, ...], goal: tuple[int, ...], solved_bonus: float 
 
 
 def _path_from_actions(start: tuple[int, ...], actions: list[str]) -> list[tuple[int, ...]]:
-    """Build a legal display path from a chosen game/policy action sequence."""
     path = [start]
     current = start
     for action in actions:
@@ -168,7 +167,7 @@ def alpha_beta_pruning(
         nodes_expanded[0] += 1
 
         if state == goal:
-            return 1000.0, [("MAX" if is_max else "MIN", state, 1000.0, 0)], []
+            return 1000.0, [("MAX" if is_max else "MIN", state, 1000.0, h_fn(state))], []
 
         if depth_left <= 0:
             util = -h_fn(state)

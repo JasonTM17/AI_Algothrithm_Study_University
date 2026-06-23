@@ -156,7 +156,7 @@ class SearchResult:
             )
 
     def _classify_run_outcome(self) -> None:
-        message = self.message.lower()
+        message = (self.message or "").lower()
         if not self.termination_reason:
             if self.success:
                 self.termination_reason = "goal"

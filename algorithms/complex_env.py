@@ -44,8 +44,6 @@ def and_or_search(
         if nondet_prob == 0.0:
             return results
 
-        blank_idx = state.index(0)
-        r, c = blank_idx // 4, blank_idx % 4
         for alt_action in action_order:
             if alt_action == action:
                 continue
@@ -103,7 +101,9 @@ def and_or_search(
             if plan["type"] == "goal":
                 lines.append(f"{prefix}GOAL reached")
             elif plan["type"] == "OR":
-                lines.append(f"{prefix}OR: choose action {plan['action']} (h={plan.get('state_h', '?'):.1f})")
+                state_h = plan.get('state_h')
+                h_str = f"{state_h:.1f}" if state_h is not None else "?"
+                lines.append(f"{prefix}OR: choose action {plan['action']} (h={h_str})")
                 if plan.get("outcomes"):
                     for oc in plan["outcomes"]:
                         lines.append(f"{prefix}  IF {oc['outcome']} (action={oc['actual_action']}):")
@@ -149,7 +149,10 @@ def no_observation_search(
 
     belief = set()
     belief.add(start)
-    while len(belief) < num_belief_states:
+    fill_attempts = 0
+    max_fill_attempts = num_belief_states * 50
+    while len(belief) < num_belief_states and fill_attempts < max_fill_attempts:
+        fill_attempts += 1
         s = scramble(goal=goal, depth=rng.randint(3, 8), seed=rng.randint(0, 999999))
         if is_solvable(s, goal) and s != goal:
             belief.add(s)
@@ -201,15 +204,7 @@ def no_observation_search(
                 representative = next_representative
                 representative_path.append(representative)
 
-        # Apply best_action to all states in belief to get new belief
-        new_belief = set()
-        for state in belief:
-            ns = _move_blank(state, best_action)
-            if ns is not None:
-                new_belief.add(ns)
-            else:
-                new_belief.add(state)
-        belief = new_belief
+        belief = best_new_belief
 
         if len(trace) < 200:
             trace.append(TraceStep(step=step + 1, state=start, action=best_action,
@@ -274,7 +269,10 @@ def partially_observable_search(
     # Initialize belief states
     belief = set()
     belief.add(start)
-    while len(belief) < num_belief_states:
+    fill_attempts = 0
+    max_fill_attempts = num_belief_states * 50
+    while len(belief) < num_belief_states and fill_attempts < max_fill_attempts:
+        fill_attempts += 1
         s = scramble(goal=goal, depth=rng.randint(2, 6), seed=rng.randint(0, 999999))
         if is_solvable(s, goal) and s != goal:
             belief.add(s)

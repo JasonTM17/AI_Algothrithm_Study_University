@@ -131,8 +131,10 @@ def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_dept
     # Generate simple start state solvable in scramble_depth steps
     start_state = scramble(depth=scramble_depth, seed=None, action_order=action_order)
     
-    # Ensure it's solvable and not already solved
-    while start_state == GOAL_STATE or not is_solvable(start_state):
+    # Ensure it's solvable and not already solved (max 1000 attempts)
+    for _ in range(1000):
+        if start_state != GOAL_STATE and is_solvable(start_state):
+            break
         start_state = scramble(depth=scramble_depth, seed=None, action_order=action_order)
         
     h_fn = HEURISTICS.get(heuristic_name, manhattan_distance)
@@ -250,6 +252,10 @@ def render_hand_tracing_page():
             st.rerun()
 
     # Calculate the mathematically correct next node to expand
+    if not frontier:
+        st.error("Frontier is empty — search space exhausted.")
+        st.session_state.ht_active = False
+        st.rerun()
     correct_item = min(frontier, key=lambda item: _get_sort_key(item, algo, tb))
     correct_node, _ = correct_item
 
@@ -298,13 +304,16 @@ def render_hand_tracing_page():
     st.subheader(t("ht_decision"))
     st.markdown(t("ht_decision_desc"))
 
-    # Show frontier options as cards
-    cols = st.columns(min(len(frontier), 4))
+    # Show frontier options as cards in rows of 4
     selected_idx = -1
-    
+    row_size = 4
+
     for i, (node, counter) in enumerate(frontier):
-        col_idx = i % 4
-        with cols[col_idx]:
+        row_start = (i // row_size) * row_size
+        if i % row_size == 0:
+            row_cols = st.columns(min(len(frontier) - i, row_size))
+        col_idx = i % row_size
+        with row_cols[col_idx]:
             st.markdown(f"**{t('ht_choice', num=i+1)}**")
             render_puzzle_board(node.state, size="mini")
             

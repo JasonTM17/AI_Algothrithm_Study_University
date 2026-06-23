@@ -304,15 +304,15 @@ def render_trace_table(trace: list, max_rows: int = 100):
             "Event": step.event,
             t("tc_action"): step.action or "-",
         }
-        if step.g > 0:
+        if step.g is not None and step.g > 0:
             row["g(n)"] = step.g
-        if step.h > 0 or step.step == 0:
+        if step.h is not None and (step.h > 0 or step.step == 0):
             row["h(n)"] = f"{step.h:.1f}"
-        if step.f > 0:
+        if step.f is not None and step.f > 0:
             row["f(n)"] = f"{step.f:.1f}"
-        if step.frontier_size > 0:
+        if step.frontier_size is not None and step.frontier_size > 0:
             row[t("tc_frontier")] = step.frontier_size
-        if step.reached_size > 0:
+        if step.reached_size is not None and step.reached_size > 0:
             row[t("tc_reached")] = step.reached_size
         if step.temperature is not None:
             row[t("tc_temp")] = f"{step.temperature:.4f}"
@@ -390,8 +390,10 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         st.markdown(f"**{t('det_curr_node')}**")
         if step.node_state:
             render_puzzle_board(step.node_state, size="small")
-        else:
+        elif step.state:
             render_puzzle_board(step.state, size="small")
+        else:
+            st.caption("(no state)")
 
     with col2:
         st.markdown(f"**{t('tc_frontier')}** ({step.frontier_size} states)")
@@ -550,14 +552,14 @@ def render_comparison_table(results: list):
 
     if len([r for r in results if r.success]) > 1:
         successful = [r for r in results if r.success]
-        fastest = min(successful, key=lambda x: x.runtime)
-        shortest = min(successful, key=lambda x: len(x.actions))
-        max_mem = max(successful, key=lambda x: x.nodes_expanded)
+        fastest = min(successful, key=lambda x: x.runtime if x.runtime is not None else float('inf'))
+        shortest = min(successful, key=lambda x: len(x.actions) if x.actions is not None else float('inf'))
+        max_mem = max(successful, key=lambda x: x.nodes_expanded if x.nodes_expanded is not None else 0)
 
         st.markdown(f"### {t('compare_analysis')}")
         st.markdown(f"- {t('compare_fastest', algo=fastest.algorithm, time=fastest.runtime)}")
         st.markdown(f"- {t('compare_shortest', algo=shortest.algorithm, steps=len(shortest.actions))}")
-        if max_mem.algorithm != min(successful, key=lambda x: x.nodes_expanded).algorithm:
+        if max_mem.algorithm != min(successful, key=lambda x: x.nodes_expanded if x.nodes_expanded is not None else float('inf')).algorithm:
             st.markdown(f"- {t('compare_most_memory', algo=max_mem.algorithm, nodes=max_mem.nodes_expanded)}")
 
         verified_count = len([r for r in successful if r.path_verified])
@@ -725,12 +727,17 @@ def render_algorithm_evaluation(algo_name: str):
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
     theory_data = THEORY.get(theory_key)
 
-    # Find the algorithm row in COMPARISON_TABLE
+    # Find the algorithm row in COMPARISON_TABLE — exact match first
     row_data = None
     for row in COMPARISON_TABLE:
-        if row["Algorithm"].lower() in algo_name.lower() or algo_name.lower() in row["Algorithm"].lower():
+        if row["Algorithm"].lower() == algo_name.lower():
             row_data = row
             break
+    if not row_data:
+        for row in COMPARISON_TABLE:
+            if row["Algorithm"].lower() in algo_name.lower() or algo_name.lower() in row["Algorithm"].lower():
+                row_data = row
+                break
     # Fallback search
     if not row_data and theory_data:
         for row in COMPARISON_TABLE:

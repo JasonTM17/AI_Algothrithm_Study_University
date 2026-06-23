@@ -79,6 +79,8 @@ def _render_thu_duc_svg(result: MapColoringResult, assignment: dict[str, str]) -
             f"<title>{tooltip}</title></path>"
         )
         projected_points = [project(point) for point in points]
+        if not projected_points:
+            continue
         label_x = sum(point[0] for point in projected_points) / len(projected_points)
         label_y = sum(point[1] for point in projected_points) / len(projected_points)
         short_label = name.replace(" ", "\n", 1) if len(name) > 11 else name
@@ -101,8 +103,10 @@ def _render_australia_svg(result: MapColoringResult, assignment: dict[str, str])
     }
     edges = []
     for region, neighbors in result.adjacency.items():
+        if region not in positions:
+            continue
         for neighbor in neighbors:
-            if region < neighbor:
+            if region < neighbor and neighbor in positions:
                 x1, y1 = positions[region]
                 x2, y2 = positions[neighbor]
                 edges.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')

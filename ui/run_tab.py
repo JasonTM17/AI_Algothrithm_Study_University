@@ -130,7 +130,7 @@ def render_run_algorithm_tab() -> None:
             st.error("Current state is NOT solvable. Please generate a solvable state.")
         else:
             fn_name = selected_fn_name
-            if fn_name is None:
+            if not fn_name:
                 st.error(f"Algorithm {algo_name} not found.")
             else:
                 import algorithms.uninformed as u

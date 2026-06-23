@@ -170,7 +170,7 @@ def validate_solution_path(
     return True, "Solution path is a legal sequence and reaches the goal"
 
 
-def validate_path(start: tuple[int, ...], actions: list[str]) -> tuple[bool, str, Optional[tuple[int, ...]]]:
+def validate_path(start: tuple[int, ...], actions: list[str], goal: tuple[int, ...] = GOAL_STATE) -> tuple[bool, str, Optional[tuple[int, ...]]]:
     """Validate that action sequence leads from start to goal.
 
     Returns (valid, message, final_state).
@@ -182,6 +182,6 @@ def validate_path(start: tuple[int, ...], actions: list[str]) -> tuple[bool, str
             inv = {"L": "Right", "R": "Left", "U": "Down", "D": "Up"}
             return False, f"Invalid action {a} at step {i} (cannot move {inv.get(a, a)})", None
         state = ns
-    if state == GOAL_STATE:
+    if state == goal:
         return True, "Path valid and reaches goal", state
     return False, "Path valid but does not reach goal", state

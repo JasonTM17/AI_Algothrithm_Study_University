@@ -163,7 +163,7 @@ def dfs(
     while frontier:
         if time.perf_counter() - t0 > timeout:
             return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Timeout", True, False)
-        if nodes_expanded > max_nodes:
+        if len(reached) > max_nodes:
             return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, f"Node limit exceeded ({max_nodes})", True, False)
 
         node = frontier.pop()
@@ -197,7 +197,7 @@ def dfs(
                         reason=f"Depth-first expand, action={action}",
                     ))
 
-    return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "No solution found within depth limit", True, False)
+    return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "No solution found within depth limit", False, False)
 
 
 def ucs(
@@ -325,7 +325,7 @@ def ids(
             result.refresh_certificate()
             return result
 
-        if result.message and "depth" not in result.message.lower():
+        if result.message and "cutoff" not in result.message.lower():
             break
 
     return SearchResult(

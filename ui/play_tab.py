@@ -220,8 +220,19 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     proof_result = st.session_state.get("play_optimal_result")
     if proof_result:
         if proof_result.success and proof_result.optimality_proven:
-            player_cert = validate_player_run(st.session_state.play_history, GOAL_STATE)
+            try:
+                player_cert = validate_player_run(st.session_state.play_history, GOAL_STATE)
+            except Exception as e:
+                st.error(f"Player-run validation failed: {e}")
+                player_cert = None
             assisted = st.session_state.get("play_assisted", False)
+            if player_cert is None:
+                return
+            try:
+                score = score_challenge(player_cert.move_count, len(proof_result.actions))
+            except Exception as e:
+                st.error(f"Score computation failed: {e}")
+                return
             cert_cols = st.columns(4)
             cert_cols[0].metric("Player Run", "Legal" if player_cert.is_legal else "Invalid")
             cert_cols[1].metric("Recorded Moves", player_cert.move_count)
@@ -239,7 +250,6 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                     "Finish the puzzle before comparing your move count with the optimum."
                 )
             else:
-                score = score_challenge(player_cert.move_count, len(proof_result.actions))
                 score_cols = st.columns(4)
                 score_cols[0].metric("Optimal Moves", score.optimal_moves)
                 score_cols[1].metric("Your Moves", score.player_moves)

@@ -156,7 +156,7 @@ def graph_coloring_demo(
             if color not in legal_colors(region):
                 trace.append(TraceStep(
                     step=attempts,
-                    state=GOAL_STATE,
+                    state=None,
                     reason=f"Reject {region}={color}: conflicts with an assigned neighbor.",
                 ))
                 continue
@@ -166,7 +166,7 @@ def graph_coloring_demo(
             record(label)
             trace.append(TraceStep(
                 step=attempts,
-                state=GOAL_STATE,
+                state=None,
                 depth_limit=len(assignment),
                 frontier_size=sum(1 for item in definition.adjacency if item not in assignment),
                 reached_size=len(assignment),

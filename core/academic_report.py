@@ -9,7 +9,7 @@ from core.academic_proofs import BENCHMARK_PRESETS, PROOF_CARDS
 
 
 def _format_state(state: tuple[int, ...] | None) -> str:
-    if not state:
+    if state is None:
         return "Not provided"
     rows = []
     for row in range(4):
@@ -19,7 +19,7 @@ def _format_state(state: tuple[int, ...] | None) -> str:
 
 
 def _benchmark_rows(results: Iterable[object] | None) -> list[str]:
-    if not results:
+    if results is None:
         return ["No benchmark run included in this report."]
 
     rows = ["| Algorithm | Success | Cost | Expanded | Runtime |", "|---|---:|---:|---:|---:|"]

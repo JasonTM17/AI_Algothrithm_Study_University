@@ -254,7 +254,7 @@ def backtracking_search(
         actions = []
         visited = {start}
 
-        def backtrack(state: tuple, depth: int, steps_count: int) -> bool:
+        def backtrack(state: tuple, depth: int, steps_count: list[int]) -> bool:
             if time.perf_counter() - t0 > timeout or steps_count[0] > max_steps:
                 return False
             if depth == T:

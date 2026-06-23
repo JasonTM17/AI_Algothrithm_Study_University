@@ -281,7 +281,7 @@ def render_benchmark_evidence(results: list) -> None:
             "Expanded": expanded,
             "Runtime (s)": round(runtime, 4),
         }
-        if baseline and cost is not None and baseline.cost is not None:
+        if baseline and cost is not None and baseline.cost is not None and baseline.nodes_expanded is not None and baseline.runtime is not None:
             row["Optimality gap"] = cost - baseline.cost
             row["Expanded ratio vs A*"] = round(expanded / max(baseline.nodes_expanded, 1), 3)
             row["Runtime ratio vs A*"] = round(runtime / max(baseline.runtime, 1e-9), 3)

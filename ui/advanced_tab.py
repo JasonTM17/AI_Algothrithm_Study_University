@@ -112,6 +112,9 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         else:
             step_index = 0
             st.caption("Chưa có bước gán màu để hiển thị.")
+        if not result.assignment_history:
+            st.warning("No assignment steps recorded for this map coloring run.")
+            return
         render_coloring_map(
             result,
             result.assignment_history[step_index],
