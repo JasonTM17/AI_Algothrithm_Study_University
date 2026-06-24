@@ -47,7 +47,7 @@ def greedy_best_first(
         return SearchResult(success=True, algorithm="Greedy Best-First", group="Informed Search",
                             path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
-                            is_complete=True, is_optimal=False, uses_heuristic=True)
+                            is_complete=False, is_optimal=False, uses_heuristic=True)
     if not is_solvable(start, goal):
         return _unsolvable_result("Greedy Best-First", t0, False, False)
 

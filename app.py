@@ -152,7 +152,8 @@ st.session_state.show_numbers = st.sidebar.checkbox(
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Current Start State")
-render_puzzle_board(st.session_state.start_state, highlight_correct=True)
+with st.sidebar:
+    render_puzzle_board(st.session_state.start_state, highlight_correct=True)
 
 # Main tab router.
 if tab == "Play":

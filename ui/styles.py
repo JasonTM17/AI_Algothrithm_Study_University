@@ -799,6 +799,16 @@ section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 {
     letter-spacing: -0.02em !important;
 }
+section[data-testid="stSidebar"] h1 {
+    font-size: 26px !important;
+    line-height: 1.08 !important;
+    margin-bottom: 8px !important;
+    max-width: 100%;
+}
+section[data-testid="stSidebar"] h3 {
+    font-size: 18px !important;
+    line-height: 1.24 !important;
+}
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p {
     color: var(--text-secondary) !important;
@@ -816,6 +826,25 @@ section[data-testid="stSidebar"] [role="radiogroup"] label:hover {
 }
 section[data-testid="stSidebar"] hr {
     border-color: rgba(214,196,166,0.12) !important;
+}
+section[data-testid="stSidebar"] .puzzle-grid {
+    width: 100%;
+    max-width: 172px;
+    gap: 4px;
+    padding: 8px;
+    border-radius: 12px;
+    margin: 0 0 10px;
+}
+section[data-testid="stSidebar"] .puzzle-grid::before {
+    inset: 5px;
+    border-radius: 8px;
+}
+section[data-testid="stSidebar"] .puzzle-cell {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+    font-size: 13px !important;
 }
 
 /* ── Section dividers ────────────────────────────────────────── */

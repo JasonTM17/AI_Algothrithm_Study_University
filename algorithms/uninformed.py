@@ -148,7 +148,7 @@ def dfs(
     """Depth-First Search with depth limit. Not optimal."""
     t0 = time.perf_counter()
     if start == goal:
-        return _make_result(True, "DFS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", True, False)
+        return _make_result(True, "DFS", None, start, goal, 0, 0, 0, 0, t0, [], "Already at goal", False, False)
     if not is_solvable(start, goal):
         return _unsolvable_result("DFS", start, goal, t0, False, False)
 
@@ -162,9 +162,9 @@ def dfs(
 
     while frontier:
         if time.perf_counter() - t0 > timeout:
-            return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Timeout", True, False)
+            return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Timeout", False, False)
         if len(reached) > max_nodes:
-            return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, f"Node limit exceeded ({max_nodes})", True, False)
+            return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, f"Node limit exceeded ({max_nodes})", False, False)
 
         node = frontier.pop()
         nodes_expanded += 1
@@ -175,13 +175,13 @@ def dfs(
         ps = PuzzleState(node.state)
         for ns, action, cost in reversed(ps.get_neighbors(action_order)):
             if time.perf_counter() - t0 > timeout:
-                return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Timeout", True, False)
+                return _make_result(False, "DFS", None, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Timeout", False, False)
 
             child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1)
             nodes_generated += 1
 
             if ns == goal:
-                return _make_result(True, "DFS", child, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Solution found", True, False)
+                return _make_result(True, "DFS", child, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Solution found", False, False)
 
             if ns not in reached:
                 reached.add(ns)

@@ -362,6 +362,16 @@ def test_a_star_matches_bfs_and_ids_on_shallow_puzzle():
     assert_valid_solution(EASY_STATE, a_star_result)
 
 
+def test_contrast_solvers_keep_theoretical_completeness_labels_on_trivial_goal():
+    dfs_result = dfs(GOAL_STATE, timeout=2)
+    greedy_result = greedy_best_first(GOAL_STATE, timeout=2)
+
+    assert dfs_result.success
+    assert greedy_result.success
+    assert dfs_result.is_complete is False
+    assert greedy_result.is_complete is False
+
+
 def test_greedy_suboptimal_teaching_preset():
     state = TEACHING_PRESETS["Greedy suboptimal: A*=15, Greedy=17"]["state"]
 
