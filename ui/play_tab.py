@@ -1,5 +1,6 @@
 """Play tab for the Streamlit app."""
 
+import random
 import time
 
 import streamlit as st
@@ -16,10 +17,25 @@ from ui.components import (
     render_puzzle_board,
 )
 
+VICTORY_MESSAGE_KEYS = (
+    "play_victory_1",
+    "play_victory_2",
+    "play_victory_3",
+    "play_victory_4",
+    "play_victory_5",
+)
+
+
+def _clear_victory_state() -> None:
+    st.session_state.pop("play_victory_signature", None)
+    st.session_state.pop("play_victory_message_key", None)
+    st.session_state.pop("play_victory_balloons_pending", None)
+
 
 def _handle_play_slide(direction: str) -> None:
     ns = _move_blank(st.session_state.play_state, direction)
     if ns:
+        _clear_victory_state()
         _clear_ai_replay()
         st.session_state.play_state = ns
         st.session_state.play_moves += 1
@@ -66,6 +82,29 @@ def _apply_ai_replay_step(index: int) -> None:
     st.session_state.play_moves = base_moves + bounded_index
     if bounded_index > 0:
         st.session_state.play_assisted = True
+
+
+def _render_victory_notice(t) -> None:
+    """Show a varied, stable win message when the live board matches the goal."""
+    if st.session_state.play_state != GOAL_STATE:
+        return
+
+    signature = (
+        tuple(st.session_state.get("play_history", ())),
+        int(st.session_state.get("play_moves", 0)),
+        bool(st.session_state.get("play_assisted", False)),
+    )
+    if st.session_state.get("play_victory_signature") != signature:
+        st.session_state.play_victory_signature = signature
+        st.session_state.play_victory_message_key = random.choice(VICTORY_MESSAGE_KEYS)
+        st.session_state.play_victory_balloons_pending = True
+
+    if st.session_state.get("play_victory_balloons_pending", False):
+        st.balloons()
+        st.session_state.play_victory_balloons_pending = False
+
+    message_key = st.session_state.get("play_victory_message_key", "play_solved_success")
+    st.success(t(message_key, moves=st.session_state.play_moves))
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
@@ -130,6 +169,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         st.session_state.play_assisted = False
         st.session_state.play_start_ref = st.session_state.start_state
         _clear_ai_replay()
+        _clear_victory_state()
         st.session_state.pop("play_optimal_result", None)
 
     has_image = "image_tiles" in st.session_state and st.session_state.image_tiles
@@ -185,9 +225,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         correct = sum(1 for i, v in enumerate(st.session_state.play_state) if v == GOAL_STATE[i] and v != 0)
         st.metric(t("play_tiles_correct"), f"{correct}/15")
 
-    if st.session_state.play_state == GOAL_STATE:
-        st.balloons()
-        st.success(t("play_solved_success", moves=st.session_state.play_moves))
+    _render_victory_notice(t)
 
     col_reset1, col_reset2 = st.columns(2)
     with col_reset1:
@@ -197,6 +235,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             st.session_state.play_history = [st.session_state.start_state]
             st.session_state.play_assisted = False
             _clear_ai_replay()
+            _clear_victory_state()
             st.rerun()
 
     # ── AI Auto-Solver ──────────────────────────────────────
@@ -208,6 +247,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             st.session_state.play_state = st.session_state.play_history[-1]
             st.session_state.play_moves = max(0, st.session_state.play_moves - 1)
             _clear_ai_replay()
+            _clear_victory_state()
             st.rerun()
 
     st.subheader(t("play_challenge_title"))

@@ -7,6 +7,7 @@ from algorithms.uninformed import bfs
 from core.gameplay import validate_player_run
 from core.puzzle import GOAL_STATE
 from ui.trace_tab import trace_rows
+from ui.play_tab import VICTORY_MESSAGE_KEYS
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
@@ -49,6 +50,8 @@ def test_ai_solver_replay_keeps_play_history_certifiable():
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_moves == 1
     assert app.session_state.play_assisted is True
+    assert app.session_state.play_victory_message_key in VICTORY_MESSAGE_KEYS
+    assert app.session_state.play_victory_balloons_pending is False
     assert cert.is_legal
     assert cert.reaches_goal
     assert cert.actions == ("R",)
@@ -94,6 +97,7 @@ def test_start_state_change_clears_stale_ai_replay():
     assert app.session_state.play_solution_actions is None
     assert app.session_state.play_solution_res is None
     assert app.session_state.play_auto_run is False
+    assert "play_victory_message_key" not in app.session_state
     assert "play_slider_val" not in app.session_state
     assert not app.exception
 
