@@ -14,6 +14,7 @@
 - `core/metrics.py` defines run certificates, trace events, and explicit search-graph nodes/edges.
 - `core/gameplay.py` scores legal player runs against a proven optimal distance.
 - `core/academic.py` defines academic taxonomy, PEAS data, and recommendation rubric.
+- `core/academic_proofs.py` defines proof cards, exam answer templates, benchmark presets, and decision guide data.
 - `core/solver_dispatch.py` builds safe kwargs for UI solver calls.
 
 ## Algorithms
@@ -25,6 +26,12 @@
 - `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graph coloring, graphs.
 - `algorithms/map_coloring.py`: deterministic MRV/degree/forward-checking map CSP with structured trace data; its bundled asset contains the 12 Thu Duc 2025 ward geometries and audited adjacency graph.
 - `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos; returned actions form a legal selected variation/sample path with explicit caveats that these are not standard 15-puzzle optimality certificates.
+
+## Academic Documentation
+
+- `docs/algorithm-groups-academic-reference.md`: Vietnamese full reference for PEAS, algorithm groups, guarantees, heuristic proofs, failure modes, CSP/complex-environment boundaries, and adversarial/stochastic framing.
+- `docs/project-overview-pdr.md`: project purpose, audience, academic positioning, and success criteria.
+- `docs/system-architecture.md`: Streamlit architecture, solver/evidence flow, extension boundaries, and documentation/reporting flow.
 
 ## Tests
 

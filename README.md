@@ -31,6 +31,8 @@ Use the app in this order when presenting to an instructor:
 
 See [docs/branch-and-release-tree.md](docs/branch-and-release-tree.md) for the web release tree connecting the academic UI, solver evidence, concept-lab boundary, and verification pipeline.
 
+For a detailed Vietnamese academic reference on the algorithm groups, guarantees, heuristics, failure modes, and exam-defense talking points, see [docs/algorithm-groups-academic-reference.md](docs/algorithm-groups-academic-reference.md).
+
 ## Academic Framing
 
 The standard 15-puzzle environment is fully observable, deterministic, static, discrete, sequential, single-agent, and unit-cost.
@@ -57,6 +59,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph; even failed or stuck runs expose a certified legal partial trajectory without labeling it as a solution.
 - Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
+- Vietnamese full-reference documentation for algorithm groups, PEAS boundaries, heuristic guarantees, CSP modeling, complex environments, and adversarial/stochastic demos.
 - Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings. Caro/Gomoku is included there as the real two-player adversarial demo for Minimax and Alpha-Beta.
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
 - Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.

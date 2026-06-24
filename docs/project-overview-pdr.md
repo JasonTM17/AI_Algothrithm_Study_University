@@ -22,6 +22,12 @@ The standard 15-puzzle environment is deterministic, fully observable, static, d
 This distinction is required so the app stays academically truthful while still covering broad AI topics.
 Graph coloring is handled as its own map-coloring CSP demo because it is a natural CSP example, not a 15-puzzle solver. The default dataset covers the 12 wards on the former Thu Duc City territory effective 2025-07-01; Australia remains available for comparison.
 
+## Academic Documentation
+
+- `docs/algorithm-groups-academic-reference.md` is the Vietnamese full reference for defending algorithm groups.
+- It covers PEAS, completeness, optimality, memory/runtime tradeoffs, heuristic guarantees, local-search failure modes, CSP formulation, complex environments, and adversarial/stochastic boundaries.
+- It is intentionally aligned with `core/academic.py`, `core/academic_proofs.py`, `core/heuristics.py`, and the `algorithms/` modules, so exam claims stay tied to implemented behavior.
+
 ## Success Criteria
 
 - The app runs without Streamlit runtime errors.
@@ -34,6 +40,7 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.
 - Theory/PEAS includes an Exam Defense guide and downloadable grading report.
+- The repository includes a detailed Vietnamese academic reference for all algorithm groups and their correct exam framing.
 - The five-step exam path is visible across the main grading workflow.
 - Mobile UI supports readable academic cards and a clickable sidebar.
 - Tests cover puzzle validity, exact/admissible heuristics, solver regressions, tree edges, Streamlit integration, runtime compile, and academic taxonomy.
