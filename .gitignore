@@ -34,9 +34,11 @@ desktop.ini
 
 # Claude / OMC internal
 .claude/
+.codex/
 .omc/
 .playwright-mcp/
 CLAUDE.md
+AGENTS.md
 
 # Archived implementation plans
 20260606-puzzle-game-feel/
@@ -57,6 +59,7 @@ DRAFT*.md
 
 # Streamlit
 .streamlit/secrets.toml
+streamlit-ui-review*.log
 
 # Test / coverage
 htmlcov/
@@ -64,6 +67,7 @@ htmlcov/
 coverage.xml
 .pytest_cache/
 verification-*.png
+*-review.png
 
 # MyPy
 .mypy_cache/
