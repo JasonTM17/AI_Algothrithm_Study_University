@@ -418,6 +418,18 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
             st.caption(t("det_not_captured"))
 
 
+def _set_slider_step(slider_key: str, step: int, max_step: int) -> None:
+    """Move a Streamlit slider by updating its key before the widget rerenders."""
+    st.session_state[slider_key] = max(0, min(step, max_step))
+
+
+def _reset_animation_slider(slider_key: str, auto_key: str, auto_step_key: str) -> None:
+    """Reset animation controls without mutating a slider after instantiation."""
+    st.session_state[slider_key] = 0
+    st.session_state[auto_key] = False
+    st.session_state[auto_step_key] = 0
+
+
 def render_path_animation(
     path: list[tuple], actions: list[str], key: str = "path", *, reaches_goal: bool = True,
 ):
@@ -433,7 +445,15 @@ def render_path_animation(
 
     # Auto-play controls
     auto_key = f"{key}_autoplay"
+    auto_step_key = f"{key}_auto_step"
+    slider_key = f"{key}_slider"
     speed_key = f"{key}_speed"
+    max_step = len(path) - 1
+
+    current_step = int(st.session_state.get(slider_key, 0))
+    if current_step < 0 or current_step > max_step:
+        current_step = max(0, min(current_step, max_step))
+        st.session_state[slider_key] = current_step
 
     col_play, col_speed, col_step = st.columns([1, 2, 3])
 
@@ -445,7 +465,7 @@ def render_path_animation(
         else:
             if st.button(t("play_auto_run"), key=f"{key}_play_btn", type="primary"):
                 st.session_state[auto_key] = True
-                st.session_state[f"{key}_auto_step"] = st.session_state.get(f"{key}_slider", 0)
+                st.session_state[auto_step_key] = st.session_state.get(slider_key, 0)
                 st.rerun()
 
     with col_speed:
@@ -458,8 +478,22 @@ def render_path_animation(
         )
         speed = speed_options[speed_label]
 
+    if st.session_state.get(auto_key, False):
+        current_auto = int(st.session_state.get(auto_step_key, current_step))
+        if current_auto < max_step:
+            import time
+            next_step = current_auto + 1
+            st.session_state[slider_key] = next_step
+            st.session_state[auto_step_key] = next_step
+            time.sleep(speed)
+            st.rerun()
+        else:
+            st.session_state[auto_key] = False
+            st.session_state[auto_step_key] = 0
+            st.success(t("anim_complete"))
+
     current_step = st.slider(
-        t("play_curr_step"), 0, len(path) - 1, 0, key=f"{key}_slider"
+        t("play_curr_step"), 0, max_step, current_step, key=slider_key
     )
 
     # Show current state
@@ -486,29 +520,26 @@ def render_path_animation(
     # Navigation buttons
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button(t("anim_prev"), key=f"{key}_prev"):
-            st.session_state[f"{key}_slider"] = max(0, current_step - 1)
+        st.button(
+            t("anim_prev"),
+            key=f"{key}_prev",
+            on_click=_set_slider_step,
+            args=(slider_key, current_step - 1, max_step),
+        )
     with col2:
-        if st.button(t("anim_next"), key=f"{key}_next"):
-            st.session_state[f"{key}_slider"] = min(len(path) - 1, current_step + 1)
+        st.button(
+            t("anim_next"),
+            key=f"{key}_next",
+            on_click=_set_slider_step,
+            args=(slider_key, current_step + 1, max_step),
+        )
     with col3:
-        if st.button(t("anim_reset"), key=f"{key}_reset"):
-            st.session_state[f"{key}_slider"] = 0
-            st.session_state[auto_key] = False
-            st.session_state[f"{key}_auto_step"] = 0
-
-    if st.session_state.get(auto_key, False):
-        current_auto = st.session_state.get(f"{key}_auto_step", 0)
-        if current_auto < len(path) - 1:
-            import time
-            st.session_state[f"{key}_slider"] = current_auto + 1
-            st.session_state[f"{key}_auto_step"] = current_auto + 1
-            time.sleep(speed)
-            st.rerun()
-        else:
-            st.session_state[auto_key] = False
-            st.session_state[f"{key}_auto_step"] = 0
-            st.success(t("anim_complete"))
+        st.button(
+            t("anim_reset"),
+            key=f"{key}_reset",
+            on_click=_reset_animation_slider,
+            args=(slider_key, auto_key, auto_step_key),
+        )
 
 
 def render_comparison_table(results: list):

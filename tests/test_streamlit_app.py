@@ -107,6 +107,28 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert not app.exception
 
 
+def test_run_solution_animation_controls_do_not_raise_streamlit_state_error():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.button(key="btn_run").click().run()
+
+    app.button(key="solution_path_next").click().run()
+    assert app.session_state["solution_path_slider"] == 1
+    assert not app.exception
+
+    app.button(key="solution_path_prev").click().run()
+    assert app.session_state["solution_path_slider"] == 0
+    assert not app.exception
+
+    app.button(key="solution_path_next").click().run()
+    app.button(key="solution_path_reset").click().run()
+    assert app.session_state["solution_path_slider"] == 0
+    assert not app.exception
+
+
 def test_run_result_is_cleared_when_solver_limits_change():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
