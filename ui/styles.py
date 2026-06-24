@@ -134,9 +134,54 @@ div[data-testid="stMarkdownContainer"] strong {
 div[data-testid="stDataFrame"], div[data-testid="stTable"] {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    overflow: hidden;
+    max-width: 100%;
+    overflow: auto;
     background: rgba(18,21,20,0.86);
     box-shadow: var(--shadow-sm);
+}
+div[data-testid="stDataFrame"] > div,
+div[data-testid="stTable"] > div {
+    max-width: 100%;
+}
+div[data-testid="stMarkdownContainer"] {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+div[data-testid="stMarkdownContainer"] table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+div[data-testid="stMarkdownContainer"] th,
+div[data-testid="stMarkdownContainer"] td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+div[data-testid="stMarkdownContainer"] pre,
+div[data-testid="stMarkdownContainer"] code,
+div[data-testid="stException"] pre,
+div[data-testid="stException"] code {
+    max-width: 100%;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+}
+div[data-testid="stCode"] {
+    max-width: 100%;
+    overflow-x: auto;
+}
+div[data-testid="stCode"] pre,
+div[data-testid="stCode"] code,
+div[data-testid="stCode"] code span {
+    max-width: 100%;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+div[data-testid="stGraphVizChart"],
+div[data-testid="stGraphVizChart"] svg {
+    max-width: 100%;
+    overflow-x: auto;
 }
 div[data-testid="stExpander"] {
     border: 1px solid var(--border-subtle) !important;
