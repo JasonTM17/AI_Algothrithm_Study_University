@@ -685,6 +685,40 @@ THEORY["Expectimax"] = {
     "exam_tips_en": "Expectimax ⇒ MAX + CHANCE nodes. CHANCE nodes calculate expected value. Pruning is not possible. Results differ from Minimax when probabilities differ from worst-case.",
 }
 
+THEORY["Caro / Gomoku"] = {
+    "name": "Caro / Gomoku",
+    "group": "Adversarial/Stochastic",
+    "goal": "Demonstrate adversarial search on a real two-player zero-sum board game.",
+    "goal_en": "Demonstrate adversarial search on a real two-player zero-sum board game.",
+    "idea": "Two players alternate marks. MAX chooses moves that improve its line threats; MIN chooses moves that block or create stronger threats.",
+    "idea_en": "Two players alternate marks. MAX chooses moves that improve its line threats; MIN chooses moves that block or create stronger threats.",
+    "data_structure": "Depth-limited game tree with board states, legal moves, terminal win/draw checks, and utility evaluation.",
+    "data_structure_en": "Depth-limited game tree with board states, legal moves, terminal win/draw checks, and utility evaluation.",
+    "formula": "Minimax(s) = utility(s) if terminal/depth limit. MAX takes max child; MIN takes min child. Alpha-Beta prunes when alpha >= beta.",
+    "formula_en": "Minimax(s) = utility(s) if terminal/depth limit. MAX takes max child; MIN takes min child. Alpha-Beta prunes when alpha >= beta.",
+    "pseudocode": """CaroAlphaBeta(state, depth, alpha, beta):
+  if terminal or depth == 0: return evaluate_lines(state)
+  if MAX: choose highest child value and update alpha
+  if MIN: choose lowest child value and update beta
+  prune when alpha >= beta""",
+    "application": "Natural fit for Minimax and Alpha-Beta because Caro has two competing players and terminal utility.",
+    "application_en": "Natural fit for Minimax and Alpha-Beta because Caro has two competing players and terminal utility.",
+    "suitable": "Phu hop cho demo doi khang. Khong phai solver 15-puzzle.",
+    "suitable_en": "Suitable for adversarial demo. It is not a 15-puzzle solver.",
+    "pros": ["Natural adversarial model", "Shows pruning effect clearly", "Easy to explain with board threats"],
+    "pros_en": ["Natural adversarial model", "Shows pruning effect clearly", "Easy to explain with board threats"],
+    "cons": ["Full game tree is too large", "Depth-limited play is approximate", "Evaluation function affects move quality"],
+    "cons_en": ["Full game tree is too large", "Depth-limited play is approximate", "Evaluation function affects move quality"],
+    "complexity": "Minimax O(b^m); Alpha-Beta best case O(b^(m/2)) with good move ordering.",
+    "complexity_en": "Minimax O(b^m); Alpha-Beta best case O(b^(m/2)) with good move ordering.",
+    "bad_example": "Using very shallow depth may miss a forced win or necessary block.",
+    "bad_example_en": "Using very shallow depth may miss a forced win or necessary block.",
+    "comparison": "Caro is a natural game-tree problem; 15-puzzle Minimax is only an artificial extension.",
+    "comparison_en": "Caro is a natural game-tree problem; 15-puzzle Minimax is only an artificial extension.",
+    "exam_tips": "Use Caro when teacher asks for adversarial search; use A*/IDA* when teacher asks for standard 15-puzzle solving.",
+    "exam_tips_en": "Use Caro when asked for adversarial search; use A*/IDA* for standard 15-puzzle solving.",
+}
+
 
 def _build_theory_by_group() -> dict[str, dict[str, dict]]:
     """Group theory notes by algorithm family for UI and future modularization."""

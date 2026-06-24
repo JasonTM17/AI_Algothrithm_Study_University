@@ -21,6 +21,7 @@ from algorithms.csp import (
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE
 from ui.academic_panels import render_academic_header, render_extension_warning
+from ui.caro_game import render_caro_game
 from ui.components import render_result_metrics, render_trace_table
 from ui.map_coloring import render_coloring_map
 
@@ -46,6 +47,7 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         "No Observation (Belief State)",
         "Partially Observable",
         "Online Search (LRTA*)",
+        "Caro / Gomoku Game",
         "Minimax Game",
         "Alpha-Beta Pruning Game",
         "Expectimax (Stochastic)",
@@ -212,7 +214,11 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         if result.trace:
             render_trace_table(result.trace)
 
+    elif mode == "Caro / Gomoku Game":
+        render_caro_game()
+
     elif mode == "Minimax Game":
+        st.caption("15-puzzle has no natural opponent; this is an artificial MAX/MIN extension.")
         d = st.number_input("Game Tree Depth", 1, 5, 3, key="mm_depth")
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="mm_h")
         result = minimax(depth=d, heuristic=heuristic, **search_kw)
@@ -220,6 +226,7 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         st.markdown(result.message)
 
     elif mode == "Alpha-Beta Pruning Game":
+        st.caption("For a natural adversarial board game, use Caro / Gomoku Game above.")
         d = st.number_input("Game Tree Depth", 1, 5, 3, key="ab_depth")
         heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="ab_h")
         result = alpha_beta_pruning(depth=d, heuristic=heuristic, **search_kw)

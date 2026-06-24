@@ -35,6 +35,7 @@ def _clear_ai_replay() -> None:
     st.session_state.play_solution_base_history = None
     st.session_state.play_solution_base_moves = 0
     st.session_state.play_auto_run = False
+    st.session_state.pop("play_slider_val", None)
 
 
 def _store_ai_replay_result(result) -> None:
@@ -127,6 +128,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         st.session_state.play_history = [st.session_state.start_state]
         st.session_state.play_assisted = False
         st.session_state.play_start_ref = st.session_state.start_state
+        _clear_ai_replay()
         st.session_state.pop("play_optimal_result", None)
 
     has_image = "image_tiles" in st.session_state and st.session_state.image_tiles

@@ -10,6 +10,7 @@ from ui.trace_tab import trace_rows
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
 
 
 def test_web_app_initial_playground_renders_without_exception():
@@ -66,6 +67,28 @@ def test_reset_clears_ai_assistance_disclosure():
     assert app.session_state.play_assisted is False
     assert app.session_state.play_history == [ONE_MOVE]
     assert app.session_state.play_moves == 0
+    assert not app.exception
+
+
+def test_start_state_change_clears_stale_ai_replay():
+    app = AppTest.from_file("app.py", default_timeout=15).run()
+    app.session_state.start_state = ONE_MOVE
+    app.run()
+
+    app.button(key="btn_ai_solve").click().run()
+    assert app.session_state.play_solution_path
+
+    app.session_state.start_state = TWO_MOVE
+    app.run()
+
+    assert app.session_state.play_state == TWO_MOVE
+    assert app.session_state.play_history == [TWO_MOVE]
+    assert app.session_state.play_moves == 0
+    assert app.session_state.play_solution_path is None
+    assert app.session_state.play_solution_actions is None
+    assert app.session_state.play_solution_res is None
+    assert app.session_state.play_auto_run is False
+    assert "play_slider_val" not in app.session_state
     assert not app.exception
 
 
@@ -180,6 +203,27 @@ def test_graph_coloring_stays_hidden_until_selected():
     maps = [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
     assert maps
     assert "12" in maps[0].value
+    assert not app.exception
+
+
+def test_caro_side_change_resets_board_ownership():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("Caro / Gomoku Game").run()
+
+    app.button(key="caro_7_7").click().run()
+    assert app.session_state.caro_state.board.count("X") == 1
+    assert app.session_state.caro_state.board.count("O") == 1
+
+    app.selectbox(key="caro_human_side").set_value("O").run()
+
+    state = app.session_state.caro_state
+    assert state.board.count("X") == 1
+    assert state.board.count("O") == 0
+    assert state.current_player == "O"
+    assert app.session_state.caro_human_side_ref == "O"
     assert not app.exception
 
 

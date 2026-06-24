@@ -1015,7 +1015,7 @@ ALGORITHM_GROUPS = {
     "CSP": ["CSP Definition", "Constraint Propagation", "Path Consistency",
             "Global Constraints", "Backtracking Search", "Min-Conflicts",
             "Constraint Graphs"],
-    "Adversarial/Stochastic": ["Minimax", "Alpha-Beta Pruning", "Expectimax"],
+    "Adversarial/Stochastic": ["Minimax", "Alpha-Beta Pruning", "Expectimax", "Caro / Gomoku"],
 }
 
 # Standard deterministic 15-puzzle pages use this subset. Extensions remain
@@ -1049,6 +1049,7 @@ ALGORITHM_FN_MAP = {
     "Minimax": "minimax",
     "Alpha-Beta Pruning": "alpha_beta_pruning",
     "Expectimax": "expectimax",
+    "Caro / Gomoku": "caro_alpha_beta",
 }
 
 THEORY_KEY_MAP = {
@@ -1074,6 +1075,7 @@ THEORY_KEY_MAP = {
     "Minimax": "Minimax",
     "Alpha-Beta Pruning": "Alpha-Beta",
     "Expectimax": "Expectimax",
+    "Caro / Gomoku": "Caro / Gomoku",
 }
 
 COMPARISON_TABLE = [
@@ -1104,6 +1106,7 @@ COMPARISON_TABLE = [
     {"Group": "Adversarial", "Algorithm": "Minimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Game demo"},
     {"Group": "Adversarial", "Algorithm": "Alpha-Beta", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Pruning demo"},
     {"Group": "Adversarial", "Algorithm": "Expectimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "Chance", "Suitable": "Stochastic demo"},
+    {"Group": "Adversarial", "Algorithm": "Caro / Gomoku", "Complete": "Depth-limited", "Optimal": "Depth-limited", "Heuristic": "line utility", "Random": "No", "Suitable": "Natural game"},
 ]
 
 NOTES = """
@@ -1111,4 +1114,5 @@ NOTES = """
   Greedy may find optimal path by chance but does NOT guarantee it.
   Hill Climbing variants typically get stuck at local optima on 15-puzzle.
   CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax entries are illustrative extensions, not natural 15-puzzle solvers.
+  Caro / Gomoku is the natural adversarial board-game demo for Minimax and Alpha-Beta.
 """

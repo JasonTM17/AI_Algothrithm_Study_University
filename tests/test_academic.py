@@ -30,15 +30,16 @@ from ui.styles import ALGORITHM_GROUPS, SOLVER_GROUPS, STYLES
 def test_taxonomy_covers_all_displayed_algorithms():
     displayed = {name for names in ALGORITHM_GROUPS.values() for name in names}
 
-    assert len(displayed) == 27
+    assert len(displayed) == 28
     assert set(ALGORITHM_TAXONOMY) == displayed
-    assert len(taxonomy_rows()) == 27
+    assert len(taxonomy_rows()) == 28
 
 
 def test_standard_solver_pages_exclude_extension_environment_models():
     displayed = {name for names in SOLVER_GROUPS.values() for name in names}
     assert "A*" in displayed
     assert "Minimax" not in displayed
+    assert "Caro / Gomoku" not in displayed
     assert "Min-Conflicts" not in displayed
     assert "AND-OR Search" not in displayed
 
@@ -63,6 +64,7 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
         "Minimax",
         "Alpha-Beta Pruning",
         "Expectimax",
+        "Caro / Gomoku",
     ]:
         assert ALGORITHM_TAXONOMY[name].role in {
             ILLUSTRATIVE_EXTENSION,

@@ -40,7 +40,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 | Real Solver | BFS, UCS, IDS, A*, IDA* | Natural solvers for the deterministic 15-puzzle model. |
 | Contrast Demo | DFS, Greedy, local search variants | Useful for showing tradeoffs, suboptimality, local optimum, or missing guarantees. |
 | Illustrative Extension | CSP, AND-OR, No/Partial Observation, LRTA* | Educational reformulations for learning broader AI concepts. |
-| Stochastic/Game Demo | Minimax, Alpha-Beta, Expectimax | Game/chance-node demonstrations, not natural 15-puzzle solvers. |
+| Stochastic/Game Demo | Minimax, Alpha-Beta, Expectimax, Caro/Gomoku | Caro is the natural adversarial game demo; 15-puzzle game/chance modes are educational extensions. |
 
 ## PEAS Summary
 
@@ -57,7 +57,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph; even failed or stuck runs expose a certified legal partial trajectory without labeling it as a solution.
 - Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
-- Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
+- Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings. Caro/Gomoku is included there as the real two-player adversarial demo for Minimax and Alpha-Beta.
 - When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
 - Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
@@ -90,5 +90,6 @@ Expected coverage includes exact heuristic checks, bounded admissibility/consist
 - A*, IDA*, BFS, UCS, and IDS are the main solver demonstrations.
 - Greedy and local search are intentionally kept as contrast cases.
 - CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax are labeled as educational extensions.
+- Standard 15-puzzle is not adversarial. Use Caro/Gomoku when explaining natural two-player game search.
 - Graph coloring belongs to the map-coloring CSP demo. It is intentionally separate from 15-puzzle.
 - Benchmark output is course evidence, not a production solver leaderboard.

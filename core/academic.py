@@ -54,6 +54,7 @@ ALGORITHM_TAXONOMY: dict[str, AlgorithmTaxonomy] = {
     "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial", "Game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MAX/MIN is an educational extension."),
     "Alpha-Beta Pruning": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial", "Same minimax value with pruning when model applies.", "Use to explain pruning, not puzzle optimality."),
     "Expectimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "stochastic", "Expected-utility demo under chance outcomes.", "Use only for stochastic action extensions."),
+    "Caro / Gomoku": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial", "Natural two-player zero-sum game demo.", "Use this as the clean adversarial example for Minimax and Alpha-Beta."),
 }
 
 
@@ -112,9 +113,15 @@ RECOMMENDATION_RUBRIC = [
     },
     {
         "Need": "Discuss PEAS extensions",
-        "Use": "CSP, AND-OR, LRTA*, Minimax, Expectimax",
+        "Use": "CSP, AND-OR, LRTA*, Caro, Minimax, Expectimax",
         "Avoid": "Benchmarking them as natural solvers",
         "Reason": "They teach alternate agent models and environments.",
+    },
+    {
+        "Need": "Show real adversarial search",
+        "Use": "Caro / Gomoku with Minimax or Alpha-Beta",
+        "Avoid": "Claiming standard 15-puzzle has an opponent",
+        "Reason": "Caro is a two-player zero-sum board game; 15-puzzle is single-agent.",
     },
 ]
 
