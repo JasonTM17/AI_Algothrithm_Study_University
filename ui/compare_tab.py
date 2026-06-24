@@ -29,18 +29,19 @@ BENCHMARK_GROUPS = (
 )
 
 
-def render_compare_tab() -> None:
-    st.title("Compare Algorithms")
+def render_compare_tab(t=None) -> None:
+    tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
+    st.title(tx("compare_title"))
     render_academic_header(
-        "Compare solver behavior and academic guarantees",
-        "Benchmark results show runtime behavior; the taxonomy table separates standard 15-puzzle solvers from contrast cases and illustrative AI extensions.",
-        "Algorithm comparison",
+        tx("compare_hero_title"),
+        tx("compare_hero_desc"),
+        tx("compare_hero_kicker"),
     )
-    render_exam_path("Compare")
+    render_exam_path("Compare", t=t)
     render_extension_warning()
 
     preset_name = st.selectbox(
-        "Benchmark preset",
+        tx("compare_preset"),
         list(BENCHMARK_PRESETS.keys()),
         key="compare_benchmark_preset",
     )
@@ -48,7 +49,7 @@ def render_compare_tab() -> None:
     render_benchmark_methodology(preset_name)
     col_preset, col_preset_note = st.columns([1, 3])
     with col_preset:
-        if st.button("Load preset state", key="btn_load_benchmark_preset"):
+        if st.button(tx("compare_load_preset_state"), key="btn_load_benchmark_preset"):
             st.session_state.start_state = scramble(
                 depth=int(preset["depth"]),
                 seed=int(preset["seed"]),
@@ -56,19 +57,16 @@ def render_compare_tab() -> None:
             st.rerun()
     with col_preset_note:
         st.caption(
-            "Preset loads a deterministic solvable state. You can still adjust algorithms, "
-            "heuristic, node cap, and timeout before running."
+            tx("compare_preset_caption")
         )
 
-    st.markdown("Select algorithms to benchmark against the current start state.")
+    st.markdown(tx("compare_select_algorithms_desc"))
     st.caption(
-        "Standard rankings include real solvers and local-search contrast cases only. "
-        "CSP, uncertainty, online, and game/chance models remain in Concept Lab because "
-        "their success criteria and environment assumptions are not directly comparable."
+        tx("compare_standard_rankings_caption")
     )
 
     selected_groups = st.multiselect(
-        "Algorithm Groups", list(BENCHMARK_GROUPS),
+        tx("compare_groups"), list(BENCHMARK_GROUPS),
         default=["Uninformed Search", "Informed Search"],
         key="compare_groups",
     )
@@ -76,7 +74,7 @@ def render_compare_tab() -> None:
     selected_algos = []
     for g in selected_groups:
         algos = st.multiselect(
-            f"Algorithms from {g}",
+            tx("compare_algorithms_from", group=g),
             SOLVER_GROUPS[g],
             default=SOLVER_GROUPS[g][:2],
             key=f"compare_{g}",
@@ -86,36 +84,35 @@ def render_compare_tab() -> None:
     heuristic_names = list(HEURISTICS.keys())
     heuristic_index = heuristic_names.index(preset["heuristic"]) if preset["heuristic"] in heuristic_names else 0
     heuristic = st.selectbox(
-        "Heuristic for comparison",
+        tx("compare_heuristic"),
         heuristic_names,
         index=heuristic_index,
         key=f"compare_heuristic_{preset_name}",
     )
     max_nodes = st.number_input(
-        "Max Nodes",
+        tx("run_max_nodes"),
         1000,
         500000,
         int(preset["max_nodes"]),
         key=f"compare_max_nodes_{preset_name}",
     )
     timeout = st.number_input(
-        "Timeout (s)",
+        tx("compare_timeout"),
         5,
         300,
         int(preset["timeout"]),
         key=f"compare_timeout_{preset_name}",
     )
     fresh_benchmark_seeds = st.checkbox(
-        "Fresh stochastic seeds each benchmark",
+        tx("compare_fresh_seeds"),
         value=True,
         key="fresh_benchmark_seeds",
         help=(
-            "Each stochastic algorithm receives a distinct recorded seed. "
-            "Disable this to reuse a fixed seed for a reproducible benchmark."
+            tx("compare_fresh_seeds_help")
         ),
     )
     fixed_benchmark_seed = st.number_input(
-        "Fixed benchmark seed",
+        tx("compare_fixed_seed"),
         0,
         2**31 - 1,
         int(preset["seed"]),
@@ -141,10 +138,10 @@ def render_compare_tab() -> None:
         st.session_state.benchmark_results = []
         st.session_state["benchmark_run_seeds"] = {}
 
-    if st.button("Run Benchmark", key="btn_benchmark", type="primary"):
+    if st.button(tx("compare_run_btn"), key="btn_benchmark", type="primary"):
         start = st.session_state.start_state
         if not is_solvable(start):
-            st.error("Current state is NOT solvable.")
+            st.error(tx("run_error_unsolvable"))
         else:
             import algorithms.uninformed as u
             import algorithms.informed as inf
@@ -168,7 +165,7 @@ def render_compare_tab() -> None:
 
             st.session_state.benchmark_results = []
 
-            progress = st.progress(0, text="Running benchmark...")
+            progress = st.progress(0, text=tx("compare_running"))
             total = len(selected_algos)
             previous_seed = st.session_state.get("last_benchmark_random_seed")
             benchmark_seeds: dict[str, int] = {}
@@ -218,7 +215,7 @@ def render_compare_tab() -> None:
                             message="Algorithm is not eligible for the standard benchmark.",
                         )
                     )
-                progress.progress((i + 1) / total, text=f"Done: {i+1}/{total}")
+                progress.progress((i + 1) / total, text=tx("compare_done", curr=i + 1, total=total))
 
             st.session_state["last_benchmark_random_seed"] = previous_seed
             st.session_state["benchmark_run_seeds"] = benchmark_seeds
@@ -234,7 +231,7 @@ def render_compare_tab() -> None:
 
     # Static comparison table
     st.markdown("---")
-    st.subheader("Algorithm Properties Comparison")
+    st.subheader(tx("compare_prop"))
     df = pd.DataFrame(COMPARISON_TABLE)
     st.dataframe(df, width="stretch", hide_index=True)
     st.caption(NOTES)

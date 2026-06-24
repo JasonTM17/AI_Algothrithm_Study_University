@@ -16,7 +16,10 @@ TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
 def test_web_app_initial_playground_renders_without_exception():
     app = AppTest.from_file("app.py", default_timeout=10).run()
     assert not app.exception
-    assert any("Interactive Board" in title.value for title in app.title)
+    assert any(
+        "Bàn cờ Tương tác" in title.value or "Interactive Board" in title.value
+        for title in app.title
+    )
     assert app.button(key="btn_prove_optimal")
 
 
@@ -61,7 +64,10 @@ def test_reset_clears_ai_assistance_disclosure():
     app.button(key="btn_play_next").click().run()
     assert app.session_state.play_assisted is True
 
-    reset_button = next(button for button in app.button if button.label == "Reset Play Board")
+    reset_button = next(
+        button for button in app.button
+        if button.label in {"Đặt lại bàn chơi", "Reset Play Board"}
+    )
     reset_button.click().run()
 
     assert app.session_state.play_assisted is False

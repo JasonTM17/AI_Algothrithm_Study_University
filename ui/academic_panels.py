@@ -80,17 +80,42 @@ EXAM_PATH_STEPS = [
     ("Hand-Tracing", "Verify by hand", "Practice expansion order and tie-breaking."),
 ]
 
+EXAM_PATH_TRANSLATION_KEYS = {
+    "Play": ("exam_step_play_title", "exam_step_play_note"),
+    "Run": ("exam_step_run_title", "exam_step_run_note"),
+    "Compare": ("exam_step_compare_title", "exam_step_compare_note"),
+    "Theory/PEAS": ("exam_step_theory_title", "exam_step_theory_note"),
+    "Hand-Tracing": ("exam_step_hand_title", "exam_step_hand_note"),
+}
 
-def render_exam_path(active_step: str) -> None:
+EXAM_PATH_STEP_LABEL_KEYS = {
+    "Play": "exam_tab_play",
+    "Run": "exam_tab_run",
+    "Compare": "exam_tab_compare",
+    "Theory/PEAS": "exam_tab_theory",
+    "Hand-Tracing": "exam_tab_hand",
+}
+
+
+def _translate(t, key: str, fallback: str) -> str:
+    return t(key) if t else fallback
+
+
+def render_exam_path(active_step: str, t=None) -> None:
     """Render the recommended oral-defense flow for graders."""
     cards = []
-    for index, (step, title, note) in enumerate(EXAM_PATH_STEPS, start=1):
+    for index, (step, title_fallback, note_fallback) in enumerate(EXAM_PATH_STEPS, start=1):
         active_class = " active" if step == active_step else ""
+        title_key, note_key = EXAM_PATH_TRANSLATION_KEYS[step]
+        title = _translate(t, title_key, title_fallback)
+        note = _translate(t, note_key, note_fallback)
+        step_label = _translate(t, "exam_step_label", "Step")
+        step_display = _translate(t, EXAM_PATH_STEP_LABEL_KEYS.get(step, ""), step)
         cards.append(
             f'<div class="exam-path-step{active_class}">'
-            f'<div class="exam-path-index">Step {index}</div>'
+            f'<div class="exam-path-index">{escape(step_label)} {index}</div>'
             f'<div class="exam-path-title">{escape(title)}</div>'
-            f'<div class="exam-path-note">{escape(step)}: {escape(note)}</div>'
+            f'<div class="exam-path-note">{escape(step_display)}: {escape(note)}</div>'
             "</div>"
         )
     st.markdown(f"<div class=\"exam-path\">{''.join(cards)}</div>", unsafe_allow_html=True)

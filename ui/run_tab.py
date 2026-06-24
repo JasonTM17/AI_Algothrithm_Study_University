@@ -19,11 +19,15 @@ from ui.components import (
 from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS
 
 
-def run_completion_notice(algo_name: str, result: SearchResult) -> tuple[str, str]:
+def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple[str, str]:
     """Return the UI notice level/text without overstating model success as a solution."""
     if result.success and result.goal_reached:
+        if t:
+            return "success", t("run_success", algo=algo_name)
         return "success", f"{algo_name} found a solution!"
     if result.success:
+        if t:
+            return "info", t("run_model_success_no_goal", algo=algo_name)
         return (
             "info",
             f"{algo_name} produced a successful model result, "
@@ -32,21 +36,22 @@ def run_completion_notice(algo_name: str, result: SearchResult) -> tuple[str, st
     return "warning", f"{algo_name}: {result.message}"
 
 
-def render_run_algorithm_tab() -> None:
-    st.title("Run Algorithm")
+def render_run_algorithm_tab(t=None) -> None:
+    tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
+    st.title(tx("run_title"))
     render_academic_header(
-        "Run one algorithm with academic context",
-        "Inspect guarantees, environment assumptions, trace data, and why the selected method is or is not a natural 15-puzzle solver.",
-        "Single algorithm analysis",
+        tx("run_hero_title"),
+        tx("run_hero_desc"),
+        tx("run_hero_kicker"),
     )
-    render_exam_path("Run")
+    render_exam_path("Run", t=t)
 
     col_algo, col_params = st.columns([1, 1])
 
     with col_algo:
-        group = st.selectbox("Algorithm Group", list(SOLVER_GROUPS.keys()), key="algo_group")
+        group = st.selectbox(tx("run_group"), list(SOLVER_GROUPS.keys()), key="algo_group")
         algorithms = SOLVER_GROUPS[group]
-        algo_name = st.selectbox("Algorithm", algorithms, key="algo_name")
+        algo_name = st.selectbox(tx("run_algo"), algorithms, key="algo_name")
         selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
         render_algorithm_role_card(algo_name)
 
@@ -54,16 +59,16 @@ def render_run_algorithm_tab() -> None:
         heuristic_options = list(HEURISTICS.keys())
         uninformed_algos = ["BFS", "DFS", "UCS", "IDS"]
         if algo_name not in uninformed_algos:
-            heuristic = st.selectbox("Heuristic", heuristic_options, key="heuristic_select")
+            heuristic = st.selectbox(tx("run_heuristic"), heuristic_options, key="heuristic_select")
         else:
             heuristic = "Manhattan Distance"  # default, won't be used
 
         if algo_name in ["UCS", "Greedy Best-First", "A*"]:
             tie_breaker = st.selectbox(
-                "Tie-Breaking Rule",
+                tx("run_tie_breaker"),
                 ["FIFO", "LIFO", "Min-g", "Max-g"],
                 key="tie_breaker_select",
-                help="Rule for selecting among equal-priority nodes. Use it when explaining hand-tracing results."
+                help=tx("run_tie_breaker_help")
             )
         else:
             tie_breaker = "FIFO"
@@ -71,31 +76,30 @@ def render_run_algorithm_tab() -> None:
     with col_params:
         col_p1, col_p2 = st.columns(2)
         with col_p1:
-            max_nodes = st.number_input("Max Nodes", 1000, 1000000, 50000, step=5000, key="max_nodes")
-            max_depth = st.number_input("Max Depth / Game Tree Depth", 1, 100, 20, key="max_depth")
+            max_nodes = st.number_input(tx("run_max_nodes"), 1000, 1000000, 50000, step=5000, key="max_nodes")
+            max_depth = st.number_input(tx("run_max_depth"), 1, 100, 20, key="max_depth")
         with col_p2:
-            timeout = st.number_input("Timeout (seconds)", 5, 600, 60, key="timeout_val")
-            action_order = st.selectbox("Action Order", ["LRUD", "UDLR", "RLDU", "DURL"], key="action_order")
+            timeout = st.number_input(tx("run_timeout"), 5, 600, 60, key="timeout_val")
+            action_order = st.selectbox(tx("run_action_order"), ["LRUD", "UDLR", "RLDU", "DURL"], key="action_order")
 
         # Extra params for specific algorithms
         extra_params = {}
         fresh_seed_each_run = False
         manual_seed = 42
         if "Hill Climbing" in algo_name or "Beam" in algo_name:
-            max_iter = st.number_input("Max Iterations", 100, 100000, 10000, key="max_iter")
+            max_iter = st.number_input(tx("run_max_iter"), 100, 100000, 10000, key="max_iter")
             extra_params["max_iterations"] = max_iter
         if is_randomized_solver(selected_fn_name):
             fresh_seed_each_run = st.checkbox(
-                "Fresh random seed each run",
+                tx("run_fresh_seed"),
                 value=True,
                 key="fresh_seed_each_run",
                 help=(
-                    "Enabled: each run samples a new stochastic trajectory. "
-                    "Disabled: reuse a fixed seed for reproducible academic comparison."
+                    tx("run_fresh_seed_help")
                 ),
             )
             manual_seed = st.number_input(
-                "Fixed Random Seed",
+                tx("run_fixed_seed"),
                 0,
                 2**31 - 1,
                 42,
@@ -103,18 +107,18 @@ def render_run_algorithm_tab() -> None:
                 disabled=fresh_seed_each_run,
             )
         if algo_name == "Random-Restart Hill Climbing":
-            extra_params["max_restarts"] = st.number_input("Max Restarts", 1, 100, 20, key="max_restarts")
+            extra_params["max_restarts"] = st.number_input(tx("run_max_restarts"), 1, 100, 20, key="max_restarts")
         if algo_name == "Local Beam Search":
-            extra_params["beam_width"] = st.number_input("Beam Width", 2, 20, 3, key="beam_width")
+            extra_params["beam_width"] = st.number_input(tx("run_beam_width"), 2, 20, 3, key="beam_width")
         if algo_name == "Simulated Annealing":
-            extra_params["initial_temp"] = st.number_input("Initial Temp", 1.0, 1000.0, 100.0, key="init_temp")
-            extra_params["cooling_rate"] = st.number_input("Cooling Rate", 0.9, 0.9999, 0.9995, key="cooling_rate", format="%0.4f")
-            extra_params["min_temp"] = st.number_input("Min Temp", 0.001, 1.0, 0.01, key="min_temp", format="%0.3f")
+            extra_params["initial_temp"] = st.number_input(tx("run_init_temp"), 1.0, 1000.0, 100.0, key="init_temp")
+            extra_params["cooling_rate"] = st.number_input(tx("run_cooling_rate"), 0.9, 0.9999, 0.9995, key="cooling_rate", format="%0.4f")
+            extra_params["min_temp"] = st.number_input(tx("run_min_temp"), 0.001, 1.0, 0.01, key="min_temp", format="%0.3f")
         if algo_name == "Minimax" or algo_name == "Alpha-Beta Pruning":
             extra_params["depth"] = max_depth
         if algo_name == "Expectimax":
             extra_params["depth"] = max_depth
-            extra_params["success_prob"] = st.slider("Success Probability", 0.1, 1.0, 0.8, key="success_prob")
+            extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
 
     run_signature = (
         tuple(st.session_state.start_state), selected_fn_name, algo_name, heuristic,
@@ -124,14 +128,14 @@ def render_run_algorithm_tab() -> None:
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
 
-    if st.button("Run", key="btn_run", type="primary"):
+    if st.button(tx("run_btn"), key="btn_run", type="primary"):
         start = st.session_state.start_state
         if not is_solvable(start):
-            st.error("Current state is NOT solvable. Please generate a solvable state.")
+            st.error(tx("run_error_unsolvable"))
         else:
             fn_name = selected_fn_name
             if not fn_name:
-                st.error(f"Algorithm {algo_name} not found.")
+                st.error(tx("run_error_not_found", algo=algo_name))
             else:
                 import algorithms.uninformed as u
                 import algorithms.informed as inf
@@ -168,7 +172,7 @@ def render_run_algorithm_tab() -> None:
 
                 solver_fn = solver_map.get(fn_name)
                 if solver_fn is None:
-                    st.error(f"Solver function {fn_name} not found.")
+                    st.error(tx("run_error_func_not_found", func=fn_name))
                 else:
                     run_seed = resolve_run_seed(
                         fn_name,
@@ -191,7 +195,7 @@ def render_run_algorithm_tab() -> None:
                         extra_params=extra_params,
                     )
 
-                    with st.spinner(f"Running {algo_name}..."):
+                    with st.spinner(tx("run_spinner_running", algo=algo_name)):
                         try:
                             result = solver_fn(**kwargs)
                             result.random_seed = run_seed
@@ -202,35 +206,27 @@ def render_run_algorithm_tab() -> None:
                             st.session_state["last_run_signature"] = run_signature
                             st.session_state.benchmark_results.append(result)
 
-                            notice_level, notice_text = run_completion_notice(algo_name, result)
+                            notice_level, notice_text = run_completion_notice(algo_name, result, t=tx)
                             getattr(st, notice_level)(notice_text)
                         except Exception as e:
-                            st.error(f"Error running {algo_name}: {e}")
+                            st.error(tx("run_error_exception", algo=algo_name, error=e))
 
     # Show last result
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
         if result.random_seed is None:
-            st.caption(
-                "Deterministic run: identical state, parameters, action order, and tie-breaker "
-                "may legitimately produce the same path as another optimal algorithm."
-            )
+            st.caption(tx("run_deterministic_caption"))
         else:
-            st.caption(
-                f"Randomized run seed: `{result.random_seed}`. Save this seed to reproduce this exact run."
-            )
+            st.caption(tx("run_random_seed_caption", seed=result.random_seed))
         render_algorithm_evaluation(result.algorithm)
 
         if result.path_verified and result.path:
             if result.success and result.goal_reached:
-                st.subheader("Solution Path")
+                st.subheader(tx("run_sol_path"))
             else:
-                st.subheader("Recorded Trajectory (not a solution)")
-                st.warning(
-                    "These moves are legal evidence of the algorithm's behavior, "
-                    "but the final state did not reach the requested goal."
-                )
+                st.subheader(tx("run_recorded_trajectory"))
+                st.warning(tx("run_recorded_warning"))
             render_path_animation(
                 result.path,
                 result.actions,
@@ -239,10 +235,9 @@ def render_run_algorithm_tab() -> None:
             )
 
         if result.trace:
-            st.subheader("Trace Steps")
+            st.subheader(tx("run_trace_steps"))
             render_trace_table(result.trace)
-            st.subheader("Node / Frontier / Reached Detail")
+            st.subheader(tx("run_detail"))
             render_search_detail_table(result.trace)
-            st.subheader("Search Tree")
+            st.subheader(tx("run_search_tree"))
             render_search_tree(result)
-

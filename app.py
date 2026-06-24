@@ -34,11 +34,11 @@ if "image_tiles" not in st.session_state:
 
 # Sidebar.
 st.sidebar.title("15-Puzzle AI")
-st.sidebar.caption("Academic Dashboard")
+st.sidebar.caption("Bảng học thuật" if st.session_state.get("global_lang_select", "Tiếng Việt") == "Tiếng Việt" else "Academic Dashboard")
 st.sidebar.markdown("---")
 
 global_lang = st.sidebar.selectbox(
-    "Language / Ngôn ngữ",
+    "Ngôn ngữ / Language",
     ["Tiếng Việt", "English"],
     key="global_lang_select"
 )
@@ -63,7 +63,7 @@ tab_options = {
 }
 
 selected_tab_label = st.sidebar.radio(
-    "Demo Workflow",
+    t("demo_workflow"),
     list(tab_options.keys()),
     key="main_tab_label"
 )
@@ -86,7 +86,7 @@ if state_input_method == t("sb_random"):
 
 elif state_input_method == t("sb_manual"):
     manual_input = st.sidebar.text_area(
-        "Enter 16 numbers (0=blank, space-separated)",
+        t("sb_manual_desc"),
         value=" ".join(str(x) for x in st.session_state.start_state),
         key="manual_input",
         height=80,
@@ -94,17 +94,17 @@ elif state_input_method == t("sb_manual"):
     if st.sidebar.button(t("sb_parse"), key="btn_parse"):
         try:
             st.session_state.start_state = parse_state(manual_input)
-            st.sidebar.success("State parsed!")
+            st.sidebar.success(t("sb_parse_success"))
         except ValueError as e:
-            st.sidebar.error(f"Invalid input: {e}")
+            st.sidebar.error(t("sb_parse_error", error=e))
 
 teaching_preset_name = st.sidebar.selectbox(
-    "Teaching Preset",
+    t("teaching_preset"),
     list(TEACHING_PRESETS.keys()),
     key="teaching_preset_select",
-    help="Audited cases that make algorithm tradeoffs visible.",
+    help=t("teaching_preset_help"),
 )
-if st.sidebar.button("Load Teaching Preset", key="btn_load_teaching_preset"):
+if st.sidebar.button(t("load_teaching_preset"), key="btn_load_teaching_preset"):
     preset = TEACHING_PRESETS[teaching_preset_name]
     st.session_state.start_state = preset["state"]
     st.sidebar.info(str(preset["purpose"]))
@@ -151,7 +151,7 @@ st.session_state.show_numbers = st.sidebar.checkbox(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Current Start State")
+st.sidebar.subheader(t("sb_curr_start"))
 with st.sidebar:
     render_puzzle_board(st.session_state.start_state, highlight_correct=True)
 
@@ -159,15 +159,15 @@ with st.sidebar:
 if tab == "Play":
     render_play_tab(t=t, solvable=solvable, global_lang=global_lang)
 elif tab == "Run Algorithm":
-    render_run_algorithm_tab()
+    render_run_algorithm_tab(t=t)
 elif tab == "Step Trace":
     render_step_trace_tab()
 elif tab == "Hand-Tracing Practice":
     render_hand_tracing_page()
 elif tab == "Compare":
-    render_compare_tab()
+    render_compare_tab(t=t)
 elif tab == "Theory":
-    render_theory_tab()
+    render_theory_tab(t=t)
 elif tab == "Advanced":
     render_advanced_tab(st.session_state.start_state)
 

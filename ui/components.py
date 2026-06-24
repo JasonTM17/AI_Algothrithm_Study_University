@@ -99,7 +99,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
 
 def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                        highlight_correct: bool = True, on_click_fn=None,
-                       show_numbers: bool = False):
+                       show_numbers: bool = False, action_labels: dict[str, str] | None = None):
     """Render interactive 4x4 board with image tiles and optional number overlay.
 
     Each tile shows the image piece. Blank tile is empty.
@@ -158,7 +158,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                         )
                         if _is_adjacent_to_blank(state, idx) and on_click_fn:
                             direction = _get_slide_direction(state, idx)
-                            dir_labels = {
+                            dir_labels = action_labels or {
                                 "L": "Slide right",
                                 "R": "Slide left",
                                 "U": "Slide down",

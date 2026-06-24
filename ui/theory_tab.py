@@ -20,14 +20,15 @@ from ui.components import render_algorithm_info
 from ui.styles import ALGORITHM_GROUPS, THEORY_KEY_MAP
 
 
-def render_theory_tab() -> None:
-    st.title("Theory Notes & PEAS Analysis")
+def render_theory_tab(t=None) -> None:
+    tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
+    st.title(tx("theory_title"))
     render_academic_header(
-        "Theory notes, PEAS, and exam framing",
-        "Use this page to explain the agent model, algorithm guarantees, data structures, complexity, and why some methods are only academic extensions.",
-        "Academic reference",
+        tx("theory_hero_title"),
+        tx("theory_hero_desc"),
+        tx("theory_hero_kicker"),
     )
-    render_exam_path("Theory/PEAS")
+    render_exam_path("Theory/PEAS", t=t)
     render_grading_summary_panel()
     render_exam_defense_panel()
     render_grading_report_export(
@@ -43,9 +44,9 @@ def render_theory_tab() -> None:
     st.markdown("---")
     st.subheader("Chi tiết lý thuyết thuật toán")
 
-    group = st.selectbox("Algorithm Group", list(ALGORITHM_GROUPS.keys()), key="theory_group")
+    group = st.selectbox(tx("run_group"), list(ALGORITHM_GROUPS.keys()), key="theory_group")
     algorithms = ALGORITHM_GROUPS[group]
-    algo_name = st.selectbox("Algorithm", algorithms, key="theory_algo")
+    algo_name = st.selectbox(tx("run_algo"), algorithms, key="theory_algo")
 
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
     theory_data = THEORY.get(theory_key)
@@ -54,6 +55,6 @@ def render_theory_tab() -> None:
         render_algorithm_role_card(algo_name)
         render_algorithm_info(algo_name, theory_data)
     else:
-        st.info(f"Detailed theory for {algo_name} coming soon.")
-        st.markdown(f"**{algo_name}** belongs to group: **{group}**")
+        st.info(tx("theory_coming_soon", algo=algo_name))
+        st.markdown(tx("theory_belongs_group", algo=algo_name, group=group))
 

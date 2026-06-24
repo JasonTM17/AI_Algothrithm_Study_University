@@ -69,47 +69,48 @@ def _apply_ai_replay_step(index: int) -> None:
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
-    st.title("15-Puzzle | Interactive Board")
+    st.title(t("play_title"))
     render_academic_header(
-        "15-Puzzle AI Solver Lab",
-        "A final-exam dashboard for demonstrating PEAS, state-space search, heuristics, and the boundary between real solvers and educational extensions.",
+        t("play_hero_title"),
+        t("play_hero_desc"),
+        t("play_hero_kicker"),
     )
-    render_exam_path("Play")
+    render_exam_path("Play", t=t)
 
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.subheader("Start State")
+        st.subheader(t("play_start"))
         render_puzzle_board(st.session_state.start_state)
         h = HEURISTICS["Manhattan Distance"](st.session_state.start_state)
-        st.metric("Manhattan Distance", h)
-        st.metric("Is Solvable", "Yes" if solvable else "No")
+        st.metric(t("play_manhattan"), h)
+        st.metric(t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no"))
 
     with col2:
-        st.subheader("Goal State")
+        st.subheader(t("play_goal"))
         render_puzzle_board(GOAL_STATE, highlight_correct=False)
-        st.metric("Manhattan Distance", 0)
+        st.metric(t("play_manhattan"), 0)
 
     st.markdown("---")
 
     # Image import section
-    st.subheader("Custom Image")
-    st.markdown("Upload an image to use as puzzle tiles. The image will be split into 15 pieces.")
-    uploaded_img = st.file_uploader("Upload puzzle image", type=["png", "jpg", "jpeg", "webp"], key="puzzle_img")
+    st.subheader(t("play_custom_img"))
+    st.markdown(t("play_upload_desc"))
+    uploaded_img = st.file_uploader(t("play_upload_label"), type=["png", "jpg", "jpeg", "webp"], key="puzzle_img")
     if uploaded_img:
         tiles = process_uploaded_image(uploaded_img)
         if tiles:
             st.session_state.image_tiles = tiles
             st.session_state.image_active = True
-            st.success(f"Image loaded! {len(tiles)} tile pieces created.")
+            st.success(t("play_img_loaded", count=len(tiles)))
         else:
-            st.error("Failed to process image. Make sure it's a valid image file.")
-    if st.button("Remove Image", key="remove_img"):
+            st.error(t("play_img_failed"))
+    if st.button(t("play_remove_img"), key="remove_img"):
         st.session_state.image_tiles = {}
         st.session_state.image_active = False
 
     st.markdown("---")
-    st.subheader("Manual Play")
-    st.markdown("Click any tile adjacent to the blank space to slide it.")
+    st.subheader(t("play_manual"))
+    st.markdown(t("play_manual_desc"))
 
     if "play_state" not in st.session_state:
         st.session_state.play_state = st.session_state.start_state
@@ -142,6 +143,12 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                 highlight_correct=True,
                 on_click_fn=_handle_play_slide,
                 show_numbers=st.session_state.get("show_numbers", True),
+                action_labels={
+                    "L": t("slide_right"),
+                    "R": t("slide_left"),
+                    "U": t("slide_down"),
+                    "D": t("slide_up"),
+                },
             )
         with col_preview:
             st.markdown('<div class="image-preview-title">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
@@ -170,21 +177,21 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
 
     col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
-        st.metric("Moves", st.session_state.play_moves)
+        st.metric(t("play_moves"), st.session_state.play_moves)
     with col_m2:
         h_play = HEURISTICS["Manhattan Distance"](st.session_state.play_state)
-        st.metric("Manhattan Dist", h_play)
+        st.metric(t("play_manhattan"), h_play)
     with col_m3:
         correct = sum(1 for i, v in enumerate(st.session_state.play_state) if v == GOAL_STATE[i] and v != 0)
-        st.metric("Tiles Correct", f"{correct}/15")
+        st.metric(t("play_tiles_correct"), f"{correct}/15")
 
     if st.session_state.play_state == GOAL_STATE:
         st.balloons()
-        st.success(f"You solved it in {st.session_state.play_moves} moves!")
+        st.success(t("play_solved_success", moves=st.session_state.play_moves))
 
     col_reset1, col_reset2 = st.columns(2)
     with col_reset1:
-        if st.button("Reset Play Board"):
+        if st.button(t("play_reset_board")):
             st.session_state.play_state = st.session_state.start_state
             st.session_state.play_moves = 0
             st.session_state.play_history = [st.session_state.start_state]
@@ -196,20 +203,19 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     st.markdown("---")
     
     with col_reset2:
-        if st.button("Undo Last Move", disabled=len(st.session_state.play_history) <= 1):
+        if st.button(t("play_undo"), disabled=len(st.session_state.play_history) <= 1):
             st.session_state.play_history.pop()
             st.session_state.play_state = st.session_state.play_history[-1]
             st.session_state.play_moves = max(0, st.session_state.play_moves - 1)
             _clear_ai_replay()
             st.rerun()
 
-    st.subheader("Academic Challenge Mode")
+    st.subheader(t("play_challenge_title"))
     st.caption(
-        "A* with admissible Linear Conflict proves the optimal distance. "
-        "Your recorded play history is certified step-by-step, then scored only after it reaches the goal."
+        t("play_challenge_desc")
     )
-    if st.button("Prove Optimal Move Count", key="btn_prove_optimal"):
-        with st.spinner("Computing an optimal certificate..."):
+    if st.button(t("play_prove_optimal"), key="btn_prove_optimal"):
+        with st.spinner(t("play_computing_certificate")):
             proof_result = a_star(
                 start=st.session_state.play_start_ref,
                 goal=GOAL_STATE,
