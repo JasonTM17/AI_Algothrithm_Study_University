@@ -347,7 +347,7 @@ def min_conflicts(
                 path=[], actions=[], cost=0, depth=0,
                 nodes_expanded=i, nodes_generated=i,
                 runtime=time.perf_counter() - t0,
-                message=(f"Tile-placement assignment reached the goal after {i} swaps, but this is not "
+                message=(f"Tile-placement assignment reached the goal after {i} iterations, but this is not "
                          "a 15-puzzle solution because arbitrary swaps are not legal blank moves."),
                 trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False)
 
@@ -372,7 +372,6 @@ def min_conflicts(
                 best_swap = other
 
         if best_swap is not None:
-            old_val = current[pos]
             current[pos], current[best_swap] = current[best_swap], current[pos]
             total_conflicts = best_conflicts
             if len(trace) < 200:

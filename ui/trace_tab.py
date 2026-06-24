@@ -11,11 +11,11 @@ def trace_rows(trace) -> list[dict[str, object]]:
     rows = []
     for step in trace:
         row = {"Step": step.step, "Event": step.event, "Action": step.action or ""}
-        if step.g > 0:
+        if step.g is not None and step.g > 0:
             row["g(n)"] = step.g
-        if step.h > 0:
+        if step.h is not None and step.h > 0:
             row["h(n)"] = f"{step.h:.1f}"
-        if step.f > 0:
+        if step.f is not None and step.f > 0:
             row["f(n)"] = f"{step.f:.1f}"
         if step.frontier_size > 0:
             row["Frontier"] = step.frontier_size
