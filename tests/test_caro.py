@@ -12,6 +12,7 @@ from algorithms.caro import (
     is_draw,
     winner,
 )
+from algorithms.caro_rules import opponent
 
 
 def board_state(size, stones, current_player="X"):
@@ -41,6 +42,20 @@ def test_caro_rejects_invalid_moves():
     occupied = apply_caro_move(state, 2, 2)
     with pytest.raises(ValueError, match="occupied"):
         apply_caro_move(occupied, 2, 2)
+
+
+def test_caro_rejects_invalid_board_marks():
+    with pytest.raises(ValueError, match="only"):
+        CaroState(size=5, board=tuple(["Z"] * 25), current_player="X")
+
+
+def test_caro_rejects_invalid_player_symbols():
+    with pytest.raises(ValueError, match="Player"):
+        opponent("Z")
+
+    state = create_initial_caro_state(5)
+    with pytest.raises(ValueError, match="Player"):
+        evaluate_caro_state(state, "Z")
 
 
 def test_caro_draw_detection_when_board_full_without_winner():

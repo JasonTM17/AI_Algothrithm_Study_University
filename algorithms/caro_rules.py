@@ -20,6 +20,9 @@ class CaroState:
         board = self.board or (EMPTY,) * (self.size * self.size)
         if len(board) != self.size * self.size:
             raise ValueError("Board length must equal size * size")
+        invalid_marks = set(board) - {EMPTY, *PLAYERS}
+        if invalid_marks:
+            raise ValueError("Board may contain only '.', 'X', or 'O'")
         if self.current_player not in PLAYERS:
             raise ValueError("Current player must be X or O")
         object.__setattr__(self, "board", tuple(board))
@@ -33,6 +36,8 @@ def create_initial_caro_state(size: int = 15) -> CaroState:
 
 
 def opponent(player: str) -> str:
+    if player not in PLAYERS:
+        raise ValueError("Player must be X or O")
     return "O" if player == "X" else "X"
 
 
