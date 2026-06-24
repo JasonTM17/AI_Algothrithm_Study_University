@@ -22,6 +22,11 @@ def render_styles():
     st.markdown(STYLES, unsafe_allow_html=True)
 
 
+def _active_goal_state(goal: tuple | None = None) -> tuple:
+    """Return the comparison goal used by the current UI render."""
+    return goal or st.session_state.get("goal_state", GOAL_STATE)
+
+
 # ── Click-to-Slide Helpers ──────────────────────────────────────
 
 def _is_adjacent_to_blank(state: tuple, tile_idx: int) -> bool:
@@ -52,7 +57,7 @@ def _get_slide_direction(state: tuple, tile_idx: int) -> str | None:
 
 def render_clickable_board(state: tuple, key_prefix: str = "board",
                            highlight_correct: bool = True,
-                           on_click_fn=None):
+                           on_click_fn=None, goal: tuple | None = None):
     """Render interactive 4x4 puzzle board with game-like 3D tile design.
 
     Uses HTML grid for visuals + Streamlit columns/buttons for interaction.
@@ -64,6 +69,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
         highlight_correct: green highlight for tiles in goal position
         on_click_fn: callback function(direction) when a tile is clicked
     """
+    goal_state = _active_goal_state(goal)
     with st.container():
         st.markdown('<div class="interactive-board-container-number"></div>', unsafe_allow_html=True)
         for r in range(4):
@@ -79,7 +85,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
                         )
                     else:
                         cls_list = ["puzzle-tile", f"row-{r}"]
-                        if highlight_correct and val == GOAL_STATE[idx]:
+                        if highlight_correct and val == goal_state[idx]:
                             cls_list.append("correct")
                         cls_str = " ".join(cls_list)
 
@@ -99,7 +105,8 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
 
 def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                        highlight_correct: bool = True, on_click_fn=None,
-                       show_numbers: bool = False, action_labels: dict[str, str] | None = None):
+                       show_numbers: bool = False, action_labels: dict[str, str] | None = None,
+                       goal: tuple | None = None):
     """Render interactive 4x4 board with image tiles and optional number overlay.
 
     Each tile shows the image piece. Blank tile is empty.
@@ -113,6 +120,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
         on_click_fn: callback function(direction) when a tile is clicked
         show_numbers: overlay a small number indicator on top-left of each tile
     """
+    goal_state = _active_goal_state(goal)
     with st.container():
         st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
         for r in range(4):
@@ -133,7 +141,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                         st.button(f" ", key=f"{key_prefix}_blank_btn_{r}_{c}",
                                   disabled=True, width="stretch")
                     elif val in image_tiles:
-                        is_correct = highlight_correct and val == GOAL_STATE[idx]
+                        is_correct = highlight_correct and val == goal_state[idx]
                         border_color = "#697d5f" if is_correct else "#b8793e"
                         
                         number_badge = ""
@@ -178,7 +186,12 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                                   disabled=True, width="stretch")
 
 
-def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str = "normal"):
+def render_puzzle_board(
+    state: tuple,
+    highlight_correct: bool = True,
+    size: str = "normal",
+    goal: tuple | None = None,
+):
     """Render 4x4 puzzle board as HTML with game-like styling.
 
     Args:
@@ -189,6 +202,7 @@ def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str 
     cell_size = {"normal": 70, "small": 50, "mini": 28}[size]
     font_size = {"normal": 22, "small": 16, "mini": 10}[size]
 
+    goal_state = _active_goal_state(goal)
     cells = []
     for i, val in enumerate(state):
         if val == 0:
@@ -197,7 +211,7 @@ def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str 
                 f'font-size:{font_size}px;">_</div>'
             )
         else:
-            correct = (val == GOAL_STATE[i]) if highlight_correct else False
+            correct = (val == goal_state[i]) if highlight_correct else False
             cls = "correct" if correct else "filled"
             cells.append(
                 f'<div class="puzzle-cell {cls}" style="width:{cell_size}px;height:{cell_size}px;'
@@ -208,7 +222,12 @@ def render_puzzle_board(state: tuple, highlight_correct: bool = True, size: str 
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_puzzle_with_image(state: tuple, image_tiles: dict, highlight_correct: bool = True):
+def render_puzzle_with_image(
+    state: tuple,
+    image_tiles: dict,
+    highlight_correct: bool = True,
+    goal: tuple | None = None,
+):
     """Render 4x4 puzzle board with image tiles overlaid on numbers.
 
     Args:
@@ -216,6 +235,7 @@ def render_puzzle_with_image(state: tuple, image_tiles: dict, highlight_correct:
         image_tiles: dict mapping tile value (1-15) to base64-encoded image data URL
         highlight_correct: Whether to highlight tiles in goal position
     """
+    goal_state = _active_goal_state(goal)
     cells = []
     for i, val in enumerate(state):
         if val == 0:
@@ -223,7 +243,7 @@ def render_puzzle_with_image(state: tuple, image_tiles: dict, highlight_correct:
                 '<div class="puzzle-cell blank" style="width:70px;height:70px;font-size:22px;">_</div>'
             )
         else:
-            correct = (val == GOAL_STATE[i]) if highlight_correct else False
+            correct = (val == goal_state[i]) if highlight_correct else False
             cls = "correct" if correct else "filled"
             img_html = ""
             if val in image_tiles:
@@ -237,7 +257,12 @@ def render_puzzle_with_image(state: tuple, image_tiles: dict, highlight_correct:
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_puzzle_row(states: list[tuple], labels: list[str] = None, max_cols: int = 5):
+def render_puzzle_row(
+    states: list[tuple],
+    labels: list[str] = None,
+    max_cols: int = 5,
+    goal: tuple | None = None,
+):
     """Render multiple puzzle states in a row."""
     if not states:
         return
@@ -247,7 +272,7 @@ def render_puzzle_row(states: list[tuple], labels: list[str] = None, max_cols: i
         with col:
             if labels and i < len(labels):
                 st.caption(labels[i])
-            render_puzzle_board(state)
+            render_puzzle_board(state, goal=goal)
 
 
 def render_result_metrics(result):
@@ -297,11 +322,18 @@ def render_trace_table(trace: list, max_rows: int = 100):
         st.info(t("tc_no_trace"))
         return
 
+    labels, details = _trace_state_catalog(trace[:max_rows])
     rows = []
     for step in trace[:max_rows]:
         row = {
             t("tc_step"): step.step,
             "Event": step.event,
+            t("tc_node"): _format_trace_state(
+                step.state, labels, details, include_parent=True,
+            ),
+            t("tc_parent"): _format_trace_state(
+                getattr(step, "node_state", None), labels, details,
+            ),
             t("tc_action"): step.action or "-",
         }
         if step.g is not None and step.g > 0:
@@ -310,10 +342,22 @@ def render_trace_table(trace: list, max_rows: int = 100):
             row["h(n)"] = f"{step.h:.1f}"
         if step.f is not None and step.f > 0:
             row["f(n)"] = f"{step.f:.1f}"
-        if step.frontier_size is not None and step.frontier_size > 0:
+        if step.frontier_states:
+            row[t("tc_frontier")] = _format_trace_state_list(
+                step.frontier_states, labels, details,
+            )
+        elif step.frontier_size is not None and step.frontier_size > 0:
             row[t("tc_frontier")] = step.frontier_size
-        if step.reached_size is not None and step.reached_size > 0:
+        if step.reached_states:
+            row[t("tc_reached")] = _format_trace_state_list(
+                step.reached_states, labels, details,
+            )
+        elif step.reached_size is not None and step.reached_size > 0:
             row[t("tc_reached")] = step.reached_size
+        if step.frontier_size is not None and step.frontier_size > 0:
+            row[t("tc_frontier_size")] = step.frontier_size
+        if step.reached_size is not None and step.reached_size > 0:
+            row[t("tc_reached_size")] = step.reached_size
         if step.temperature is not None:
             row[t("tc_temp")] = f"{step.temperature:.4f}"
         if step.probability is not None:
@@ -335,13 +379,120 @@ def render_trace_table(trace: list, max_rows: int = 100):
     st.dataframe(df, width="stretch", height=300)
 
 
-def _state_to_mini_grid(state: tuple) -> str:
+def _state_label(index: int) -> str:
+    """Return spreadsheet-like labels: A..Z, A1..Z1, A2..."""
+    letter = chr(ord("A") + (index % 26))
+    suffix = "" if index < 26 else str(index // 26)
+    return f"{letter}{suffix}"
+
+
+def _is_puzzle_state(value: object) -> bool:
+    return isinstance(value, tuple) and len(value) == 16 and set(value) == set(range(16))
+
+
+def _trace_state_catalog(trace: list) -> tuple[dict[tuple, str], dict[tuple, dict[str, object]]]:
+    """Build stable labels and first-known metrics for states appearing in a trace."""
+    labels: dict[tuple, str] = {}
+    details: dict[tuple, dict[str, object]] = {}
+
+    def ensure_label(state: tuple | None) -> None:
+        if _is_puzzle_state(state) and state not in labels:
+            labels[state] = _state_label(len(labels))
+
+    for step in trace:
+        ensure_label(getattr(step, "node_state", None))
+        ensure_label(getattr(step, "state", None))
+        for state in getattr(step, "frontier_states", None) or []:
+            ensure_label(state)
+        for state in getattr(step, "reached_states", None) or []:
+            ensure_label(state)
+
+        state = getattr(step, "state", None)
+        if _is_puzzle_state(state):
+            details.setdefault(
+                state,
+                {
+                    "action": step.action,
+                    "g": step.g,
+                    "h": step.h,
+                    "f": step.f,
+                    "parent": getattr(step, "node_state", None),
+                    "event": step.event,
+                },
+            )
+
+        parent = getattr(step, "node_state", None)
+        if _is_puzzle_state(parent):
+            details.setdefault(
+                parent,
+                {
+                    "action": None,
+                    "g": max(int(step.g or 0) - 1, 0),
+                    "h": None,
+                    "f": None,
+                    "parent": None,
+                    "event": "expand",
+                },
+            )
+    return labels, details
+
+
+def _metric_text(name: str, value: object) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, float):
+        return f"{name}={value:g}"
+    return f"{name}={value}"
+
+
+def _format_trace_state(
+    state: tuple | None,
+    labels: dict[tuple, str],
+    details: dict[tuple, dict[str, object]],
+    *,
+    include_parent: bool = False,
+) -> str:
+    if not _is_puzzle_state(state):
+        return "-"
+    info = details.get(state, {})
+    parts = [labels.get(state, "?")]
+    action = info.get("action")
+    if action:
+        parts.append(str(action))
+    for metric in ("g", "h", "f"):
+        metric_part = _metric_text(metric, info.get(metric))
+        if metric_part:
+            parts.append(metric_part)
+    if include_parent and _is_puzzle_state(info.get("parent")):
+        parts.append(f"cha={labels.get(info['parent'], '?')}")
+    return f"({', '.join(parts)})"
+
+
+def _format_trace_state_list(
+    states: list[tuple] | None,
+    labels: dict[tuple, str],
+    details: dict[tuple, dict[str, object]],
+    limit: int = 6,
+) -> str:
+    if not states:
+        return "-"
+    shown = [
+        _format_trace_state(state, labels, details)
+        for state in states[:limit]
+    ]
+    if len(states) > limit:
+        shown.append(f"... +{len(states) - limit}")
+    return " ".join(shown)
+
+
+def _state_to_mini_grid(state: tuple, goal: tuple | None = None) -> str:
     """Return a compact HTML mini-grid for a puzzle state."""
+    goal_state = _active_goal_state(goal)
     cells = []
     for i, v in enumerate(state):
         if v == 0:
             cells.append('<span class="mc b">_</span>')
-        elif v == GOAL_STATE[i]:
+        elif v == goal_state[i]:
             cells.append(f'<span class="mc c">{v}</span>')
         else:
             cells.append(f'<span class="mc f">{v}</span>')
@@ -374,12 +525,18 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         st.info(t("det_no_detail"))
         return
 
-    step_idx = st.slider(
-        t("det_slider"), 0, min(len(trace) - 1, max_rows - 1), 0,
-        key="detail_step_slider"
-    )
+    max_step_index = min(len(trace) - 1, max_rows - 1)
+    if max_step_index == 0:
+        step_idx = 0
+        st.caption(t("det_single_step"))
+    else:
+        step_idx = st.slider(
+            t("det_slider"), 0, max_step_index, 0,
+            key="detail_step_slider"
+        )
 
     step = trace[step_idx]
+    labels, details = _trace_state_catalog(trace[:max_rows])
 
     st.markdown(f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
                 f"g={step.g} h={step.h:.1f} f={step.f:.1f}")
@@ -400,6 +557,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         if step.frontier_states and len(step.frontier_states) > 0:
             frontier_display = step.frontier_states[:6]
             for i, fs in enumerate(frontier_display):
+                st.caption(_format_trace_state(fs, labels, details, include_parent=True))
                 st.markdown(_state_to_mini_grid(fs), unsafe_allow_html=True)
             if len(step.frontier_states) > 6:
                 st.caption(t("det_more", count=len(step.frontier_states) - 6))
@@ -411,6 +569,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         if step.reached_states and len(step.reached_states) > 0:
             reached_display = step.reached_states[:6]
             for i, rs in enumerate(reached_display):
+                st.caption(_format_trace_state(rs, labels, details, include_parent=True))
                 st.markdown(_state_to_mini_grid(rs), unsafe_allow_html=True)
             if len(step.reached_states) > 6:
                 st.caption(t("det_more", count=len(step.reached_states) - 6))

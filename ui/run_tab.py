@@ -38,6 +38,7 @@ def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple
 
 def render_run_algorithm_tab(t=None) -> None:
     tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
+    goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(tx("run_title"))
     render_academic_header(
         tx("run_hero_title"),
@@ -121,7 +122,7 @@ def render_run_algorithm_tab(t=None) -> None:
             extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
 
     run_signature = (
-        tuple(st.session_state.start_state), selected_fn_name, algo_name, heuristic,
+        tuple(st.session_state.start_state), tuple(goal), selected_fn_name, algo_name, heuristic,
         tie_breaker, action_order, int(max_nodes), int(max_depth), float(timeout),
         tuple(sorted(extra_params.items())), fresh_seed_each_run, int(manual_seed),
     )
@@ -130,7 +131,7 @@ def render_run_algorithm_tab(t=None) -> None:
 
     if st.button(tx("run_btn"), key="btn_run", type="primary"):
         start = st.session_state.start_state
-        if not is_solvable(start):
+        if not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
         else:
             fn_name = selected_fn_name
@@ -185,7 +186,7 @@ def render_run_algorithm_tab(t=None) -> None:
                     kwargs = build_solver_kwargs(
                         fn_name,
                         start=start,
-                        goal=GOAL_STATE,
+                        goal=goal,
                         timeout=float(timeout),
                         action_order=action_order,
                         max_nodes=int(max_nodes),

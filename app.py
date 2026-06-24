@@ -27,6 +27,8 @@ render_styles()
 # Initialize session state.
 if "start_state" not in st.session_state:
     st.session_state.start_state = scramble(depth=10, seed=42)
+if "goal_state" not in st.session_state:
+    st.session_state.goal_state = GOAL_STATE
 if "benchmark_results" not in st.session_state:
     st.session_state.benchmark_results = []
 if "image_tiles" not in st.session_state:
@@ -82,7 +84,11 @@ if state_input_method == t("sb_random"):
         scramble_seed = st.number_input(t("sb_seed"), 0, 99999, 42, key="scramble_seed")
 
     if st.sidebar.button(t("sb_generate"), key="btn_random"):
-        st.session_state.start_state = scramble(depth=scramble_depth, seed=scramble_seed)
+        st.session_state.start_state = scramble(
+            goal=st.session_state.goal_state,
+            depth=scramble_depth,
+            seed=scramble_seed,
+        )
 
 elif state_input_method == t("sb_manual"):
     manual_input = st.sidebar.text_area(
@@ -98,6 +104,32 @@ elif state_input_method == t("sb_manual"):
         except ValueError as e:
             st.sidebar.error(t("sb_parse_error", error=e))
 
+st.sidebar.markdown("---")
+st.sidebar.subheader(t("sb_goal_state"))
+goal_input = st.sidebar.text_area(
+    t("sb_goal_manual_desc"),
+    value=" ".join(str(x) for x in st.session_state.goal_state),
+    key="goal_manual_input",
+    height=80,
+)
+goal_col1, goal_col2 = st.sidebar.columns(2)
+with goal_col1:
+    if st.button(t("sb_parse_goal"), key="btn_parse_goal"):
+        try:
+            st.session_state.goal_state = parse_state(goal_input)
+            st.sidebar.success(t("sb_goal_parse_success"))
+            st.session_state.pop("last_result", None)
+            st.session_state.benchmark_results = []
+            st.rerun()
+        except ValueError as e:
+            st.sidebar.error(t("sb_parse_error", error=e))
+with goal_col2:
+    if st.button(t("sb_standard_goal"), key="btn_standard_goal"):
+        st.session_state.goal_state = GOAL_STATE
+        st.session_state.pop("last_result", None)
+        st.session_state.benchmark_results = []
+        st.rerun()
+
 teaching_preset_name = st.sidebar.selectbox(
     t("teaching_preset"),
     list(TEACHING_PRESETS.keys()),
@@ -110,9 +142,9 @@ if st.sidebar.button(t("load_teaching_preset"), key="btn_load_teaching_preset"):
     st.sidebar.info(str(preset["purpose"]))
 
 if st.sidebar.button(t("sb_reset_goal"), key="btn_reset"):
-    st.session_state.start_state = GOAL_STATE
+    st.session_state.start_state = st.session_state.goal_state
 
-solvable = is_solvable(st.session_state.start_state)
+solvable = is_solvable(st.session_state.start_state, st.session_state.goal_state)
 if solvable:
     st.sidebar.success(t("sb_solvable"))
 else:
@@ -154,6 +186,8 @@ st.sidebar.markdown("---")
 st.sidebar.subheader(t("sb_curr_start"))
 with st.sidebar:
     render_puzzle_board(st.session_state.start_state, highlight_correct=True)
+    st.caption(t("sb_curr_goal"))
+    render_puzzle_board(st.session_state.goal_state, highlight_correct=False)
 
 # Main tab router.
 if tab == "Play":
@@ -169,7 +203,7 @@ elif tab == "Compare":
 elif tab == "Theory":
     render_theory_tab(t=t)
 elif tab == "Advanced":
-    render_advanced_tab(st.session_state.start_state)
+    render_advanced_tab(st.session_state.start_state, st.session_state.goal_state)
 
 
 if __name__ == "__main__":

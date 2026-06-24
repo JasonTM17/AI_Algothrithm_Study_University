@@ -31,6 +31,7 @@ BENCHMARK_GROUPS = (
 
 def render_compare_tab(t=None) -> None:
     tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
+    goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(tx("compare_title"))
     render_academic_header(
         tx("compare_hero_title"),
@@ -51,6 +52,7 @@ def render_compare_tab(t=None) -> None:
     with col_preset:
         if st.button(tx("compare_load_preset_state"), key="btn_load_benchmark_preset"):
             st.session_state.start_state = scramble(
+                goal=goal,
                 depth=int(preset["depth"]),
                 seed=int(preset["seed"]),
             )
@@ -122,6 +124,7 @@ def render_compare_tab(t=None) -> None:
 
     benchmark_signature = (
         tuple(st.session_state.start_state),
+        tuple(goal),
         preset_name,
         tuple(selected_groups),
         tuple(selected_algos),
@@ -140,7 +143,7 @@ def render_compare_tab(t=None) -> None:
 
     if st.button(tx("compare_run_btn"), key="btn_benchmark", type="primary"):
         start = st.session_state.start_state
-        if not is_solvable(start):
+        if not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
         else:
             import algorithms.uninformed as u
@@ -180,7 +183,7 @@ def render_compare_tab(t=None) -> None:
                             manual_seed=int(fixed_benchmark_seed),
                             previous_seed=previous_seed,
                         )
-                        kwargs = dict(start=start, goal=GOAL_STATE,
+                        kwargs = dict(start=start, goal=goal,
                                      timeout=float(timeout), action_order="LRUD")
                         if run_seed is not None:
                             kwargs["seed"] = run_seed

@@ -126,16 +126,16 @@ def _get_sort_key(item, algorithm, tie_breaker):
     return counter
 
 
-def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_depth, action_order):
+def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_depth, action_order, goal):
     """Initialize state for a new hand-tracing challenge."""
     # Generate simple start state solvable in scramble_depth steps
-    start_state = scramble(depth=scramble_depth, seed=None, action_order=action_order)
+    start_state = scramble(goal=goal, depth=scramble_depth, seed=None, action_order=action_order)
     
     # Ensure it's solvable and not already solved (max 1000 attempts)
     for _ in range(1000):
-        if start_state != GOAL_STATE and is_solvable(start_state):
+        if start_state != goal and is_solvable(start_state, goal):
             break
-        start_state = scramble(depth=scramble_depth, seed=None, action_order=action_order)
+        start_state = scramble(goal=goal, depth=scramble_depth, seed=None, action_order=action_order)
         
     h_fn = HEURISTICS.get(heuristic_name, manhattan_distance)
     
@@ -146,9 +146,10 @@ def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_dept
     st.session_state.ht_tie_breaker = tie_breaker
     st.session_state.ht_action_order = action_order
     st.session_state.ht_scramble_depth = scramble_depth
+    st.session_state.ht_goal = goal
     
     # Root node setup
-    root_h = h_fn(start_state) if algorithm not in ["BFS", "DFS", "UCS"] else 0.0
+    root_h = h_fn(start_state, goal=goal) if algorithm not in ["BFS", "DFS", "UCS"] else 0.0
     root_node = Node(state=start_state, g=0, depth=0, h=root_h)
     
     st.session_state.ht_step = 0
@@ -168,6 +169,7 @@ def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_dept
 
 
 def render_hand_tracing_page():
+    goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(t("ht_title"))
     render_exam_path("Hand-Tracing")
     st.markdown(t("ht_desc"))
@@ -217,7 +219,7 @@ def render_hand_tracing_page():
         )
 
         if st.button(t("ht_btn_generate"), key="btn_ht_generate", type="primary"):
-            init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_depth, action_order)
+            init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_depth, action_order, goal)
             st.rerun()
 
     if not st.session_state.get("ht_active", False):
@@ -237,6 +239,7 @@ def render_hand_tracing_page():
     reached = st.session_state.ht_reached
     step_num = st.session_state.ht_step
     solved = st.session_state.ht_solved
+    goal = st.session_state.get("ht_goal", goal)
 
     st.markdown("---")
     col_info, col_btn = st.columns([3, 1])
@@ -264,14 +267,14 @@ def render_hand_tracing_page():
     col_start, col_curr, col_goal = st.columns(3)
     with col_start:
         st.markdown(f"**{t('ht_state_start')}**")
-        render_puzzle_board(st.session_state.ht_start, size="small")
+        render_puzzle_board(st.session_state.ht_start, size="small", goal=goal)
     with col_curr:
         st.markdown(f"**{t('ht_state_curr')}**")
-        render_puzzle_board(st.session_state.ht_current.state, size="small")
+        render_puzzle_board(st.session_state.ht_current.state, size="small", goal=goal)
         st.caption(t("ht_curr_step", step=step_num))
     with col_goal:
         st.markdown(f"**{t('ht_state_goal')}**")
-        render_puzzle_board(GOAL_STATE, highlight_correct=False, size="small")
+        render_puzzle_board(goal, highlight_correct=False, size="small", goal=goal)
 
     # Show feedback from last choice
     if st.session_state.ht_feedback:
@@ -315,7 +318,7 @@ def render_hand_tracing_page():
         col_idx = i % row_size
         with row_cols[col_idx]:
             st.markdown(f"**{t('ht_choice', num=i+1)}**")
-            render_puzzle_board(node.state, size="mini")
+            render_puzzle_board(node.state, size="mini", goal=goal)
             
             # Print node metrics
             metrics_str = f"g={node.g}"
@@ -352,7 +355,7 @@ def render_hand_tracing_page():
                 st.session_state.ht_expanded_node_ids.append(chosen_id)
             
             # Check if this node is Goal
-            if chosen_node.state == GOAL_STATE:
+            if chosen_node.state == goal:
                 # Add to history
                 hist_item = {
                     t("tc_step"): step_num + 1,
@@ -398,7 +401,7 @@ def render_hand_tracing_page():
                         continue
                 
                 # Node is valid, create child
-                h_val = h_fn(ns) if algo in ["Greedy Best-First", "A*"] else 0.0
+                h_val = h_fn(ns, goal=goal) if algo in ["Greedy Best-First", "A*"] else 0.0
                 child = Node(state=ns, parent=chosen_node, action=action, g=new_g, depth=chosen_node.depth + 1, h=h_val)
                 _record_hand_trace_edge(chosen_node, child, action)
                 

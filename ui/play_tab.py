@@ -86,7 +86,8 @@ def _apply_ai_replay_step(index: int) -> None:
 
 def _render_victory_notice(t) -> None:
     """Show a varied, stable win message when the live board matches the goal."""
-    if st.session_state.play_state != GOAL_STATE:
+    goal = st.session_state.get("goal_state", GOAL_STATE)
+    if st.session_state.play_state != goal:
         return
 
     signature = (
@@ -108,6 +109,7 @@ def _render_victory_notice(t) -> None:
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
+    goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(t("play_title"))
     render_academic_header(
         t("play_hero_title"),
@@ -119,14 +121,14 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     col1, col2 = st.columns([1, 1])
     with col1:
         st.subheader(t("play_start"))
-        render_puzzle_board(st.session_state.start_state)
-        h = HEURISTICS["Manhattan Distance"](st.session_state.start_state)
+        render_puzzle_board(st.session_state.start_state, goal=goal)
+        h = HEURISTICS["Manhattan Distance"](st.session_state.start_state, goal=goal)
         st.metric(t("play_manhattan"), h)
         st.metric(t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no"))
 
     with col2:
         st.subheader(t("play_goal"))
-        render_puzzle_board(GOAL_STATE, highlight_correct=False)
+        render_puzzle_board(goal, highlight_correct=False, goal=goal)
         st.metric(t("play_manhattan"), 0)
 
     st.markdown("---")
@@ -162,12 +164,18 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
 
     if "play_start_ref" not in st.session_state:
         st.session_state.play_start_ref = st.session_state.start_state
-    if st.session_state.play_start_ref != st.session_state.start_state:
+    if "play_goal_ref" not in st.session_state:
+        st.session_state.play_goal_ref = goal
+    if (
+        st.session_state.play_start_ref != st.session_state.start_state
+        or st.session_state.play_goal_ref != goal
+    ):
         st.session_state.play_state = st.session_state.start_state
         st.session_state.play_moves = 0
         st.session_state.play_history = [st.session_state.start_state]
         st.session_state.play_assisted = False
         st.session_state.play_start_ref = st.session_state.start_state
+        st.session_state.play_goal_ref = goal
         _clear_ai_replay()
         _clear_victory_state()
         st.session_state.pop("play_optimal_result", None)
@@ -183,6 +191,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                 highlight_correct=True,
                 on_click_fn=_handle_play_slide,
                 show_numbers=st.session_state.get("show_numbers", True),
+                goal=goal,
                 action_labels={
                     "L": t("slide_right"),
                     "R": t("slide_left"),
@@ -213,16 +222,17 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
             key_prefix="play",
             highlight_correct=True,
             on_click_fn=_handle_play_slide,
+            goal=goal,
         )
 
     col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
         st.metric(t("play_moves"), st.session_state.play_moves)
     with col_m2:
-        h_play = HEURISTICS["Manhattan Distance"](st.session_state.play_state)
+        h_play = HEURISTICS["Manhattan Distance"](st.session_state.play_state, goal=goal)
         st.metric(t("play_manhattan"), h_play)
     with col_m3:
-        correct = sum(1 for i, v in enumerate(st.session_state.play_state) if v == GOAL_STATE[i] and v != 0)
+        correct = sum(1 for i, v in enumerate(st.session_state.play_state) if v == goal[i] and v != 0)
         st.metric(t("play_tiles_correct"), f"{correct}/15")
 
     _render_victory_notice(t)
@@ -258,7 +268,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         with st.spinner(t("play_computing_certificate")):
             proof_result = a_star(
                 start=st.session_state.play_start_ref,
-                goal=GOAL_STATE,
+                goal=goal,
                 heuristic="Linear Conflict",
                 timeout=30.0,
                 max_nodes=300000,
@@ -269,54 +279,60 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     if proof_result:
         if proof_result.success and proof_result.optimality_proven:
             try:
-                player_cert = validate_player_run(st.session_state.play_history, GOAL_STATE)
+                player_cert = validate_player_run(st.session_state.play_history, goal)
             except Exception as e:
-                st.error(f"Player-run validation failed: {e}")
+                st.error(t("play_cert_validation_failed", error=e))
                 player_cert = None
             assisted = st.session_state.get("play_assisted", False)
             if player_cert is None:
                 return
-            try:
-                score = score_challenge(player_cert.move_count, len(proof_result.actions))
-            except Exception as e:
-                st.error(f"Score computation failed: {e}")
-                return
             cert_cols = st.columns(4)
-            cert_cols[0].metric("Player Run", "Legal" if player_cert.is_legal else "Invalid")
-            cert_cols[1].metric("Recorded Moves", player_cert.move_count)
-            cert_cols[2].metric("Reached Goal", "Yes" if player_cert.reaches_goal else "No")
-            cert_cols[3].metric("Assistance", "AI-assisted" if assisted else "Unassisted")
+            cert_cols[0].metric(
+                t("play_cert_player_run"),
+                t("play_cert_legal") if player_cert.is_legal else t("play_cert_invalid"),
+            )
+            cert_cols[1].metric(t("play_cert_recorded_moves"), player_cert.move_count)
+            cert_cols[2].metric(t("play_cert_reached_goal"), t("tc_yes") if player_cert.reaches_goal else t("tc_no"))
+            cert_cols[3].metric(
+                t("play_cert_assistance"),
+                t("play_cert_ai_assisted") if assisted else t("play_cert_unassisted"),
+            )
             st.success(
-                "Optimality certificate verified: every move is legal and "
-                f"the proven solution cost is {proof_result.cost}."
+                t("play_cert_verified", cost=proof_result.cost)
             )
             if not player_cert.is_legal:
-                st.error(f"Player-run certificate failed: {player_cert.message}")
+                st.error(t("play_cert_failed", message=player_cert.message))
             elif not player_cert.reaches_goal:
                 st.info(
-                    "Player-run certificate verified, but the current run is still in progress. "
-                    "Finish the puzzle before comparing your move count with the optimum."
+                    t("play_cert_in_progress")
                 )
             else:
+                try:
+                    score = score_challenge(player_cert.move_count, len(proof_result.actions))
+                except Exception as e:
+                    st.error(t("play_score_failed", error=e))
+                    return
                 score_cols = st.columns(4)
-                score_cols[0].metric("Optimal Moves", score.optimal_moves)
-                score_cols[1].metric("Your Moves", score.player_moves)
-                score_cols[2].metric("Move Gap", f"{score.gap:+d}")
-                score_cols[3].metric("Efficiency", f"{score.efficiency_percent:.1f}%")
+                score_cols[0].metric(t("play_score_optimal_moves"), score.optimal_moves)
+                score_cols[1].metric(t("play_score_your_moves"), score.player_moves)
+                score_cols[2].metric(t("play_score_gap"), f"{score.gap:+d}")
+                score_cols[3].metric(t("play_score_efficiency"), f"{score.efficiency_percent:.1f}%")
                 if score.is_optimal_play and not assisted:
-                    st.success("Your completed run matches the proven optimal move count.")
+                    st.success(t("play_score_optimal_unassisted"))
                 elif score.is_optimal_play:
                     st.info(
-                        "The completed AI-assisted run matches the optimal move count. "
-                        "This demonstrates the solver path, not unassisted player optimality."
+                        t("play_score_optimal_assisted")
                     )
                 else:
                     st.warning(
-                        f"The completed {'AI-assisted' if assisted else 'unassisted'} run is legal "
-                        f"but {score.gap} move(s) longer than optimal."
+                        t(
+                            "play_score_longer",
+                            mode=t("play_cert_ai_assisted") if assisted else t("play_cert_unassisted"),
+                            gap=score.gap,
+                        )
                     )
         else:
-            st.warning(f"No optimality certificate produced: {proof_result.message}")
+            st.warning(t("play_no_opt_cert", message=proof_result.message))
 
     st.markdown("---")
 
@@ -347,15 +363,15 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     col_solve1, col_solve2 = st.columns(2)
     with col_solve1:
         if st.button(t("play_ai_solve_btn_full"), key="btn_ai_solve"):
-            if st.session_state.play_state == GOAL_STATE:
+            if st.session_state.play_state == goal:
                 st.info(t("play_ai_already_goal"))
-            elif not is_solvable(st.session_state.play_state):
+            elif not is_solvable(st.session_state.play_state, goal):
                 st.error(t("play_ai_unsolvable"))
             else:
                 with st.spinner(t("play_ai_running")):
                     res = a_star(
                         start=st.session_state.play_state,
-                        goal=GOAL_STATE,
+                        goal=goal,
                         heuristic="Manhattan Distance",
                         timeout=30.0,
                     )

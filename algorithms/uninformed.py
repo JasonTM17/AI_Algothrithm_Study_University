@@ -129,8 +129,8 @@ def bfs(
             if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=child.g, h=manhattan_distance(ns), depth=child.depth,
-                        f=child.g + manhattan_distance(ns),
+                        g=child.g, h=manhattan_distance(ns, goal), depth=child.depth,
+                        f=child.g + manhattan_distance(ns, goal),
                         frontier_size=len(frontier), reached_size=len(reached),
                         node_state=node.state, frontier_states=[n.state for n in frontier], reached_states=list(reached.keys()),
                         event="generate" if accepted else "reject_duplicate",

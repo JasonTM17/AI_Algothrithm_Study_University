@@ -26,7 +26,7 @@ from ui.components import render_result_metrics, render_trace_table
 from ui.map_coloring import render_coloring_map
 
 
-def render_advanced_tab(start: tuple[int, ...]) -> None:
+def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE) -> None:
     """Render academic extensions for CSP, complex environments, and games."""
     st.title("CSP / Complex Environments / Game Mode")
     render_academic_header(
@@ -60,7 +60,7 @@ def render_advanced_tab(start: tuple[int, ...]) -> None:
         )
         return
 
-    base_kw = dict(start=start, goal=GOAL_STATE)
+    base_kw = dict(start=start, goal=goal)
     csp_search_kw = dict(**base_kw, timeout=30.0)
     search_kw = dict(**base_kw, timeout=30.0, action_order="LRUD")
 

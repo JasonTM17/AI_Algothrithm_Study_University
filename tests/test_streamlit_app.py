@@ -117,6 +117,33 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert not app.exception
 
 
+def test_solver_run_uses_custom_goal_state():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = GOAL_STATE
+    app.session_state["goal_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+    assert result.success
+    assert result.goal_state == ONE_MOVE
+    assert result.path[-1] == ONE_MOVE
+    assert result.path_verified
+    assert not app.exception
+
+
+def test_trace_rows_show_frontier_nodes_not_only_counts():
+    result = bfs(TWO_MOVE, timeout=5)
+
+    rows = trace_rows(result.trace)
+
+    frontier_values = [str(row.get("Frontier", "")) for row in rows if row.get("Frontier")]
+    assert frontier_values
+    assert any(value.startswith("(") and "g=" in value for value in frontier_values)
+
+
 def test_run_solution_animation_controls_do_not_raise_streamlit_state_error():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
