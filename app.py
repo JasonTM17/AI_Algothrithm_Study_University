@@ -18,7 +18,7 @@ st.set_page_config(
     page_title="15-Puzzle AI",
     page_icon="AI",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 render_styles()

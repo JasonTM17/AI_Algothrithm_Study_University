@@ -429,9 +429,9 @@ button:disabled {
 
 @media (max-width: 640px) {
     div[data-testid="stMainBlockContainer"] {
-        padding-left: 86px !important;
+        padding-left: 12px !important;
         padding-right: 12px !important;
-        padding-top: 30px !important;
+        padding-top: 56px !important;
     }
     input, textarea, select, button {
         font-size: 16px !important;
@@ -472,10 +472,26 @@ button:disabled {
         width: 100% !important;
     }
     section[data-testid="stSidebar"][aria-expanded="false"] {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important;
+        border-right: 0 !important;
+        box-shadow: none !important;
         pointer-events: none !important;
     }
     section[data-testid="stSidebar"][aria-expanded="true"] {
         pointer-events: auto !important;
+    }
+    button[data-testid="stExpandSidebarButton"] {
+        position: fixed !important;
+        top: 14px !important;
+        left: 14px !important;
+        z-index: calc(var(--z-sticky) + 20) !important;
+        background: rgba(18,21,20,0.92) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: var(--radius-sm) !important;
+        box-shadow: var(--shadow-sm) !important;
     }
     section[data-testid="stSidebar"] [role="radiogroup"] label {
         white-space: normal !important;
