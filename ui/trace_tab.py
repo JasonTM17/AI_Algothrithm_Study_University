@@ -3,6 +3,7 @@
 import pandas as pd
 import streamlit as st
 
+from ui.localization import translate
 from ui.components import (
     _format_trace_state,
     _format_trace_state_list,
@@ -11,6 +12,11 @@ from ui.components import (
     render_search_tree,
     render_trace_table,
 )
+
+
+def t(key, **kwargs):
+    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    return translate(global_lang, key, **kwargs)
 
 
 def trace_rows(trace) -> list[dict[str, object]]:
@@ -46,33 +52,34 @@ def trace_rows(trace) -> list[dict[str, object]]:
 
 
 def render_step_trace_tab() -> None:
-    st.title("Step-by-Step Trace")
+    st.title(t("trace_title"))
 
     if "last_result" not in st.session_state or not st.session_state.last_result:
-        st.info("Run an algorithm first to see the trace.")
+        st.info(t("trace_info"))
         return
 
     result = st.session_state.last_result
-    st.subheader(f"Trace: {result.algorithm}")
+    st.subheader(t("trace_result_title", algorithm=result.algorithm))
 
     if not result.trace:
-        st.info("This result has no recorded trace events.")
+        st.info(t("trace_empty_result"))
         return
 
+    st.caption(t("trace_notation_help"))
     render_trace_table(result.trace, max_rows=200)
 
     st.markdown("---")
-    st.subheader("Node / Frontier / Reached Detail")
+    st.subheader(t("trace_detail_title"))
     render_search_detail_table(result.trace, max_rows=50)
 
     st.markdown("---")
-    st.subheader("Search Tree")
+    st.subheader(t("trace_tree_title"))
     render_search_tree(result, max_nodes=40)
 
     df = pd.DataFrame(trace_rows(result.trace))
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "Download Trace CSV",
+        t("trace_download_csv"),
         data=csv,
         file_name=f"{result.algorithm.lower().replace(' ', '-')}-trace.csv",
         mime="text/csv",

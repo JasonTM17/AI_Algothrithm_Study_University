@@ -4,10 +4,3 @@ from algorithms.local_search import simple_hill_climbing, steepest_ascent_hill_c
 from algorithms.complex_env import and_or_search, no_observation_search, partially_observable_search, online_search_lrta
 from algorithms.csp import csp_definition, constraint_propagation, path_consistency, global_constraints, backtracking_search, min_conflicts, solve_csp_constraint_graphs
 from algorithms.adversarial import minimax, alpha_beta_pruning, expectimax
-from algorithms.caro import (
-    apply_caro_move,
-    caro_alpha_beta,
-    caro_minimax,
-    create_initial_caro_state,
-    evaluate_caro_state,
-)

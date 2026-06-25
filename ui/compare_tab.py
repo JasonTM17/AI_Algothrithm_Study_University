@@ -39,7 +39,7 @@ def render_compare_tab(t=None) -> None:
         tx("compare_hero_kicker"),
     )
     render_exam_path("Compare", t=t)
-    render_extension_warning()
+    render_extension_warning(t=t)
 
     preset_name = st.selectbox(
         tx("compare_preset"),

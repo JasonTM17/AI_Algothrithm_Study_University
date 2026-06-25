@@ -211,14 +211,21 @@ def render_taxonomy_table() -> None:
         st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
-def render_extension_warning() -> None:
+def render_extension_warning(t=None) -> None:
+    warning = _translate(
+        t,
+        "academic_extension_warning",
+        (
+            "Academic boundary: CSP, complex-environment, Minimax, Alpha-Beta, "
+            "and Expectimax modes are educational extensions. They explain alternate "
+            "AI problem formulations, but they are not natural solvers for the standard "
+            "deterministic, fully observable 15-puzzle."
+        ),
+    )
     st.markdown(
-        """
+        f"""
         <div class="academic-warning">
-            <strong>Academic boundary:</strong> CSP, complex-environment, Minimax,
-            Alpha-Beta, and Expectimax modes are educational extensions. They explain
-            alternate AI problem formulations, but they are not natural solvers for the
-            standard deterministic, fully observable 15-puzzle.
+            {escape(warning)}
         </div>
         """,
         unsafe_allow_html=True,

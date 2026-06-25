@@ -1090,8 +1090,8 @@ GROUP_COLORS = {
                               "icon": "Globe", "emoji": ""},
     "CSP": {"badge": "group-csp", "color": "#6f8e60", "bg": "#344435",
              "icon": "Grid", "emoji": ""},
-    "Adversarial/Stochastic": {"badge": "group-adversarial", "color": "#d66a5f", "bg": "#6f332e",
-                                "icon": "Sword", "emoji": ""},
+    "AI-vs-AI Tournament": {"badge": "group-adversarial", "color": "#d66a5f", "bg": "#6f332e",
+                             "icon": "Trophy", "emoji": ""},
 }
 
 ALGORITHM_GROUPS = {
@@ -1105,7 +1105,7 @@ ALGORITHM_GROUPS = {
     "CSP": ["CSP Definition", "Constraint Propagation", "Path Consistency",
             "Global Constraints", "Backtracking Search", "Min-Conflicts",
             "Constraint Graphs"],
-    "Adversarial/Stochastic": ["Minimax", "Alpha-Beta Pruning", "Expectimax", "Caro / Gomoku"],
+    "AI-vs-AI Tournament": ["AI-vs-AI Tournament", "Minimax", "Alpha-Beta Pruning", "Expectimax"],
 }
 
 # Standard deterministic 15-puzzle pages use this subset. Extensions remain
@@ -1139,7 +1139,7 @@ ALGORITHM_FN_MAP = {
     "Minimax": "minimax",
     "Alpha-Beta Pruning": "alpha_beta_pruning",
     "Expectimax": "expectimax",
-    "Caro / Gomoku": "caro_alpha_beta",
+    "AI-vs-AI Tournament": "ai_vs_ai_tournament",
 }
 
 THEORY_KEY_MAP = {
@@ -1165,7 +1165,7 @@ THEORY_KEY_MAP = {
     "Minimax": "Minimax",
     "Alpha-Beta Pruning": "Alpha-Beta",
     "Expectimax": "Expectimax",
-    "Caro / Gomoku": "Caro / Gomoku",
+    "AI-vs-AI Tournament": "AI-vs-AI Tournament",
 }
 
 COMPARISON_TABLE = [
@@ -1193,10 +1193,10 @@ COMPARISON_TABLE = [
     {"Group": "CSP", "Algorithm": "Constraint Graphs", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Backtracking", "Complete": "No", "Optimal": "No", "Heuristic": "MRV+LCV", "Random": "No", "Suitable": "Planning demo"},
     {"Group": "CSP", "Algorithm": "Min-Conflicts", "Complete": "No", "Optimal": "No", "Heuristic": "Conflicts", "Random": "Yes", "Suitable": "N-Queens better"},
-    {"Group": "Adversarial", "Algorithm": "Minimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Game demo"},
-    {"Group": "Adversarial", "Algorithm": "Alpha-Beta", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Pruning demo"},
-    {"Group": "Adversarial", "Algorithm": "Expectimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "Chance", "Suitable": "Stochastic demo"},
-    {"Group": "Adversarial", "Algorithm": "Caro / Gomoku", "Complete": "Depth-limited", "Optimal": "Depth-limited", "Heuristic": "line utility", "Random": "No", "Suitable": "Natural game"},
+    {"Group": "AI-vs-AI", "Algorithm": "Tournament", "Complete": "Reference-bound", "Optimal": "Scored by A*", "Heuristic": "Depends on agents", "Random": "Optional", "Suitable": "Competition demo"},
+    {"Group": "Game/Chance", "Algorithm": "Minimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Artificial extension"},
+    {"Group": "Game/Chance", "Algorithm": "Alpha-Beta", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Pruning demo"},
+    {"Group": "Game/Chance", "Algorithm": "Expectimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "Chance", "Suitable": "Stochastic demo"},
 ]
 
 NOTES = """
@@ -1204,5 +1204,5 @@ NOTES = """
   Greedy may find optimal path by chance but does NOT guarantee it.
   Hill Climbing variants typically get stuck at local optima on 15-puzzle.
   CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax entries are illustrative extensions, not natural 15-puzzle solvers.
-  Caro / Gomoku is the natural adversarial board-game demo for Minimax and Alpha-Beta.
+  AI-vs-AI Tournament is a scoring layer over solver outputs, not a natural adversarial PEAS model.
 """

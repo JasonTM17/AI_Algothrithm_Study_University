@@ -566,12 +566,48 @@ for algo_name in ["Constraint Propagation", "Path Consistency", "Global Constrai
         }
 
 # ============================================================
-# GROUP 6: ADVERSARIAL / STOCHASTIC
+# GROUP 6: AI-VS-AI TOURNAMENT / GAME-CHANCE EXTENSIONS
 # ============================================================
+
+THEORY["AI-vs-AI Tournament"] = {
+    "name": "AI-vs-AI Tournament",
+    "group": "AI-vs-AI Tournament",
+    "goal": "Cháº¥m Ä‘iá»ƒm hai AI giáº£i cÃ¹ng má»™t bÃ i 15-puzzle báº±ng chuáº©n A* tá»‘i Æ°u.",
+    "goal_en": "Score two AI agents on the same 15-puzzle instance using an A* optimal reference.",
+    "idea": "MÃ´i trÆ°á»ng puzzle váº«n single-agent. Tournament cháº¡y hai solver riÃªng, kiá»ƒm path há»£p lá»‡, so vá»›i optimal cost, rá»“i cá»™ng/trá»« Ä‘iá»ƒm.",
+    "idea_en": "The puzzle remains single-agent. The tournament runs two separate solvers, verifies legal paths, compares cost with the optimal reference, then awards or subtracts points.",
+    "data_structure": "Round list, A* reference result, two SearchResult certificates, score rows, total scoreboard.",
+    "data_structure_en": "Round list, A* reference result, two SearchResult certificates, score rows, total scoreboard.",
+    "formula": "Score = 100 if optimal; max(20, 100 - 10*excess) if legal but longer; -10 partial; -20 failed; -50 invalid.",
+    "formula_en": "Score = 100 if optimal; max(20, 100 - 10*excess) if legal but longer; -10 partial; -20 failed; -50 invalid.",
+    "pseudocode": """Tournament(round):
+  reference = A*(round.start)
+  if not reference.optimality_proven: skip round
+  for agent in [AI_A, AI_B]:
+    result = agent.solve(round.start)
+    score = score_by_legality_goal_and_excess_cost(result, reference.cost)
+  winner = compare(total, solved_rounds, excess_cost, runtime, nodes)""",
+    "application": "DÃ¹ng Ä‘á»ƒ so sÃ¡nh AI tÃ¬m Ä‘Ãºng, tÃ¬m Ä‘Æ°á»ng kÃ©m tá»‘i Æ°u, dá»«ng giá»¯a chÆ°á»«ng, timeout, hoáº·c ghi path sai.",
+    "application_en": "Use it to compare agents that find optimal paths, suboptimal paths, partial paths, timeouts, or invalid paths.",
+    "suitable": "PhÃ¹ há»£p lÃ  lá»›p Ä‘Ã¡nh giÃ¡ solver. KhÃ´ng pháº£i game Ä‘á»‘i khÃ¡ng tá»± nhiÃªn.",
+    "suitable_en": "Suitable as a solver-evaluation layer. It is not a natural adversarial game.",
+    "pros": ["So sÃ¡nh hai AI trÃªn cÃ¹ng board", "CÃ³ chuáº©n A* tá»‘i Æ°u", "Pháº¡t hiá»‡n path sai vÃ  timeout rÃµ rÃ ng"],
+    "pros_en": ["Compares two AI agents on the same board", "Uses an A* optimal reference", "Makes invalid paths and timeouts explicit"],
+    "cons": ["Phá»¥ thuá»™c A* reference cháº¡y Ä‘Æ°á»£c", "KhÃ´ng thay tháº¿ benchmark solver chuáº©n", "KhÃ´ng pháº£i PEAS Ä‘á»‘i khÃ¡ng"],
+    "cons_en": ["Depends on a successful A* reference", "Does not replace standard solver benchmarks", "Not an adversarial PEAS model"],
+    "complexity": "Mỗi round chạy A* reference cộng hai solver được chọn; chi phí phụ thuộc solver đắt nhất.",
+    "complexity_en": "Each round runs an A* reference plus the two selected solvers; cost depends on the slowest solver.",
+    "bad_example": "Nếu A* reference bị giới hạn tài nguyên, round không nên chấm vì không có optimal cost đáng tin.",
+    "bad_example_en": "If the A* reference hits a resource limit, the round should not be scored because no trusted optimal cost exists.",
+    "comparison": "Compare tab là benchmark nhiều thuật toán; Tournament là trận 2 AI có luật điểm và tie-break.",
+    "comparison_en": "Compare tab benchmarks many algorithms; Tournament is a two-agent match with scoring and tie-break rules.",
+    "exam_tips": "Nói rõ: AI-vs-AI là lớp chấm điểm, không phải MIN player trong 15-puzzle.",
+    "exam_tips_en": "State clearly: AI-vs-AI is a scoring layer, not a MIN player inside the 15-puzzle.",
+}
 
 THEORY["Minimax"] = {
     "name": "Minimax",
-    "group": "Adversarial/Stochastic",
+    "group": "AI-vs-AI Tournament",
     "goal": "Tìm chiến lược tối ưu trong game 2 người zero-sum. MAX maximize, MIN minimax.",
     "goal_en": "Find the optimal strategy in a 2-player zero-sum game. MAX maximizes utility, MIN minimizes it.",
     "idea": "MAX chọn action tối đa hóa utility. MIN chọn action tối tiểu hóa utility. Depth-limited với evaluation function.",
@@ -607,7 +643,7 @@ THEORY["Minimax"] = {
 
 THEORY["Alpha-Beta"] = {
     "name": "Alpha-Beta Pruning",
-    "group": "Adversarial/Stochastic",
+    "group": "AI-vs-AI Tournament",
     "goal": "Tối ưu Minimax bằng cách cắt nhánh không ảnh hưởng kết quả.",
     "goal_en": "Optimize Minimax by pruning branches that do not affect the final decision.",
     "idea": "Alpha: best value MAX đã thấy. Beta: best value MIN đã thấy. Cắt khi alpha ≥ beta.",
@@ -652,7 +688,7 @@ THEORY["Alpha-Beta"] = {
 
 THEORY["Expectimax"] = {
     "name": "Expectimax",
-    "group": "Adversarial/Stochastic",
+    "group": "AI-vs-AI Tournament",
     "goal": "Tính kỳ vọng utility khi có yếu tố ngẫu nhiên (chance node).",
     "goal_en": "Calculate expected utility under random chance nodes.",
     "idea": "MAX node: chọn max. CHANCE node: tính kỳ vọng dựa trên xác suất. Không giả sử đối thủ xấu nhất.",
@@ -684,41 +720,6 @@ THEORY["Expectimax"] = {
     "exam_tips": "Expectimax ⇒ MAX + CHANCE node. CHANCE node tính kỳ vọng. Không pruning được. Kết quả khác Minimax khi xác suất ≠ worst-case.",
     "exam_tips_en": "Expectimax ⇒ MAX + CHANCE nodes. CHANCE nodes calculate expected value. Pruning is not possible. Results differ from Minimax when probabilities differ from worst-case.",
 }
-
-THEORY["Caro / Gomoku"] = {
-    "name": "Caro / Gomoku",
-    "group": "Adversarial/Stochastic",
-    "goal": "Demonstrate adversarial search on a real two-player zero-sum board game.",
-    "goal_en": "Demonstrate adversarial search on a real two-player zero-sum board game.",
-    "idea": "Two players alternate marks. MAX chooses moves that improve its line threats; MIN chooses moves that block or create stronger threats.",
-    "idea_en": "Two players alternate marks. MAX chooses moves that improve its line threats; MIN chooses moves that block or create stronger threats.",
-    "data_structure": "Depth-limited game tree with board states, legal moves, terminal win/draw checks, and utility evaluation.",
-    "data_structure_en": "Depth-limited game tree with board states, legal moves, terminal win/draw checks, and utility evaluation.",
-    "formula": "Minimax(s) = utility(s) if terminal/depth limit. MAX takes max child; MIN takes min child. Alpha-Beta prunes when alpha >= beta.",
-    "formula_en": "Minimax(s) = utility(s) if terminal/depth limit. MAX takes max child; MIN takes min child. Alpha-Beta prunes when alpha >= beta.",
-    "pseudocode": """CaroAlphaBeta(state, depth, alpha, beta):
-  if terminal or depth == 0: return evaluate_lines(state)
-  if MAX: choose highest child value and update alpha
-  if MIN: choose lowest child value and update beta
-  prune when alpha >= beta""",
-    "application": "Natural fit for Minimax and Alpha-Beta because Caro has two competing players and terminal utility.",
-    "application_en": "Natural fit for Minimax and Alpha-Beta because Caro has two competing players and terminal utility.",
-    "suitable": "Phu hop cho demo doi khang. Khong phai solver 15-puzzle.",
-    "suitable_en": "Suitable for adversarial demo. It is not a 15-puzzle solver.",
-    "pros": ["Natural adversarial model", "Shows pruning effect clearly", "Easy to explain with board threats"],
-    "pros_en": ["Natural adversarial model", "Shows pruning effect clearly", "Easy to explain with board threats"],
-    "cons": ["Full game tree is too large", "Depth-limited play is approximate", "Evaluation function affects move quality"],
-    "cons_en": ["Full game tree is too large", "Depth-limited play is approximate", "Evaluation function affects move quality"],
-    "complexity": "Minimax O(b^m); Alpha-Beta best case O(b^(m/2)) with good move ordering.",
-    "complexity_en": "Minimax O(b^m); Alpha-Beta best case O(b^(m/2)) with good move ordering.",
-    "bad_example": "Using very shallow depth may miss a forced win or necessary block.",
-    "bad_example_en": "Using very shallow depth may miss a forced win or necessary block.",
-    "comparison": "Caro is a natural game-tree problem; 15-puzzle Minimax is only an artificial extension.",
-    "comparison_en": "Caro is a natural game-tree problem; 15-puzzle Minimax is only an artificial extension.",
-    "exam_tips": "Use Caro when teacher asks for adversarial search; use A*/IDA* when teacher asks for standard 15-puzzle solving.",
-    "exam_tips_en": "Use Caro when asked for adversarial search; use A*/IDA* for standard 15-puzzle solving.",
-}
-
 
 def _build_theory_by_group() -> dict[str, dict[str, dict]]:
     """Group theory notes by algorithm family for UI and future modularization."""

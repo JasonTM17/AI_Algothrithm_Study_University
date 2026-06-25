@@ -125,7 +125,7 @@ def minimax(
     selected_path = _path_from_actions(start, actions)
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
-        success=solved, algorithm="Minimax", group="Adversarial/Stochastic",
+        success=solved, algorithm="Minimax", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
@@ -246,7 +246,7 @@ def alpha_beta_pruning(
     selected_path = _path_from_actions(start, actions)
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
-        success=solved, algorithm="Alpha-Beta Pruning", group="Adversarial/Stochastic",
+        success=solved, algorithm="Alpha-Beta Pruning", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
@@ -420,7 +420,7 @@ def expectimax(
     selected_path = _path_from_actions(start, actions)
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
-        success=solved, algorithm="Expectimax", group="Adversarial/Stochastic",
+        success=solved, algorithm="Expectimax", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions), random_seed=seed,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],

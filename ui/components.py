@@ -6,15 +6,12 @@ from core.comparison import compact_action_path, shared_verified_paths, unique_v
 from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.utils import format_state_grid
 from ui.styles import STYLES, GROUP_COLORS
-from ui.localization import LOC
+from ui.localization import translate
 
 
 def t(key, **kwargs):
     global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
-    text = LOC[global_lang].get(key, key)
-    if kwargs:
-        return text.format(**kwargs)
-    return text
+    return translate(global_lang, key, **kwargs)
 
 
 def render_styles():
@@ -717,7 +714,7 @@ def render_comparison_table(results: list):
             elif r.group == "Local Search": group_trans = "Tìm kiếm cục bộ"
             elif r.group == "Complex Environments": group_trans = "Môi trường phức tạp"
             elif r.group == "CSP": group_trans = "Thỏa mãn ràng buộc"
-            elif r.group == "Adversarial/Stochastic": group_trans = "Đối kháng/Ngẫu nhiên"
+            elif r.group == "AI-vs-AI Tournament": group_trans = "Thi đấu AI-vs-AI"
             
         row = {
             t("compare_group_col"): group_trans,
@@ -786,7 +783,7 @@ def render_algorithm_info(algo_name: str, theory: dict):
         elif group == "Local Search": group_display = "Tìm kiếm cục bộ"
         elif group == "Complex Environments": group_display = "Môi trường phức tạp"
         elif group == "CSP": group_display = "Thỏa mãn ràng buộc"
-        elif group == "Adversarial/Stochastic": group_display = "Đối kháng/Ngẫu nhiên"
+        elif group == "AI-vs-AI Tournament": group_display = "Thi đấu AI-vs-AI"
 
     badge_cls = group_style.get("badge", "")
     if badge_cls:

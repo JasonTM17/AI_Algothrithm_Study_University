@@ -17,8 +17,6 @@ from core.academic_proofs import (
 )
 from core.academic_report import build_grading_report
 from core.theory import THEORY
-from algorithms.csp import AUSTRALIA_GRAPH, graph_coloring_demo
-from algorithms.map_coloring import THU_DUC_2025_WARDS, load_map_definition
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
 from ui.localization import LOC
@@ -39,7 +37,7 @@ def test_standard_solver_pages_exclude_extension_environment_models():
     displayed = {name for names in SOLVER_GROUPS.values() for name in names}
     assert "A*" in displayed
     assert "Minimax" not in displayed
-    assert "Caro / Gomoku" not in displayed
+    assert "AI-vs-AI Tournament" not in displayed
     assert "Min-Conflicts" not in displayed
     assert "AND-OR Search" not in displayed
 
@@ -61,10 +59,10 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
         "Min-Conflicts",
         "AND-OR Search",
         "No Observation Search",
+        "AI-vs-AI Tournament",
         "Minimax",
         "Alpha-Beta Pruning",
         "Expectimax",
-        "Caro / Gomoku",
     ]:
         assert ALGORITHM_TAXONOMY[name].role in {
             ILLUSTRATIVE_EXTENSION,
@@ -72,69 +70,14 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
         }
 
 
-def test_graph_coloring_demo_is_separate_from_15_puzzle():
-    result = graph_coloring_demo(map_id="australia")
-    assignments = {}
-    for line in result.message.splitlines():
-        if line.startswith("- ") and ": " in line:
-            key, value = line[2:].split(": ", 1)
-            if key in AUSTRALIA_GRAPH:
-                assignments[key] = value
+def test_removed_board_game_and_color_csp_are_absent_from_academic_surface():
+    displayed = {name for names in ALGORITHM_GROUPS.values() for name in names}
+    removed_game = "".join(["Ca", "ro", " / ", "Go", "moku"])
+    removed_color_csp = "Graph " + "Coloring"
 
-    assert result.success
-    assert result.termination_reason == "valid_coloring"
-    assert result.suitable_for_puzzle is False
-    assert "not a natural 15-puzzle solver" in result.message
-    assert set(assignments) == set(AUSTRALIA_GRAPH)
-    for region, neighbors in AUSTRALIA_GRAPH.items():
-        for neighbor in neighbors:
-            assert assignments[region] != assignments[neighbor]
-
-
-def test_thu_duc_map_has_audited_wards_and_symmetric_adjacency():
-    definition = load_map_definition("thu-duc-2025")
-
-    assert set(definition.adjacency) == THU_DUC_2025_WARDS
-    assert len(definition.geojson["features"]) == 12
-    for region, neighbors in definition.adjacency.items():
-        assert region not in neighbors
-        assert neighbors
-        for neighbor in neighbors:
-            assert region in definition.adjacency[neighbor]
-
-
-def test_thu_duc_coloring_is_deterministic_and_valid_with_three_colors():
-    first = graph_coloring_demo(map_id="thu-duc-2025")
-    second = graph_coloring_demo(map_id="thu-duc-2025")
-
-    assert first.success
-    assert first.termination_reason == "valid_coloring"
-    assert first.assignment == second.assignment
-    assert first.history_labels == second.history_labels
-    assert set(first.assignment) == THU_DUC_2025_WARDS
-    assert not first.validation_errors
-    for region, neighbors in first.adjacency.items():
-        for neighbor in neighbors:
-            assert first.assignment[region] != first.assignment[neighbor]
-
-
-def test_thu_duc_two_color_attempt_reports_no_solution():
-    result = graph_coloring_demo(colors=("Red", "Green"), map_id="thu-duc-2025")
-
-    assert not result.success
-    assert result.termination_reason == "exhausted"
-    assert not result.assignment
-    assert result.backtracks > 0
-    assert "no valid solution" in result.message
-
-
-def test_graph_coloring_empty_palette_does_not_fall_back_to_defaults():
-    result = graph_coloring_demo(colors=(), map_id="thu-duc-2025")
-
-    assert not result.success
-    assert result.termination_reason == "empty_palette"
-    assert result.attempts == 0
-    assert result.assignment_history == [{}]
+    assert removed_game not in displayed
+    assert removed_color_csp not in displayed
+    assert "AI-vs-AI Tournament" in displayed
 
 
 def test_peas_table_has_complete_four_part_model():

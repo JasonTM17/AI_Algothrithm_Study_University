@@ -237,6 +237,7 @@ def render_run_algorithm_tab(t=None) -> None:
 
         if result.trace:
             st.subheader(tx("run_trace_steps"))
+            st.caption(tx("trace_notation_help"))
             render_trace_table(result.trace)
             st.subheader(tx("run_detail"))
             render_search_detail_table(result.trace)

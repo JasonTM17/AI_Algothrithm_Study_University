@@ -40,7 +40,6 @@ def test_search_tree_renderer_has_no_legacy_trace_fallback():
 
 def test_advanced_mode_function_kwargs_match_app_dispatch():
     from algorithms.adversarial import alpha_beta_pruning, expectimax, minimax
-    from algorithms.caro import caro_alpha_beta, create_initial_caro_state
     from algorithms.complex_env import (
         and_or_search,
         no_observation_search,
@@ -51,7 +50,6 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
         backtracking_search,
         constraint_propagation,
         csp_definition,
-        graph_coloring_demo,
         min_conflicts,
         path_consistency,
         solve_csp_constraint_graphs,
@@ -65,7 +63,6 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     calls = [
         lambda: csp_definition(time_horizon=1, **base_kw),
         lambda: constraint_propagation(time_horizon=1, **base_kw),
-        lambda: graph_coloring_demo(),
         lambda: backtracking_search(**csp_search_kw, max_steps=10),
         lambda: min_conflicts(**csp_search_kw, max_iterations=10, seed=1),
         lambda: solve_csp_constraint_graphs(time_horizon=1, **base_kw),
@@ -82,14 +79,6 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     for call in calls:
         result = call()
         assert result.algorithm
-
-    caro_result = caro_alpha_beta(create_initial_caro_state(15), depth=1, player="X")
-    assert caro_result.algorithm == "Alpha-Beta"
-    assert caro_result.move == (7, 7)
-
-    from ui.caro_game import render_caro_game
-
-    assert callable(render_caro_game)
 
     min_conflicts_result = min_conflicts(
         start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),

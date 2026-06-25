@@ -94,6 +94,7 @@ def build_grading_report(
         "",
         "## Known Limitations",
         "- CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax modes are educational extensions.",
+        "- AI-vs-AI Tournament is a scoring layer over solver outputs, not a natural adversarial PEAS model.",
         "- Benchmark output is course evidence, not a production solver leaderboard.",
         "- Solver signatures and algorithm behavior are intentionally unchanged by the UI/UX hardening pass.",
         "",

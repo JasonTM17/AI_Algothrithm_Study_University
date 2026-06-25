@@ -36,13 +36,13 @@ def render_theory_tab(t=None) -> None:
         st.session_state.get("benchmark_results", []),
     )
     render_peas_panel()
-    render_extension_warning()
+    render_extension_warning(t=t)
     render_recommendation_rubric()
     render_proof_cards()
     render_exam_answer_templates()
 
     st.markdown("---")
-    st.subheader("Chi tiết lý thuyết thuật toán")
+    st.subheader(tx("theory_detail_title"))
 
     group = st.selectbox(tx("run_group"), list(ALGORITHM_GROUPS.keys()), key="theory_group")
     algorithms = ALGORITHM_GROUPS[group]

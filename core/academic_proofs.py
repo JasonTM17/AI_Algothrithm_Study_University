@@ -78,13 +78,13 @@ EXAM_ANSWER_TEMPLATES = {
         "when_to_use": "Use to show alternative AI problem formulation.",
         "when_not_to_use": "Do not claim it is the standard 15-puzzle approach.",
     },
-    "Adversarial/Stochastic": {
-        "goal": "Explain game-tree and chance-node reasoning.",
-        "frontier": "MAX/MIN/CHANCE tree to a fixed depth.",
-        "evaluation": "Utility based on heuristic distance or expected value.",
-        "guarantee": "Valid for the artificial game/stochastic model, not standard 15-puzzle.",
-        "when_to_use": "Use to demonstrate Minimax, pruning, and Expectimax concepts.",
-        "when_not_to_use": "Do not call it a natural single-agent puzzle solver.",
+    "AI-vs-AI Tournament": {
+        "goal": "Compare two AI solver agents on identical 15-puzzle rounds.",
+        "frontier": "Each agent uses its own solver frontier; tournament logic only scores outputs.",
+        "evaluation": "A* reference cost, path legality, goal reachability, excess cost, runtime, and nodes.",
+        "guarantee": "Scoring is valid only when the A* reference proves optimal cost for the round.",
+        "when_to_use": "Use to show optimal, suboptimal, failed, and illegal solver behavior side by side.",
+        "when_not_to_use": "Do not describe it as a natural adversarial PEAS model with a MIN player.",
     },
 }
 
@@ -129,5 +129,6 @@ DECISION_GUIDE = [
     {"Question": "Need a real optimal solver?", "Use": "A* or IDA*", "Why": "They use g(n)+h(n) and preserve optimality with admissible heuristics."},
     {"Question": "Need a shallow proof of optimality?", "Use": "BFS/UCS/IDS", "Why": "They expose complete/optimal uninformed search behavior under unit cost."},
     {"Question": "Need to show heuristic failure?", "Use": "Greedy or Hill Climbing", "Why": "They visibly fail when local or heuristic-only choices mislead the search."},
+    {"Question": "Need to compare two AI agents?", "Use": "AI-vs-AI Tournament", "Why": "It scores both agents against the same A* optimal reference without changing PEAS."},
     {"Question": "Need to explain PEAS variations?", "Use": "CSP/Complex/Game demos", "Why": "They change problem formulation or environment assumptions for teaching."},
 ]

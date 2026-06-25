@@ -7,7 +7,7 @@ from core.node import Node, reconstruct_path
 from core.heuristics import HEURISTICS, manhattan_distance
 from ui.components import render_puzzle_board, _state_to_mini_grid, _state_to_grid_str
 from ui.academic_panels import render_exam_path
-from ui.localization import LOC
+from ui.localization import translate
 
 
 def _register_hand_trace_node(node: Node) -> str:
@@ -80,10 +80,7 @@ def render_hand_trace_tree() -> None:
 
 def t(key, **kwargs):
     global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
-    text = LOC[global_lang].get(key, key)
-    if kwargs:
-        return text.format(**kwargs)
-    return text
+    return translate(global_lang, key, **kwargs)
 
 
 def _get_sort_key(item, algorithm, tie_breaker):
@@ -256,7 +253,7 @@ def render_hand_tracing_page():
 
     # Calculate the mathematically correct next node to expand
     if not frontier:
-        st.error("Frontier is empty — search space exhausted.")
+        st.error(t("ht_frontier_empty"))
         st.session_state.ht_active = False
         st.rerun()
     correct_item = min(frontier, key=lambda item: _get_sort_key(item, algo, tb))

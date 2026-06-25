@@ -10,7 +10,6 @@ from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
 from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
-from algorithms.map_coloring import AUSTRALIA_GRAPH, MapColoringResult, graph_coloring_demo
 
 
 def csp_definition(
@@ -223,7 +222,7 @@ def backtracking_search(
 
     The state representation is not an explicit variable/domain CSP, so this
     demo uses heuristic value ordering rather than claiming MRV or forward
-    checking. Graph coloring is the project's genuine CSP implementation.
+    checking. It remains an educational formulation, not the standard solver path.
     """
     t0 = time.perf_counter()
     h_fn = get_heuristic("Manhattan Distance", goal)

@@ -6,7 +6,7 @@ from core.puzzle import GOAL_STATE, TEACHING_PRESETS, is_solvable, parse_state, 
 from ui.advanced_tab import render_advanced_tab
 from ui.components import render_puzzle_board, render_styles
 from ui.sample_images import SAMPLE_IMAGES, generate_sample_tiles
-from ui.localization import LOC
+from ui.localization import translate
 from ui.play_tab import render_play_tab
 from ui.run_tab import render_run_algorithm_tab
 from ui.trace_tab import render_step_trace_tab
@@ -47,10 +47,7 @@ global_lang = st.sidebar.selectbox(
 
 # Translation helper function
 def t(key, **kwargs):
-    text = LOC[global_lang].get(key, key)
-    if kwargs:
-        return text.format(**kwargs)
-    return text
+    return translate(global_lang, key, **kwargs)
 
 st.sidebar.markdown("---")
 

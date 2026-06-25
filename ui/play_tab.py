@@ -200,7 +200,10 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                 },
             )
         with col_preview:
-            st.markdown('<div class="image-preview-title">Target Preview (Ảnh Gốc)</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="image-preview-title">{t("play_target_preview")}</div>',
+                unsafe_allow_html=True,
+            )
             if uploaded_img:
                 st.image(uploaded_img, width="stretch")
             elif "sample_select" in st.session_state:
@@ -211,11 +214,11 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
                     if preview_img_data:
                         st.image(preview_img_data, width="stretch")
                     else:
-                        st.caption("Preview could not be generated.")
+                        st.caption(t("play_preview_fail"))
                 except Exception as e:
-                    st.caption(f"Error loading preview: {e}")
+                    st.caption(t("play_preview_error", error=e))
             else:
-                st.info("No preview available.")
+                st.info(t("play_preview_none"))
     else:
         render_clickable_board(
             st.session_state.play_state,

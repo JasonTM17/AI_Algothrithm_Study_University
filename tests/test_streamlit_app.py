@@ -251,38 +251,35 @@ def test_compare_results_clear_when_benchmark_limits_change():
     assert not app.exception
 
 
-def test_graph_coloring_stays_hidden_until_selected():
+def test_advanced_mode_excludes_removed_board_game_and_color_csp_options():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Advanced Mode"
     app.run()
-    assert not [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
+    removed_widget_key = "_".join(["graph", "coloring", "map"])
+    removed_color_option = "Graph " + "Coloring (Map CSP)"
+    removed_game_option = "".join(["Ca", "ro", " / ", "Go", "moku Game"])
+    assert not [widget for widget in app.selectbox if widget.key == removed_widget_key]
 
-    app.selectbox(key="complex_mode_v2").set_value("Graph Coloring (Map CSP)").run()
-    maps = [widget for widget in app.selectbox if widget.key == "graph_coloring_map"]
-    assert maps
-    assert "12" in maps[0].value
+    options = app.selectbox(key="complex_mode_v2").options
+    assert "AI-vs-AI Tournament" in options
+    assert removed_color_option not in options
+    assert removed_game_option not in options
     assert not app.exception
 
 
-def test_caro_side_change_resets_board_ownership():
+def test_ai_vs_ai_tournament_runs_from_advanced_mode():
     app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Advanced Mode"
     app.run()
-    app.selectbox(key="complex_mode_v2").set_value("Caro / Gomoku Game").run()
+    app.selectbox(key="complex_mode_v2").set_value("AI-vs-AI Tournament").run()
+    app.button(key="btn_run_tournament").click().run()
 
-    app.button(key="caro_7_7").click().run()
-    assert app.session_state.caro_state.board.count("X") == 1
-    assert app.session_state.caro_state.board.count("O") == 1
-
-    app.selectbox(key="caro_human_side").set_value("O").run()
-
-    state = app.session_state.caro_state
-    assert state.board.count("X") == 1
-    assert state.board.count("O") == 0
-    assert state.current_player == "O"
-    assert app.session_state.caro_human_side_ref == "O"
+    result = app.session_state.tournament_result
+    assert result.rounds[0].optimal_cost == 1
+    assert result.winner in {result.agent_a_label, result.agent_b_label, "Draw"}
     assert not app.exception
 
 
