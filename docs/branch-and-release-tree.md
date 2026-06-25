@@ -21,8 +21,8 @@ flowchart LR
 ## Release Shape
 
 - Academic dashboard: the Streamlit UI is organized around the grading path: Play, Run Algorithm, Compare, Theory/PEAS, and Hand-Tracing.
-- AI framing: algorithms are labeled as real solvers, contrast demos, illustrative extensions, or stochastic/game demos.
-- CSP boundary: graph coloring uses the 12 current wards on the former Thu Duc City territory, with Australia retained as a comparison; it is not presented as a 15-puzzle solver.
+- AI framing: algorithms are labeled as real solvers, contrast demos, illustrative extensions, or AI-vs-AI/game-chance demos.
+- Advanced boundary: AI-vs-AI Tournament is a scoring layer over two solver agents with A* reference evidence; CSP/game/chance modes remain educational extensions, not standard solver rankings.
 - Web learning lab: manual play, optimality challenge, legal path playback, and bounded parent-linked search evidence share one browser surface.
 - Verification: Python compile checks, pytest regressions, Streamlit AppTest, web health, and Git branch checks are required before publishing.
 

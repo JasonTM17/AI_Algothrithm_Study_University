@@ -33,6 +33,8 @@ See [docs/branch-and-release-tree.md](docs/branch-and-release-tree.md) for the w
 
 For a detailed Vietnamese academic reference on the algorithm groups, guarantees, heuristics, failure modes, and exam-defense talking points, see [docs/algorithm-groups-academic-reference.md](docs/algorithm-groups-academic-reference.md).
 
+For the algorithm verification matrix, edge cases, UI/browser checks, and exam-defense acceptance criteria, see [docs/algorithm-test-plan.md](docs/algorithm-test-plan.md).
+
 ## Academic Framing
 
 The standard 15-puzzle environment is fully observable, deterministic, static, discrete, sequential, single-agent, and unit-cost.
@@ -42,7 +44,7 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 | Real Solver | BFS, UCS, IDS, A*, IDA* | Natural solvers for the deterministic 15-puzzle model. |
 | Contrast Demo | DFS, Greedy, local search variants | Useful for showing tradeoffs, suboptimality, local optimum, or missing guarantees. |
 | Illustrative Extension | CSP, AND-OR, No/Partial Observation, LRTA* | Educational reformulations for learning broader AI concepts. |
-| Stochastic/Game Demo | Minimax, Alpha-Beta, Expectimax, Caro/Gomoku | Caro is the natural adversarial game demo; 15-puzzle game/chance modes are educational extensions. |
+| AI-vs-AI Tournament | AI-vs-AI scoring, Minimax, Alpha-Beta, Expectimax | Tournament compares two solver agents on the same 15-puzzle with A* reference scoring; game/chance modes remain educational extensions. |
 
 ## PEAS Summary
 
@@ -59,9 +61,10 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph; even failed or stuck runs expose a certified legal partial trajectory without labeling it as a solution.
 - Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
-- Vietnamese full-reference documentation for algorithm groups, PEAS boundaries, heuristic guarantees, CSP modeling, complex environments, and adversarial/stochastic demos.
-- Advanced CSP, complex-environment, and game-model demonstrations live in a separate Concept Lab and are excluded from standard solver rankings. Caro/Gomoku is included there as the real two-player adversarial demo for Minimax and Alpha-Beta.
-- When selected, graph coloring opens on the current 12-ward Thu Duc map (effective 2025-07-01), with an Australia comparison, an offline SVG map, and an auditable MRV/forward-checking trace. It remains hidden until selected and separate from the 15-puzzle solver.
+- Vietnamese full-reference documentation for algorithm groups, PEAS boundaries, heuristic guarantees, CSP modeling, complex environments, and AI-vs-AI scoring.
+- Formal algorithm test plan covering solver oracles, trace evidence, custom goals, stochastic seeds, CSP/game demos, AI-vs-AI scoring, and UI/browser validation.
+- Advanced CSP, complex-environment, game/chance, and AI-vs-AI tournament demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
+- AI-vs-AI Tournament scores two selected solvers on identical 15-puzzle rounds: optimal paths get full points, legal longer paths get reduced points, partial/failed paths lose points, and invalid paths receive the strongest penalty.
 - Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
 - Stochastic demos use a fresh recorded seed by default, while deterministic solvers remain reproducible under the same state, action order, and tie-breaker.
@@ -86,13 +89,12 @@ python -m compileall -q app.py core algorithms ui
 python -m pytest tests/ -q
 ```
 
-Expected coverage includes exact heuristic checks, bounded admissibility/consistency checks, legal path and tree-edge evidence, solver regressions, Streamlit AppTest flows, dispatch safety, map coloring, and academic taxonomy.
+Expected coverage includes exact heuristic checks, bounded admissibility/consistency checks, legal path and tree-edge evidence, solver regressions, Streamlit AppTest flows, dispatch safety, AI-vs-AI tournament scoring, and academic taxonomy.
 
 ## Notes For Grading
 
 - A*, IDA*, BFS, UCS, and IDS are the main solver demonstrations.
 - Greedy and local search are intentionally kept as contrast cases.
 - CSP, complex-environment, Minimax, Alpha-Beta, and Expectimax are labeled as educational extensions.
-- Standard 15-puzzle is not adversarial. Use Caro/Gomoku when explaining natural two-player game search.
-- Graph coloring belongs to the map-coloring CSP demo. It is intentionally separate from 15-puzzle.
+- Standard 15-puzzle is not adversarial. AI-vs-AI Tournament is a scoring layer over solver outputs, not a MIN-player environment.
 - Benchmark output is course evidence, not a production solver leaderboard.

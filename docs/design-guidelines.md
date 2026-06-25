@@ -32,8 +32,8 @@ Use a tactile solver-laboratory dashboard style:
 
 - Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
 - For game/chance demos, label returned actions as selected variation or sample outcome paths, not full game trees or optimal puzzle certificates.
-- Present graph coloring through map coloring or another graph game, never as a direct 15-puzzle algorithm.
-- Default graph coloring to the offline Thu Duc 2025 map; show source attribution, the selected palette, adjacency evidence, partial assignments, and backtracking without implying legal-map authority.
+- For AI-vs-AI Tournament, show the A* optimal reference, each agent's score reason, legality status, excess cost, runtime, nodes, and tie-break result.
+- State that tournament scoring compares agents on the same puzzle; it is not a natural adversarial PEAS model for 15-puzzle.
 - When an algorithm is not optimal or not complete, state that directly.
 - Prefer concise tables and cards over long paragraphs for exam-facing material.
 - Preserve existing solver behavior unless a dedicated algorithm fix is planned.

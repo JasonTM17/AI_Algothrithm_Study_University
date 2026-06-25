@@ -3,7 +3,8 @@
 ## Entry Point
 
 - `app.py` is the Streamlit entrypoint and main tab router.
-- `ui/advanced_tab.py` renders CSP, complex-environment, and game-tree demos.
+- `ui/advanced_tab.py` renders CSP, complex-environment, game-tree, and AI-vs-AI tournament demos.
+- `ui/ai_vs_ai_tournament.py` renders the tournament setup, per-round scoring table, reference status, and winner summary.
 - `ui/academic_panels.py` renders PEAS, taxonomy, rubric, exam path, grading summary, and academic warning panels.
 - `ui/hand_tracing.py` renders interactive expansion-order practice and a Graphviz tree from the learner's verified parent/child choices.
 
@@ -13,6 +14,7 @@
 - `core/heuristics.py` contains Misplaced Tiles, Manhattan Distance, and Linear Conflict.
 - `core/metrics.py` defines run certificates, trace events, and explicit search-graph nodes/edges.
 - `core/gameplay.py` scores legal player runs against a proven optimal distance.
+- `core/ai_vs_ai_tournament.py` scores two solver agents on identical 15-puzzle rounds against an A* reference optimal certificate.
 - `core/academic.py` defines academic taxonomy, PEAS data, and recommendation rubric.
 - `core/academic_proofs.py` defines proof cards, exam answer templates, benchmark presets, and decision guide data.
 - `core/solver_dispatch.py` builds safe kwargs for UI solver calls.
@@ -23,13 +25,13 @@
 - `algorithms/informed.py`: Greedy Best-First, A*, IDA*.
 - `algorithms/local_search.py`: hill climbing variants, beam search, simulated annealing.
 - `algorithms/complex_env.py`: AND-OR, belief-state, partial-observation, LRTA* demos.
-- `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, graph coloring, graphs.
-- `algorithms/map_coloring.py`: deterministic MRV/degree/forward-checking map CSP with structured trace data; its bundled asset contains the 12 Thu Duc 2025 ward geometries and audited adjacency graph.
+- `algorithms/csp.py`: CSP definition, propagation, consistency, backtracking, min-conflicts, and constraint-graph demos.
 - `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax demos; returned actions form a legal selected variation/sample path with explicit caveats that these are not standard 15-puzzle optimality certificates.
 
 ## Academic Documentation
 
-- `docs/algorithm-groups-academic-reference.md`: Vietnamese full reference for PEAS, algorithm groups, guarantees, heuristic proofs, failure modes, CSP/complex-environment boundaries, and adversarial/stochastic framing.
+- `docs/algorithm-groups-academic-reference.md`: Vietnamese full reference for PEAS, algorithm groups, guarantees, heuristic proofs, failure modes, CSP/complex-environment boundaries, tournament scoring, and game/chance framing.
+- `docs/algorithm-test-plan.md`: Vietnamese verification matrix for solver correctness, custom goals, trace evidence, stochastic seeds, AI-vs-AI scoring, UI/browser checks, and exam-defense acceptance criteria.
 - `docs/project-overview-pdr.md`: project purpose, audience, academic positioning, and success criteria.
 - `docs/system-architecture.md`: Streamlit architecture, solver/evidence flow, extension boundaries, and documentation/reporting flow.
 
@@ -38,6 +40,7 @@
 - `tests/test_puzzle.py`: puzzle mechanics and solvability.
 - `tests/test_heuristics.py`: heuristic correctness.
 - `tests/test_solvers.py`: solver behavior, path validation, teaching preset regressions, and legal selected-path checks for game/chance demos.
+- `tests/test_ai_vs_ai_tournament.py`: scoring rules, reference reuse, deterministic seeds, integration, and tie-break behavior for AI-vs-AI Tournament.
 - `tests/test_runtime_integrity.py`: compile/import and dispatch regressions.
 - `tests/test_academic.py`: taxonomy, PEAS, rubric, exam path, report, and UI contract completeness.
 - `tests/test_search_tree_evidence.py`: legal parent/child edges and run certificates.

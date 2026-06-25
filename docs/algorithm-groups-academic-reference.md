@@ -1,207 +1,175 @@
-# Tham chiếu học thuật về các nhóm thuật toán
+# Tham chieu hoc thuat ve cac nhom thuat toan
 
-Tài liệu này dùng cho phần bảo vệ cuối kỳ của ứng dụng 15-Puzzle AI Algorithm Simulator. Nội dung bám theo code hiện tại trong `algorithms/`, `core/academic.py`, `core/academic_proofs.py`, `core/heuristics.py`, và cách UI tách "standard solver lab" khỏi "advanced concept lab".
+Tai lieu nay dung cho phan bao ve cuoi ky cua ung dung 15-Puzzle AI Algorithm Simulator. Noi dung bam theo code hien tai trong `algorithms/`, `core/academic.py`, `core/academic_proofs.py`, `core/heuristics.py`, va cach UI tach "standard solver lab" khoi "advanced concept lab".
 
-## 1. Mô hình bài toán chuẩn
+## 1. Mo hinh bai toan chuan
 
-15-puzzle chuẩn trong repo là một bài toán tìm kiếm trạng thái đơn tác tử.
+15-puzzle chuan trong repo la bai toan tim kiem trang thai don tac tu.
 
-| Thuộc tính | Kết luận học thuật | Ý nghĩa trong app |
+| Thuoc tinh | Ket luan hoc thuat | Y nghia trong app |
 |---|---|---|
-| Quan sát | Fully observable | Agent thấy toàn bộ 4x4 board. |
-| Tính xác định | Deterministic | Một hành động hợp lệ luôn sinh đúng một trạng thái kế tiếp. |
-| Tính động | Static | Board không tự đổi khi agent suy nghĩ. |
-| Rời rạc | Discrete | State, action, path cost đều rời rạc. |
-| Tuần tự | Sequential | Quyết định hiện tại ảnh hưởng các trạng thái sau. |
-| Tác tử | Single-agent | Không có đối thủ trong bài toán chuẩn. |
-| Chi phí | Unit step cost | Mỗi lần trượt ô trống có cost 1. |
+| Quan sat | Fully observable | Agent thay toan bo 4x4 board. |
+| Tinh xac dinh | Deterministic | Mot hanh dong hop le luon sinh dung mot trang thai ke tiep. |
+| Tinh dong | Static | Board khong tu doi khi agent suy nghi. |
+| Roi rac | Discrete | State, action, path cost deu roi rac. |
+| Tuan tu | Sequential | Quyet dinh hien tai anh huong cac trang thai sau. |
+| Tac tu | Single-agent | Khong co doi thu trong bai toan chuan. |
+| Chi phi | Unit step cost | Moi lan truot o trong co cost 1. |
 
-PEAS chuẩn:
+PEAS chuan:
 
-| PEAS | Diễn giải |
+| PEAS | Dien giai |
 |---|---|
-| Performance | Đến goal, ít bước, ít node mở rộng, ít bộ nhớ, runtime thấp. |
+| Performance | Den goal, it buoc, it node mo rong, it bo nho, runtime thap. |
 | Environment | Board 4x4, deterministic, fully observable, static, discrete, sequential, single-agent. |
-| Actuators | Trượt ô trống theo L/R/U/D khi hợp lệ. |
-| Sensors | Trạng thái board đầy đủ, vị trí ô trống, legal moves, heuristic estimates. |
+| Actuators | Truot o trong theo L/R/U/D khi hop le. |
+| Sensors | Trang thai board day du, vi tri o trong, legal moves, heuristic estimates. |
 
-Ranh giới quan trọng: CSP, AND-OR, no/partial observation, LRTA*, Minimax, Alpha-Beta, Expectimax là phần mở rộng học thuật. Chúng giúp trình bày nhiều mô hình AI hơn, nhưng không phải solver tự nhiên của 15-puzzle chuẩn. Caro/Gomoku mới là ví dụ đối kháng tự nhiên cho Minimax và Alpha-Beta.
+Ranh gioi quan trong: CSP, AND-OR, no/partial observation, LRTA*, Minimax, Alpha-Beta, va Expectimax la phan mo rong hoc thuat. AI-vs-AI Tournament la lop cham diem giua hai solver agent cung giai 15-puzzle; no khong bien 15-puzzle thanh moi truong co MIN player.
 
-## 2. Bảng phân loại nhanh
+## 2. Bang phan loai nhanh
 
-| Vai trò | Thuật toán | Có nên dùng làm solver chính? | Điểm bảo vệ |
+| Vai tro | Thuat toan | Co nen dung lam solver chinh? | Diem bao ve |
 |---|---|---:|---|
-| Real Solver | BFS, UCS, IDS, A*, IDA* | Có | Dùng để chứng minh lời giải hợp lệ, tính đầy đủ, tối ưu trong điều kiện phù hợp. |
-| Contrast Demo | DFS, Greedy Best-First, local search variants | Không | Dùng để chỉ ra trade-off, suboptimality, local optimum, plateau, hoặc thiếu guarantee. |
-| Illustrative Extension | CSP, AND-OR, No Observation, Partial Observation, LRTA* | Không | Dùng để giải thích cách đổi mô hình bài toán và môi trường. |
-| Stochastic/Game Demo | Minimax, Alpha-Beta, Expectimax, Caro/Gomoku | Chỉ Caro là game tự nhiên | Dùng để giải thích game tree, pruning, chance node, utility. |
+| Real Solver | BFS, UCS, IDS, A*, IDA* | Co | Chung minh loi giai hop le, tinh day du, toi uu trong dieu kien phu hop. |
+| Contrast Demo | DFS, Greedy Best-First, local search variants | Khong | Chi ra trade-off, suboptimality, local optimum, plateau, hoac thieu guarantee. |
+| Illustrative Extension | CSP, AND-OR, No Observation, Partial Observation, LRTA* | Khong | Giai thich cach doi mo hinh bai toan va moi truong. |
+| AI-vs-AI/Game-Chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Tournament la scoring layer | Tournament cham diem hai agent; game/chance mode chi la extension giao duc. |
 
-Khi bảo vệ, nên nói rõ ba tầng bằng chứng:
+Khi bao ve, nen noi ro ba tang bang chung:
 
-1. Legal path certificate: mỗi cạnh trong path phải là một move hợp lệ.
-2. Goal reachability: path kết thúc đúng goal hay chỉ là partial/selected/sample path.
-3. Optimality certificate: thuật toán và heuristic có đủ điều kiện để chứng minh cost tối ưu hay không.
+1. Legal path certificate: moi canh trong path phai la mot move hop le.
+2. Goal reachability: path ket thuc dung goal hay chi la partial/selected/sample path.
+3. Optimality certificate: thuat toan va heuristic co du dieu kien de chung minh cost toi uu hay khong.
 
 ## 3. Uninformed Search
 
-Nhóm uninformed search không dùng heuristic. Frontier được điều khiển bởi depth, stack/queue, hoặc path cost.
+Nhom uninformed search khong dung heuristic. Frontier duoc dieu khien boi depth, stack/queue, hoac path cost.
 
-| Thuật toán | Frontier/evaluation | Complete | Optimal | Bộ nhớ | Ghi chú |
+| Thuat toan | Frontier/evaluation | Complete | Optimal | Bo nho | Ghi chu |
 |---|---|---:|---:|---|---|
-| BFS | FIFO queue, mở theo depth | Có nếu branching hữu hạn | Có với unit cost | Rất cao, thường O(b^d) | Dễ chứng minh shortest path nhưng nhanh hết bộ nhớ. |
-| DFS | Stack/depth-first | Không đảm bảo trong graph/lúc giới hạn | Không | Thấp, thường O(bm) | Contrast demo: tiết kiệm bộ nhớ nhưng dễ đi sâu sai hướng. |
-| UCS | Priority queue theo g(n) | Có với cost dương | Có | Cao | Với 15-puzzle unit cost, UCS tương đương BFS về thứ tự cost. |
-| IDS | Lặp depth-limited search | Có với branching hữu hạn | Có với unit cost | Thấp, O(bd) | Tốt để giải thích đổi runtime lấy bộ nhớ thấp. |
+| BFS | FIFO queue, mo theo depth | Co neu branching huu han | Co voi unit cost | Rat cao, O(b^d) | De chung minh shortest path nhung nhanh het bo nho. |
+| DFS | Stack/depth-first | Khong dam bao trong graph/luc gioi han | Khong | Thap, O(bm) | Contrast demo: tiet kiem bo nho nhung de di sau sai huong. |
+| UCS | Priority queue theo g(n) | Co voi cost duong | Co | Cao | Voi 15-puzzle unit cost, UCS tuong duong BFS ve thu tu cost. |
+| IDS | Lap depth-limited search | Co voi branching huu han | Co voi unit cost | Thap, O(bd) | Doi runtime lay bo nho thap. |
 
-Ký hiệu: `b` là branching factor, `d` là độ sâu lời giải ngắn nhất, `m` là depth tối đa đang xét.
+`b` la branching factor, `d` la do sau loi giai ngan nhat, `m` la depth toi da dang xet.
 
-### BFS
+## 4. Informed Search va heuristic
 
-BFS mở rộng tất cả node depth `0`, rồi depth `1`, rồi depth `2`, ... Vì mỗi move cost 1, node goal đầu tiên được lấy ra ở depth nhỏ nhất. Đây là chứng minh tối ưu rất phù hợp cho bài bảo vệ.
-
-Điểm yếu: frontier và reached set tăng theo hàm mũ. Với 15-puzzle sâu, BFS/UCS nhanh bị áp lực bộ nhớ dù guarantee đẹp.
-
-### DFS
-
-DFS đi sâu theo một nhánh trước. Nó có thể tìm lời giải nhanh nếu may mắn, nhưng không chứng minh shortest path. Trong app, DFS bị đặt depth/node/time limit để tránh treo UI; vì vậy càng không nên gọi DFS là complete solver thực tế.
-
-Nên dùng DFS để so sánh: "low memory does not imply reliable optimal solving".
-
-### UCS
-
-UCS mở node có `g(n)` nhỏ nhất. Với mọi move cost 1, `g(n)` chính là depth, nên UCS và BFS có cùng bản chất tối ưu trong 15-puzzle chuẩn. UCS vẫn đáng trình bày vì là phiên bản tổng quát hơn khi action cost không bằng nhau.
-
-### IDS
-
-IDS chạy DFS giới hạn depth 0, rồi 1, rồi 2, ... Nó lặp lại một số node nhưng giữ bộ nhớ thấp. Với unit cost, goal đầu tiên tại depth `d` là lời giải tối ưu. Đây là lựa chọn tốt khi muốn chứng minh completeness/optimality mà vẫn nói được về memory efficiency.
-
-## 4. Informed Search và heuristic
-
-Nhóm informed search dùng heuristic `h(n)` để ước lượng cost còn lại.
-
-| Thuật toán | Evaluation | Complete | Optimal | Vai trò |
+| Thuat toan | Evaluation | Complete | Optimal | Vai tro |
 |---|---|---:|---:|---|
-| Greedy Best-First | Ưu tiên h(n) nhỏ nhất | Không đảm bảo trong thực hành graph search | Không | Contrast demo cho heuristic-only failure. |
-| A* | f(n)=g(n)+h(n) | Có nếu heuristic admissible/consistent và tài nguyên đủ | Có | Solver tham chiếu chính. |
-| IDA* | DFS theo ngưỡng f-cost tăng dần | Có trong điều kiện hữu hạn | Có với admissible heuristic | Solver tối ưu tiết kiệm bộ nhớ hơn A*. |
+| Greedy Best-First | Uu tien h(n) nho nhat | Khong dam bao trong thuc hanh graph search | Khong | Contrast demo cho heuristic-only failure. |
+| A* | f(n)=g(n)+h(n) | Co neu heuristic admissible/consistent va tai nguyen du | Co | Solver tham chieu chinh. |
+| IDA* | DFS theo nguong f-cost tang dan | Co trong dieu kien huu han | Co voi admissible heuristic | Solver toi uu tiet kiem bo nho hon A*. |
 
-### Heuristic trong repo
+Heuristic trong repo:
 
-| Heuristic | Định nghĩa | Quan hệ sức mạnh | Dùng để bảo vệ |
+| Heuristic | Dinh nghia | Quan he suc manh | Dung de bao ve |
 |---|---|---|---|
-| Misplaced Tiles | Đếm tile sai vị trí, bỏ qua blank | Yếu nhất trong ba heuristic | Dễ giải thích admissible vì một tile sai cần ít nhất một move. |
-| Manhattan Distance | Tổng khoảng cách hàng+cột tới goal | Mạnh hơn Misplaced | Chuẩn để chứng minh A* optimality. |
-| Linear Conflict | Manhattan + 2 lần số conflict độc lập | Mạnh hơn Manhattan | Cho thấy heuristic mạnh hơn nhưng vẫn admissible. |
+| Misplaced Tiles | Dem tile sai vi tri, bo qua blank | Yeu nhat | De giai thich admissible. |
+| Manhattan Distance | Tong khoang cach hang+cot toi goal | Manh hon Misplaced | Chuan de chung minh A* optimality. |
+| Linear Conflict | Manhattan + conflict penalty hop le | Manh hon Manhattan | Cho thay heuristic manh hon nhung van admissible. |
 
-Admissible nghĩa là `h(n) <= h*(n)`, không bao giờ overestimate true remaining cost. Consistent nghĩa là `h(n) <= c(n,n') + h(n')` với mọi cạnh hợp lệ. Với unit cost, Manhattan consistent vì một slide chỉ làm tổng Manhattan đổi nhiều nhất 1.
-
-### Greedy Best-First
-
-Greedy chỉ nhìn `h(n)`, bỏ qua `g(n)`. Nó có thể chạy nhanh và đôi khi tìm đường tốt, nhưng không có chứng minh tối ưu. Teaching preset trong app dùng Greedy để chỉ ra trường hợp A* trả path ngắn hơn Greedy.
-
-Câu bảo vệ nên dùng: "Greedy is a heuristic baseline, not an optimal solver. It may choose a state that looks close to goal while taking a longer route."
-
-### A*
-
-A* cân bằng cost đã đi và estimate còn lại bằng `f(n)=g(n)+h(n)`. Với heuristic admissible và consistent như Manhattan/Linear Conflict trong app, A* graph search có thể chứng minh optimal path khi không bị timeout/node cap.
-
-Điểm cần nói rõ: nếu run bị timeout hoặc node cap, kết quả thực nghiệm không còn là optimality certificate, dù tính chất lý thuyết của A* vẫn đúng dưới giả định đủ tài nguyên.
-
-### IDA*
-
-IDA* dùng ngưỡng `f=g+h`, chạy depth-first cho các node không vượt ngưỡng, rồi tăng ngưỡng. Nó giảm memory so với A* vì không giữ toàn bộ frontier lớn. Đổi lại, nó có thể mở lại node nhiều lần.
-
-Câu bảo vệ nên dùng: "IDA* keeps A*'s optimality condition under admissible heuristic but trades repeated work for lower memory."
+Admissible nghia la `h(n) <= h*(n)`. Consistent nghia la `h(n) <= c(n,n') + h(n')` voi moi canh hop le. Neu A* bi timeout hoac node cap, ket qua thuc nghiem khong con la optimality certificate.
 
 ## 5. Local Search
 
-Local search không duy trì frontier đầy đủ của state-space search. Nó thường giữ một state hiện tại, một vài state tốt nhất, hoặc chấp nhận move xấu theo xác suất.
+Local search khong duy tri frontier day du. No giu mot state hien tai, mot vai state tot nhat, hoac chap nhan move xau theo xac suat.
 
-| Thuật toán | Cách chọn bước | Complete | Optimal | Failure mode |
+| Thuat toan | Cach chon buoc | Complete | Optimal | Failure mode |
 |---|---|---:|---:|---|
-| Simple Hill Climbing | Chọn cải thiện đầu tiên | Không | Không | Local optimum, plateau. |
-| Steepest-Ascent Hill Climbing | Chọn neighbor tốt nhất | Không | Không | Vẫn kẹt nếu mọi neighbor không tốt hơn. |
-| Stochastic Hill Climbing | Chọn cải thiện ngẫu nhiên | Không | Không | Phụ thuộc seed, vẫn kẹt. |
-| Random-Restart Hill Climbing | Chạy lại từ nhiều điểm | Không tuyệt đối | Không | Tăng xác suất thành công nhưng không chứng minh tối ưu. |
-| Local Beam Search | Giữ k state tốt nhất | Không | Không | Beam hẹp có thể mất nhánh lời giải. |
-| Simulated Annealing | Có thể nhận move xấu theo temperature | Không hữu hạn | Không | Schedule không phù hợp có thể hội tụ kém. |
+| Simple Hill Climbing | Chon cai thien dau tien | Khong | Khong | Local optimum, plateau. |
+| Steepest-Ascent Hill Climbing | Chon neighbor tot nhat | Khong | Khong | Ket neu moi neighbor khong tot hon. |
+| Stochastic Hill Climbing | Chon cai thien ngau nhien | Khong | Khong | Phu thuoc seed. |
+| Random-Restart Hill Climbing | Chay lai tu nhieu diem | Khong tuyet doi | Khong | Tang xac suat thanh cong, khong chung minh toi uu. |
+| Local Beam Search | Giu k state tot nhat | Khong | Khong | Beam hep co the mat nhanh loi giai. |
+| Simulated Annealing | Co the nhan move xau theo temperature | Khong huu han | Khong | Schedule kem co the hoi tu kem. |
 
-Trong 15-puzzle, local search hữu ích nhất ở vai trò giáo dục: chứng minh heuristic tốt không đủ nếu thuật toán chỉ tối ưu cục bộ. App dùng nhóm này làm contrast demo, không đưa vào bảng xếp hạng solver chuẩn.
+Trong 15-puzzle, nhom nay huu ich nhat o vai tro giao duc: heuristic tot khong du neu thuat toan chi toi uu cuc bo.
 
-## 6. CSP và map coloring
+## 6. CSP trong 15-puzzle
 
-CSP mô hình hóa bài toán bằng biến `X`, miền giá trị `D`, và ràng buộc `C`. Với 15-puzzle, có thể mô hình hóa planning bằng biến theo time step, nhưng không tự nhiên bằng state-space search vì số biến/ràng buộc tăng lớn theo horizon.
+CSP mo hinh hoa bai toan bang bien `X`, mien gia tri `D`, va rang buoc `C`. Voi 15-puzzle, co the mo hinh planning bang bien theo time step, nhung khong tu nhien bang state-space search vi so bien/rang buoc tang theo horizon.
 
-| Thành phần | Trong app | Ý nghĩa học thuật |
+| Thanh phan | Trong app | Y nghia hoc thuat |
 |---|---|---|
-| CSP Definition | Trình bày X, D, C | Giúp đổi cách nhìn từ path search sang constraint satisfaction. |
-| Constraint Propagation | Thu hẹp domain | Giải thích pruning trước/sau assignment. |
-| Path Consistency | Consistency bậc cao hơn arc consistency | Cho thấy kiểm tra ràng buộc giữa nhiều biến. |
-| Global Constraints | Ví dụ AllDifferent | Tóm gọn nhiều ràng buộc nhị phân. |
-| Backtracking Search | Demo planning có giới hạn | Trong app là minh họa bounded transition planning, không phải MRV/forward-checking đầy đủ cho 15-puzzle. |
-| Min-Conflicts | Local repair | Hợp với N-Queens hơn 15-puzzle transition planning. |
-| Constraint Graphs | Đồ thị biến-ràng buộc | Dùng để giải thích độ liên kết và độ khó. |
-| Map Coloring | Thu Duc 2025/Australia | Ví dụ CSP tự nhiên hơn cho tô màu đồ thị. |
+| CSP Definition | Trinh bay X, D, C | Doi cach nhin tu path search sang constraint satisfaction. |
+| Constraint Propagation | Thu hep domain | Giai thich pruning truoc/sau assignment. |
+| Path Consistency | Consistency bac cao hon arc consistency | Kiem tra rang buoc giua nhieu bien. |
+| Global Constraints | Vi du AllDifferent | Tom gon nhieu rang buoc nhi phan. |
+| Backtracking Search | Demo planning co gioi han | Minh hoa bounded transition planning, khong phai solver chinh. |
+| Min-Conflicts | Local repair | Hop voi bai toan sua loi rang buoc hon 15-puzzle transition planning. |
+| Constraint Graphs | Do thi bien-rang buoc | Giai thich lien ket va do kho. |
 
-Map coloring trong app là ví dụ CSP tự nhiên: mỗi vùng là biến, domain là màu, hai vùng kề nhau không được cùng màu. Bản Thu Duc dùng dữ liệu offline 12 phường hiệu lực 2025-07-01, có trace MRV/degree/forward-checking. Tài liệu và UI không được ngụ ý đây là chứng nhận pháp lý bản đồ; nó là dataset học thuật offline.
+Khong con demo to mau ban do trong UI/code. Khi bao ve, chi can noi CSP la cach mo hinh minh hoa, khong phai huong giai tu nhien nhat cho 15-puzzle.
 
 ## 7. Complex Environments
 
-Nhóm này thay đổi giả định môi trường chuẩn.
-
-| Thuật toán | Môi trường | Output | Ranh giới |
+| Thuat toan | Moi truong | Output | Ranh gioi |
 |---|---|---|---|
-| AND-OR Search | Nondeterministic | Conditional plan | Không cần cho 15-puzzle deterministic chuẩn. |
-| No Observation Search | Không quan sát state thật | Belief-state plan/demo | Sensor bị yếu đi có chủ ý. |
-| Partially Observable Search | Quan sát một phần | Belief update trace | Không phải solver chuẩn. |
-| LRTA* | Online search/learning | Path học từng bước | Có thể không tối ưu, dùng để bàn về agent online. |
+| AND-OR Search | Nondeterministic | Conditional plan | Khong can cho 15-puzzle deterministic chuan. |
+| No Observation Search | Khong quan sat state that | Belief-state plan/demo | Sensor bi yeu di co chu y. |
+| Partially Observable Search | Quan sat mot phan | Belief update trace | Khong phai solver chuan. |
+| LRTA* | Online search/learning | Path hoc tung buoc | Co the khong toi uu, dung de ban ve agent online. |
 
-Khi bảo vệ, dùng nhóm này để nói về PEAS: nếu sensor/transition/observability thay đổi, biểu diễn state và thuật toán cũng thay đổi. Không so sánh trực tiếp node count của nhóm này với A*/IDA* như thể cùng một bài toán.
+Neu sensor/transition/observability thay doi, bieu dien state va thuat toan cung thay doi. Khong so sanh node count cua nhom nay voi A*/IDA* nhu the cung mot bai toan.
 
-## 8. Adversarial và stochastic search
+## 8. AI-vs-AI Tournament va game/chance extension
 
-15-puzzle chuẩn là single-agent, nên không có MIN player hoặc chance node tự nhiên. App vẫn có Minimax/Alpha-Beta/Expectimax dạng extension để giải thích mô hình game/chance, nhưng kết quả chỉ là selected variation hoặc sample outcome path, không phải chứng chỉ tối ưu puzzle.
+15-puzzle chuan la single-agent. Tournament trong app la lop cham diem giua hai agent giai cung board, khong phai doi khang tu nhien trong moi truong puzzle.
 
-| Thuật toán | Mô hình | Guarantee | Nên trình bày |
+| Thanh phan | Mo hinh | Guarantee | Nen trinh bay |
 |---|---|---|---|
-| Minimax | MAX/MIN game tree | Tối ưu theo utility nếu game tree/depth đúng và duyệt đủ | Khái niệm đối thủ tối ưu. |
-| Alpha-Beta Pruning | Minimax có cắt tỉa | Giữ cùng root value với Minimax nếu điều kiện duyệt đủ | Pruning giảm node mà không đổi quyết định. |
-| Expectimax | MAX/CHANCE tree | Tối ưu kỳ vọng theo xác suất mô hình | Ra quyết định khi có chance outcome. |
-| Caro/Gomoku | Game hai người zero-sum tự nhiên | Depth-limited search | Ví dụ đúng nhất cho Minimax/Alpha-Beta trong app. |
+| AI-vs-AI Tournament | Hai solver agent chay tren cung start/goal | Diem dua tren A* reference optimal certificate | So sanh chat luong loi giai, failure, runtime, nodes. |
+| Minimax | MAX/MIN game tree extension | Toi uu theo utility neu game tree/depth dung va duyet du | Khai niem doi thu toi uu. |
+| Alpha-Beta Pruning | Minimax co cat tia | Giu cung root value voi Minimax neu dieu kien duyet du | Pruning giam node ma khong doi quyet dinh. |
+| Expectimax | MAX/CHANCE tree | Toi uu ky vong theo xac suat mo hinh | Ra quyet dinh khi co chance outcome. |
 
-Câu bảo vệ quan trọng: "Minimax trên 15-puzzle là artificial extension; Caro/Gomoku mới là môi trường đối kháng tự nhiên."
+Scoring tournament co dinh:
 
-## 9. Cách chọn thuật toán khi bảo vệ
+| Ket qua agent | Diem |
+|---|---:|
+| Path hop le, toi goal, cost bang optimal cost | +100 |
+| Path hop le, toi goal, cost dai hon optimal | `max(20, 100 - 10 * excess_cost)` |
+| Path hop le nhung khong toi goal | -10 |
+| Timeout/resource limit/no path | -20 |
+| Exception, path khong verify, action sai luat, state/action mismatch | -50 |
 
-| Nhu cầu | Nên dùng | Tránh nói |
+Moi round chay A* lam reference. Neu A* reference khong chung minh duoc optimal path, round do duoc bao `reference failed` va khong cham diem. Tie-break theo thu tu: tong diem, solved rounds, total excess cost thap hon, runtime thap hon, nodes thap hon; neu van hoa thi draw.
+
+Cau bao ve quan trong: "AI-vs-AI Tournament danh gia hai solver agent bang thang diem; no khong tao MIN player trong PEAS chuan cua 15-puzzle."
+
+## 9. Cach chon thuat toan khi bao ve
+
+| Nhu cau | Nen dung | Tranh noi |
 |---|---|---|
-| Chứng minh shortest path nông | BFS/UCS/IDS | "DFS tối ưu" |
-| Solver chuẩn tốt nhất | A* với Manhattan hoặc Linear Conflict | "Greedy cũng tối ưu vì có heuristic" |
-| Puzzle sâu, ít bộ nhớ hơn A* | IDA* | "BFS phù hợp puzzle sâu" |
-| Chứng minh heuristic failure | Greedy, Hill Climbing preset | "Local search là solver đáng tin cậy" |
-| Giải thích môi trường phức tạp | AND-OR, belief-state, LRTA* | "Đây là cùng bài toán chuẩn" |
-| Giải thích CSP | Map coloring, constraint graph | "CSP là cách tự nhiên nhất cho 15-puzzle" |
-| Giải thích đối kháng | Caro/Gomoku, Minimax, Alpha-Beta | "15-puzzle có đối thủ" |
+| Chung minh shortest path nong | BFS/UCS/IDS | "DFS toi uu" |
+| Solver chuan tot nhat | A* voi Manhattan hoac Linear Conflict | "Greedy cung toi uu vi co heuristic" |
+| Puzzle sau, it bo nho hon A* | IDA* | "BFS phu hop puzzle sau" |
+| Chung minh heuristic failure | Greedy, Hill Climbing preset | "Local search la solver dang tin cay" |
+| Giai thich moi truong phuc tap | AND-OR, belief-state, LRTA* | "Day la cung bai toan chuan" |
+| Giai thich CSP | CSP planning, constraint graph | "CSP la cach tu nhien nhat cho 15-puzzle" |
+| So sanh hai AI | AI-vs-AI Tournament | "15-puzzle co doi thu tu nhien" |
 
-## 10. Checklist trả lời vấn đáp
+## 10. Checklist tra loi van dap
 
-- Nêu đúng PEAS trước khi chọn thuật toán.
-- Phân biệt solver chuẩn, contrast demo, extension, game demo.
-- Với mỗi path, hỏi: path có hợp lệ không, có đến goal không, có chứng minh tối ưu không.
-- Với A*/IDA*, nêu heuristic admissible/consistent và giới hạn timeout/node cap.
-- Với BFS/UCS/IDS, nêu unit step cost là lý do optimality.
-- Với DFS/Greedy/local search, nêu failure mode cụ thể.
-- Với CSP/game/chance, nói rõ đây là đổi mô hình, không phải solver tự nhiên của 15-puzzle chuẩn.
-- Khi dùng benchmark, nêu seed, depth, heuristic, max nodes, timeout và caveat.
+- Neu dung PEAS truoc khi chon thuat toan.
+- Phan biet solver chuan, contrast demo, extension, tournament/game demo.
+- Voi moi path, hoi: path co hop le khong, co den goal khong, co chung minh toi uu khong.
+- Voi A*/IDA*, neu heuristic admissible/consistent va gioi han timeout/node cap.
+- Voi BFS/UCS/IDS, neu unit step cost la ly do optimality.
+- Voi DFS/Greedy/local search, neu failure mode cu the.
+- Voi CSP/game/chance/tournament, noi ro day la doi mo hinh hoac lop danh gia, khong phai solver tu nhien cua 15-puzzle chuan.
+- Khi dung benchmark/tournament, neu seed, depth, heuristic, max nodes, timeout va caveat.
 
-## 11. Bảng câu nói ngắn cho giảng viên
+## 11. Bang cau noi ngan cho giang vien
 
-| Câu hỏi | Câu trả lời gợi ý |
+| Cau hoi | Cau tra loi goi y |
 |---|---|
-| Vì sao A* tối ưu? | Vì A* dùng `f=g+h`; với Manhattan/Linear Conflict admissible và consistent, goal đầu tiên được chọn từ frontier có cost tối ưu nếu không bị giới hạn tài nguyên. |
-| Vì sao UCS giống BFS ở đây? | Vì mọi slide có cost 1, nên thứ tự tăng `g(n)` của UCS trùng với thứ tự depth của BFS. |
-| Vì sao Greedy không đủ? | Greedy chỉ tối thiểu hóa `h(n)`, bỏ qua cost đã đi `g(n)`, nên có thể chọn đường nhìn gần goal nhưng dài hơn. |
-| Vì sao local search kẹt? | Nó tối ưu cục bộ, không giữ frontier toàn cục, nên local optimum/plateau có thể chặn đường tới goal. |
-| Vì sao CSP không phải solver chính? | CSP planning cần biến theo time step và horizon; với 15-puzzle chuẩn, state-space search tự nhiên và trực tiếp hơn. |
-| Vì sao có Caro trong repo? | Để minh họa đối kháng tự nhiên cho Minimax/Alpha-Beta; 15-puzzle chuẩn không có đối thủ. |
-
+| Vi sao A* toi uu? | Vi A* dung `f=g+h`; voi Manhattan/Linear Conflict admissible va consistent, goal dau tien duoc chon tu frontier co cost toi uu neu khong bi gioi han tai nguyen. |
+| Vi sao UCS giong BFS o day? | Vi moi slide co cost 1, nen thu tu tang `g(n)` cua UCS trung voi thu tu depth cua BFS. |
+| Vi sao Greedy khong du? | Greedy chi toi thieu hoa `h(n)`, bo qua cost da di `g(n)`, nen co the chon duong nhin gan goal nhung dai hon. |
+| Vi sao local search ket? | No toi uu cuc bo, khong giu frontier toan cuc, nen local optimum/plateau co the chan duong toi goal. |
+| Vi sao CSP khong phai solver chinh? | CSP planning can bien theo time step va horizon; voi 15-puzzle chuan, state-space search tu nhien va truc tiep hon. |
+| Vi sao co AI-vs-AI Tournament? | De cham diem hai solver agent tren cung puzzle bang A* reference: dung/toi uu duoc diem cao, duong dai hon duoc diem thap hon, sai/that bai bi tru diem. |

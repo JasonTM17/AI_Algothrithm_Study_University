@@ -17,15 +17,16 @@ The standard 15-puzzle environment is deterministic, fully observable, static, d
 - Real solvers: BFS, UCS, IDS, A*, IDA*.
 - Contrast demos: DFS, Greedy Best-First, local search variants.
 - Illustrative extensions: CSP, AND-OR, no/partial observation, LRTA*.
-- Stochastic/game demos: Minimax, Alpha-Beta, Expectimax.
+- AI-vs-AI/game-chance demos: AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax.
 
 This distinction is required so the app stays academically truthful while still covering broad AI topics.
-Graph coloring is handled as its own map-coloring CSP demo because it is a natural CSP example, not a 15-puzzle solver. The default dataset covers the 12 wards on the former Thu Duc City territory effective 2025-07-01; Australia remains available for comparison.
+AI-vs-AI Tournament is handled as a scoring layer over two 15-puzzle solver agents. Each round uses an A* reference optimal certificate; optimal legal paths receive full points, legal longer paths receive reduced points, failed paths lose points, and invalid paths receive the strongest penalty.
 
 ## Academic Documentation
 
 - `docs/algorithm-groups-academic-reference.md` is the Vietnamese full reference for defending algorithm groups.
-- It covers PEAS, completeness, optimality, memory/runtime tradeoffs, heuristic guarantees, local-search failure modes, CSP formulation, complex environments, and adversarial/stochastic boundaries.
+- `docs/algorithm-test-plan.md` is the Vietnamese verification plan for solver oracles, trace evidence, custom goals, stochastic seeds, UI/browser checks, and exam-defense acceptance criteria.
+- It covers PEAS, completeness, optimality, memory/runtime tradeoffs, heuristic guarantees, local-search failure modes, CSP formulation, complex environments, tournament scoring, and game/chance boundaries.
 - It is intentionally aligned with `core/academic.py`, `core/academic_proofs.py`, `core/heuristics.py`, and the `algorithms/` modules, so exam claims stay tied to implemented behavior.
 
 ## Success Criteria
@@ -36,6 +37,7 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 - Search visualization contains explicit parent/child edges rather than inferred indentation.
 - Hand-Tracing records the learner's chosen expansions as explicit parent/child graph edges.
 - Advanced game/chance demos return only a legal selected variation or sample outcome path, and label it separately from full-tree evidence or optimal puzzle certificates.
+- AI-vs-AI Tournament shows reference optimal cost, per-agent score reason, winner/draw, and tie-break detail.
 - Challenge Mode first certifies the recorded player history as a legal trajectory, then compares completed solutions against an A* optimality certificate.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.
@@ -43,4 +45,4 @@ Graph coloring is handled as its own map-coloring CSP demo because it is a natur
 - The repository includes a detailed Vietnamese academic reference for all algorithm groups and their correct exam framing.
 - The five-step exam path is visible across the main grading workflow.
 - Mobile UI supports readable academic cards and a clickable sidebar.
-- Tests cover puzzle validity, exact/admissible heuristics, solver regressions, tree edges, Streamlit integration, runtime compile, and academic taxonomy.
+- Tests cover puzzle validity, exact/admissible heuristics, solver regressions, tournament scoring, tree edges, Streamlit integration, runtime compile, and academic taxonomy.

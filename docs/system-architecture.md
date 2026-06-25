@@ -11,16 +11,16 @@ flowchart LR
     R --> T[Academic taxonomy and proof cards]
     P --> C
     P --> G
-    A --> M[Map CSP and extension models]
-    A --> O[Caro adversarial game]
+    A --> M[CSP and extension models]
+    A --> O[AI-vs-AI scoring]
     T --> D[Docs and grading report]
 ```
 
 The standard solver lab accepts only deterministic 15-puzzle algorithms. Extension environments remain isolated in the Advanced concept lab and are not ranked against standard solvers.
 
-Every successful puzzle run contains a legal state/action path certificate. Goal termination and optimality are reported as separate run fields so path legality is not confused with a proof of goal reachability or optimal cost. Extension demos can provide contextual termination reasons such as `valid_coloring` instead of reusing the 15-puzzle `goal` label. The search visualization draws an edge only when applying its recorded action to the parent produces the child state. Trace capture is bounded for browser responsiveness and reports truncation explicitly.
+Every successful puzzle run contains a legal state/action path certificate. Goal termination and optimality are reported as separate run fields so path legality is not confused with a proof of goal reachability or optimal cost. Extension demos provide contextual termination reasons instead of reusing the 15-puzzle `goal` label when they are not solving the standard puzzle. The search visualization draws an edge only when applying its recorded action to the parent produces the child state. Trace capture is bounded for browser responsiveness and reports truncation explicitly.
 
-Game-tree and stochastic demos expose selected variations or sample outcome paths for teaching. They do not claim to render the full evaluated tree in the main metrics, and their guarantees remain conditional on depth, timeout, action ordering, and environment assumptions. Caro/Gomoku is the natural adversarial example in this app; the 15-puzzle remains single-agent, so puzzle Minimax/Alpha-Beta modes are explicitly artificial extensions.
+AI-vs-AI Tournament runs two selected solver agents on identical 15-puzzle rounds and scores them against an A* optimal reference. It is an evaluation layer over solver outputs, not a MIN-player environment. Game-tree and stochastic demos expose selected variations or sample outcome paths for teaching; their guarantees remain conditional on depth, timeout, action ordering, and environment assumptions.
 
 All heuristic-driven solvers and demos bind their heuristic to the run's requested goal state. This keeps custom-goal experiments academically consistent with the standard-goal classroom flow.
 
