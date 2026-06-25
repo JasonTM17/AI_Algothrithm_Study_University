@@ -666,6 +666,12 @@ LOC = {
         "play_preview_fail": "Preview could not be generated.",
         "play_preview_error": "Error loading preview: {error}",
         "play_preview_none": "No preview available.",
+        "play_game_kicker": "Game mode",
+        "play_game_title": "Number board like 8-puzzle",
+        "play_game_desc": "Click a numbered tile adjacent to the blank space. The image on the right is the visual target; the victory notice appears when the board state matches the goal matrix.",
+        "play_game_status": "Click a tile next to blank",
+        "play_victory_kicker": "Puzzle complete",
+        "play_victory_subtitle": "The current board matches the target image. You can prove the optimal move count or run AI for comparison.",
         "play_solved_success": "Congratulations! You solved the puzzle in {moves} moves!",
         "play_victory_1": "Victory! The current board matches the goal board after {moves} moves.",
         "play_victory_2": "Perfect! Every tile is in the same position as the goal board after {moves} moves.",
@@ -764,6 +770,13 @@ if _UNICODE_VIETNAMESE_KEY in LOC:
         "demo_workflow": "Lu\u1ed3ng demo",
         "play_title": "Tr\u00f2 ch\u01a1i 15-Puzzle | B\u00e0n c\u1edd T\u01b0\u01a1ng t\u00e1c",
         "play_reset_board": "\u0110\u1eb7t l\u1ea1i b\u00e0n ch\u01a1i",
+        "play_target_preview": "\u1ea2nh \u0111\u00edch",
+        "play_game_kicker": "Ch\u1ebf \u0111\u1ed9 game",
+        "play_game_title": "B\u00e0n ch\u01a1i \u00f4 s\u1ed1 ki\u1ec3u 8-puzzle",
+        "play_game_desc": "Nh\u1ea5p tr\u1ef1c ti\u1ebfp v\u00e0o \u00f4 s\u1ed1 n\u1eb1m c\u1ea1nh \u00f4 tr\u1ed1ng. \u1ea2nh b\u00ean ph\u1ea3i l\u00e0 m\u1ee5c ti\u00eau tr\u1ef1c quan; th\u00f4ng b\u00e1o chi\u1ebfn th\u1eafng xu\u1ea5t hi\u1ec7n khi tr\u1ea1ng th\u00e1i b\u00e0n kh\u1edbp ma tr\u1eadn \u0111\u00edch.",
+        "play_game_status": "B\u1ea5m \u00f4 c\u1ea1nh \u00f4 tr\u1ed1ng",
+        "play_victory_kicker": "Ho\u00e0n th\u00e0nh puzzle",
+        "play_victory_subtitle": "B\u1ea3ng hi\u1ec7n t\u1ea1i \u0111\u00e3 kh\u1edbp v\u1edbi \u1ea3nh \u0111\u00edch. B\u1ea1n c\u00f3 th\u1ec3 ch\u1ee9ng minh s\u1ed1 b\u01b0\u1edbc t\u1ed1i \u01b0u ho\u1eb7c ch\u1ea1y AI \u0111\u1ec3 \u0111\u1ed1i chi\u1ebfu.",
     })
 
 

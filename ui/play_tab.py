@@ -1,5 +1,6 @@
 """Play tab for the Streamlit app."""
 
+from html import escape
 import random
 import time
 
@@ -13,7 +14,6 @@ from ui.academic_panels import render_academic_header, render_exam_path
 from ui.components import (
     process_uploaded_image,
     render_clickable_board,
-    render_image_board,
     render_puzzle_board,
 )
 
@@ -24,7 +24,6 @@ VICTORY_MESSAGE_KEYS = (
     "play_victory_4",
     "play_victory_5",
 )
-
 
 def _clear_victory_state() -> None:
     st.session_state.pop("play_victory_signature", None)
@@ -105,7 +104,17 @@ def _render_victory_notice(t) -> None:
         st.session_state.play_victory_balloons_pending = False
 
     message_key = st.session_state.get("play_victory_message_key", "play_solved_success")
-    st.success(t(message_key, moves=st.session_state.play_moves))
+    message = t(message_key, moves=st.session_state.play_moves)
+    st.markdown(
+        f"""
+        <div class="play-victory-banner">
+            <div class="play-victory-kicker">{escape(t("play_victory_kicker"))}</div>
+            <div class="play-victory-title">{escape(message)}</div>
+            <div class="play-victory-subtitle">{escape(t("play_victory_subtitle"))}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
@@ -182,43 +191,52 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
 
     has_image = "image_tiles" in st.session_state and st.session_state.image_tiles
     if has_image:
-        col_board, col_preview = st.columns([5, 3])
+        st.markdown(
+            f"""
+            <div class="play-game-panel">
+                <div>
+                    <div class="play-game-kicker">{escape(t("play_game_kicker"))}</div>
+                    <h3>{escape(t("play_game_title"))}</h3>
+                    <p>{escape(t("play_game_desc"))}</p>
+                </div>
+                <div class="play-game-status">{escape(t("play_game_status"))}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        col_board, col_preview = st.columns([1.18, 0.82], gap="large")
         with col_board:
-            render_image_board(
+            st.markdown('<div class="play-number-game-frame">', unsafe_allow_html=True)
+            render_clickable_board(
                 st.session_state.play_state,
-                st.session_state.image_tiles,
-                key_prefix="play",
+                key_prefix="play_game",
                 highlight_correct=True,
                 on_click_fn=_handle_play_slide,
-                show_numbers=st.session_state.get("show_numbers", True),
                 goal=goal,
-                action_labels={
-                    "L": t("slide_right"),
-                    "R": t("slide_left"),
-                    "U": t("slide_down"),
-                    "D": t("slide_up"),
-                },
             )
+            st.markdown('</div>', unsafe_allow_html=True)
         with col_preview:
-            st.markdown(
-                f'<div class="image-preview-title">{t("play_target_preview")}</div>',
-                unsafe_allow_html=True,
-            )
-            if uploaded_img:
-                st.image(uploaded_img, width="stretch")
-            elif "sample_select" in st.session_state:
-                choice = st.session_state.sample_select
-                from ui.sample_images import get_full_sample_image
-                try:
-                    preview_img_data = get_full_sample_image(choice)
-                    if preview_img_data:
-                        st.image(preview_img_data, width="stretch")
-                    else:
-                        st.caption(t("play_preview_fail"))
-                except Exception as e:
-                    st.caption(t("play_preview_error", error=e))
-            else:
-                st.info(t("play_preview_none"))
+            with st.container():
+                st.markdown(
+                    f'<div class="play-preview-card"><div class="image-preview-title">{t("play_target_preview")}</div>',
+                    unsafe_allow_html=True,
+                )
+                if uploaded_img:
+                    st.image(uploaded_img, width="stretch")
+                elif "sample_select" in st.session_state:
+                    choice = st.session_state.sample_select
+                    from ui.sample_images import get_full_sample_image
+                    try:
+                        preview_img_data = get_full_sample_image(choice)
+                        if preview_img_data:
+                            st.image(preview_img_data, width="stretch")
+                        else:
+                            st.caption(t("play_preview_fail"))
+                    except Exception as e:
+                        st.caption(t("play_preview_error", error=e))
+                else:
+                    st.info(t("play_preview_none"))
+                st.markdown("</div>", unsafe_allow_html=True)
     else:
         render_clickable_board(
             st.session_state.play_state,
