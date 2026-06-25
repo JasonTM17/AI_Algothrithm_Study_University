@@ -114,6 +114,8 @@ class SearchResult:
     def refresh_certificate(self) -> None:
         """Recompute derived evidence after an iterative wrapper sets guarantees."""
         self._verify_path_evidence()
+        if self.termination_reason in {"goal", "model_success"}:
+            self.termination_reason = ""
         self._classify_run_outcome()
 
     def _verify_path_evidence(self) -> None:
@@ -159,7 +161,7 @@ class SearchResult:
         message = (self.message or "").lower()
         if not self.termination_reason:
             if self.success:
-                self.termination_reason = "goal"
+                self.termination_reason = "goal" if self.goal_reached else "model_success"
             elif "timeout" in message:
                 self.termination_reason = "timeout"
             elif "node limit" in message or "max steps" in message:

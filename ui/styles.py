@@ -959,6 +959,19 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) butt
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast) !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.25) !important;
     cursor: pointer !important;
+    transform: translateZ(0) !important;
+    will-change: transform, box-shadow;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y pinch-zoom;
+}
+
+div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button p,
+div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button div,
+div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button span {
+    color: inherit !important;
+    font: inherit !important;
+    line-height: 1 !important;
+    margin: 0 !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:hover {
@@ -970,10 +983,26 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) butt
 }
 
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:active {
-    transform: translateY(1px) scale(0.975) !important;
-    border-bottom: 2px solid #503720 !important;
-    border-right: 2px solid #503720 !important;
+    transform: translateY(1px) scale(0.985) !important;
+    border-bottom-color: #503720 !important;
+    border-right-color: #503720 !important;
     box-shadow: 0 3px 8px rgba(4,7,6,0.42) !important;
+}
+
+@media (hover: none) {
+    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button {
+        transition: transform 90ms ease-out, box-shadow 90ms ease-out, filter 90ms ease-out !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:hover {
+        transform: translateZ(0) !important;
+        background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
+        box-shadow:
+            0 5px 12px rgba(4,7,6,0.48),
+            inset 0 1px 0 rgba(255,255,255,0.35) !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:active {
+        transform: translateY(1px) scale(0.99) !important;
+    }
 }
 
 /* Ensure puzzle tiles in the number container are responsive squares */
@@ -982,30 +1011,6 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     aspect-ratio: 1 !important;
     height: auto !important;
     margin: 0 !important;
-}
-
-/* Styles for image board buttons (tactile low-profile tabs) */
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button {
-    width: 100% !important;
-    height: 28px !important;
-    line-height: 28px !important;
-    margin-top: 4px !important;
-    padding: 0 !important;
-    background: rgba(51,38,24,0.92) !important;
-    border: 1px solid rgba(214,161,95,0.28) !important;
-    color: var(--text-secondary) !important;
-    border-radius: 6px !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 10px rgba(4,7,6,0.28) !important;
-}
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button:hover:not(:disabled) {
-    background: rgba(78,55,30,0.98) !important;
-    color: var(--text-primary) !important;
-    transform: translateY(-1px) !important;
-}
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button:disabled {
-    visibility: hidden !important;
 }
 
 /* Premium game board for the Play tab */
@@ -1084,11 +1089,22 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) butto
         0 10px 18px rgba(0,0,0,0.34),
         inset 0 1px 0 rgba(255,255,255,0.12);
     transform: translateZ(0);
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     transition:
         transform 150ms ease,
         box-shadow 150ms ease,
         border-color 150ms ease,
         filter 150ms ease;
+}
+.play-image-cell img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
 }
 .play-image-cell.is-correct {
     border-color: rgba(122,166,106,0.9);
@@ -1108,6 +1124,10 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) butto
 .play-image-cell.is-clickable:active {
     transform: translateY(1px) scale(0.99);
 }
+.play-image-cell.is-clickable:focus-visible {
+    outline: 3px solid var(--accent-hover);
+    outline-offset: 3px;
+}
 .play-image-cell-blank {
     border: 1px dashed rgba(214,196,166,0.18);
     background:
@@ -1115,6 +1135,14 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) butto
         repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 8px, transparent 8px 16px),
         #050706;
     box-shadow: inset 0 12px 22px rgba(0,0,0,0.68);
+}
+.play-image-cell-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-weight: 800;
 }
 .play-tile-number {
     position: absolute;

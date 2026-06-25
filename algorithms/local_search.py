@@ -323,9 +323,18 @@ def local_beam_search(
     nodes_expanded = 0
     trace: list[TraceStep] = []
 
+    def best_trajectory() -> tuple[list[tuple[int, ...]], list[str]]:
+        if not beam:
+            return [start], []
+        _, best_state = min(beam, key=lambda item: item[0])
+        path, actions = best_path.get(best_state, ([start], []))
+        return list(path), list(actions)
+
     for i in range(max_iterations):
         if time.perf_counter() - t0 > timeout:
+            path, actions = best_trajectory()
             return _local_result(goal, success=False, algorithm="Local Beam Search", group="Local Search",
+                                path=path, actions=actions, depth=len(actions),
                                 nodes_expanded=nodes_expanded, runtime=time.perf_counter() - t0,
                                 message="Timeout", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -374,11 +383,13 @@ def local_beam_search(
             trace.append(TraceStep(step=i, state=beam[0][1], current_h=beam[0][0],
                                    reason=f"Beam iteration, best h={beam[0][0]:.1f}, width={len(beam)}"))
 
-    best_state = min(beam, key=lambda x: x[0])
+    path, actions = best_trajectory()
+    best_h = h_fn(path[-1])
     return _local_result(goal, success=False, algorithm="Local Beam Search", group="Local Search",
+                        path=path, actions=actions, depth=len(actions),
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                         runtime=time.perf_counter() - t0,
-                        message=f"Best h={best_state[0]:.1f}", trace=trace,
+                        message=f"Best h={best_h:.1f}", trace=trace,
                         uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
 

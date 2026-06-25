@@ -425,6 +425,6 @@ def expectimax(
         cost=len(actions), depth=len(actions), random_seed=seed,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
-        uses_adversary=True, uses_probability=True, uses_randomness=True,
+        uses_adversary=False, uses_probability=True, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )

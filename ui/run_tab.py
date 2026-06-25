@@ -5,18 +5,28 @@ import streamlit as st
 from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable
-from core.randomness import is_randomized_solver, resolve_run_seed
+from core.randomness import activate_run_variation, apply_run_variation, make_run_variation
 from core.solver_dispatch import build_solver_kwargs
 from ui.academic_panels import render_academic_header, render_algorithm_role_card, render_exam_path
 from ui.components import (
     render_algorithm_evaluation,
     render_path_animation,
     render_result_metrics,
+    render_run_variation_metadata,
     render_search_detail_table,
     render_search_tree,
+    render_start_goal_contract,
     render_trace_table,
 )
 from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS
+
+
+RUN_MAX_NODES_MIN = 1000
+RUN_MAX_NODES_DEFAULT = 20000
+RUN_MAX_NODES_CAP = 50000
+RUN_TRACE_ROWS = 60
+RUN_DETAIL_ROWS = 30
+RUN_TREE_NODES = 24
 
 
 def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple[str, str]:
@@ -46,6 +56,11 @@ def render_run_algorithm_tab(t=None) -> None:
         tx("run_hero_kicker"),
     )
     render_exam_path("Run", t=t)
+    render_start_goal_contract(
+        st.session_state.start_state,
+        goal,
+        is_solvable(st.session_state.start_state, goal),
+    )
 
     col_algo, col_params = st.columns([1, 1])
 
@@ -64,49 +79,38 @@ def render_run_algorithm_tab(t=None) -> None:
         else:
             heuristic = "Manhattan Distance"  # default, won't be used
 
-        if algo_name in ["UCS", "Greedy Best-First", "A*"]:
-            tie_breaker = st.selectbox(
-                tx("run_tie_breaker"),
-                ["FIFO", "LIFO", "Min-g", "Max-g"],
-                key="tie_breaker_select",
-                help=tx("run_tie_breaker_help")
-            )
-        else:
-            tie_breaker = "FIFO"
+        tie_breaker = "FIFO"
 
     with col_params:
         col_p1, col_p2 = st.columns(2)
         with col_p1:
-            max_nodes = st.number_input(tx("run_max_nodes"), 1000, 1000000, 50000, step=5000, key="max_nodes")
+            max_nodes = st.number_input(
+                tx("run_max_nodes"),
+                RUN_MAX_NODES_MIN,
+                RUN_MAX_NODES_CAP,
+                RUN_MAX_NODES_DEFAULT,
+                step=1000,
+                key="max_nodes",
+                help=tx("run_max_nodes_help", limit=RUN_MAX_NODES_CAP),
+            )
             max_depth = st.number_input(tx("run_max_depth"), 1, 100, 20, key="max_depth")
         with col_p2:
             timeout = st.number_input(tx("run_timeout"), 5, 600, 60, key="timeout_val")
-            action_order = st.selectbox(tx("run_action_order"), ["LRUD", "UDLR", "RLDU", "DURL"], key="action_order")
+            st.caption(tx("run_variation_no_path") if not selected_fn_name else tx("run_fresh_seed_help"))
+        st.caption(
+            tx(
+                "run_layout_guard",
+                nodes=RUN_MAX_NODES_CAP,
+                trace=RUN_TRACE_ROWS,
+                tree=RUN_TREE_NODES,
+            )
+        )
 
         # Extra params for specific algorithms
         extra_params = {}
-        fresh_seed_each_run = False
-        manual_seed = 42
         if "Hill Climbing" in algo_name or "Beam" in algo_name:
             max_iter = st.number_input(tx("run_max_iter"), 100, 100000, 10000, key="max_iter")
             extra_params["max_iterations"] = max_iter
-        if is_randomized_solver(selected_fn_name):
-            fresh_seed_each_run = st.checkbox(
-                tx("run_fresh_seed"),
-                value=True,
-                key="fresh_seed_each_run",
-                help=(
-                    tx("run_fresh_seed_help")
-                ),
-            )
-            manual_seed = st.number_input(
-                tx("run_fixed_seed"),
-                0,
-                2**31 - 1,
-                42,
-                key="seed_val",
-                disabled=fresh_seed_each_run,
-            )
         if algo_name == "Random-Restart Hill Climbing":
             extra_params["max_restarts"] = st.number_input(tx("run_max_restarts"), 1, 100, 20, key="max_restarts")
         if algo_name == "Local Beam Search":
@@ -123,8 +127,7 @@ def render_run_algorithm_tab(t=None) -> None:
 
     run_signature = (
         tuple(st.session_state.start_state), tuple(goal), selected_fn_name, algo_name, heuristic,
-        tie_breaker, action_order, int(max_nodes), int(max_depth), float(timeout),
-        tuple(sorted(extra_params.items())), fresh_seed_each_run, int(manual_seed),
+        int(max_nodes), int(max_depth), float(timeout), tuple(sorted(extra_params.items())),
     )
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
@@ -175,33 +178,36 @@ def render_run_algorithm_tab(t=None) -> None:
                 if solver_fn is None:
                     st.error(tx("run_error_func_not_found", func=fn_name))
                 else:
-                    run_seed = resolve_run_seed(
+                    variation = make_run_variation(
                         fn_name,
-                        fresh_each_run=fresh_seed_each_run,
-                        manual_seed=int(manual_seed),
-                        previous_seed=st.session_state.get("last_random_seed"),
+                        previous_seed=st.session_state.get("last_run_variation_seed"),
+                        previous_action_order=st.session_state.get("last_run_variation_action_order"),
+                        previous_tie_breaker=st.session_state.get("last_run_variation_tie_breaker"),
                     )
-                    if run_seed is not None:
-                        extra_params["seed"] = run_seed
+                    run_extra_params = dict(extra_params)
+                    if variation.solver_seed is not None:
+                        run_extra_params["seed"] = variation.solver_seed
                     kwargs = build_solver_kwargs(
                         fn_name,
                         start=start,
                         goal=goal,
                         timeout=float(timeout),
-                        action_order=action_order,
+                        action_order=variation.action_order,
                         max_nodes=int(max_nodes),
                         max_depth=int(max_depth),
                         heuristic=heuristic,
-                        tie_breaker=tie_breaker,
-                        extra_params=extra_params,
+                        tie_breaker=variation.tie_breaker,
+                        extra_params=run_extra_params,
                     )
 
                     with st.spinner(tx("run_spinner_running", algo=algo_name)):
                         try:
-                            result = solver_fn(**kwargs)
-                            result.random_seed = run_seed
-                            if run_seed is not None:
-                                st.session_state["last_random_seed"] = run_seed
+                            with activate_run_variation(variation):
+                                result = solver_fn(**kwargs)
+                            apply_run_variation(result, variation)
+                            st.session_state["last_run_variation_seed"] = variation.seed
+                            st.session_state["last_run_variation_action_order"] = variation.action_order
+                            st.session_state["last_run_variation_tie_breaker"] = variation.tie_breaker
 
                             st.session_state["last_result"] = result
                             st.session_state["last_run_signature"] = run_signature
@@ -216,30 +222,40 @@ def render_run_algorithm_tab(t=None) -> None:
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
-        if result.random_seed is None:
-            st.caption(tx("run_deterministic_caption"))
-        else:
-            st.caption(tx("run_random_seed_caption", seed=result.random_seed))
-        render_algorithm_evaluation(result.algorithm)
+        render_run_variation_metadata(result)
+
+        with st.expander(tx("run_eval_section"), expanded=False):
+            render_algorithm_evaluation(result.algorithm)
 
         if result.path_verified and result.path:
-            if result.success and result.goal_reached:
-                st.subheader(tx("run_sol_path"))
-            else:
-                st.subheader(tx("run_recorded_trajectory"))
-                st.warning(tx("run_recorded_warning"))
-            render_path_animation(
-                result.path,
-                result.actions,
-                key="solution_path",
-                reaches_goal=result.goal_reached,
+            solution_title = (
+                tx("run_sol_path")
+                if result.success and result.goal_reached
+                else tx("run_recorded_trajectory")
             )
+            with st.expander(solution_title, expanded=True):
+                if not (result.success and result.goal_reached):
+                    st.warning(tx("run_recorded_warning"))
+                render_path_animation(
+                    result.path,
+                    result.actions,
+                    key="solution_path",
+                    reaches_goal=result.goal_reached,
+                )
 
         if result.trace:
-            st.subheader(tx("run_trace_steps"))
-            st.caption(tx("trace_notation_help"))
-            render_trace_table(result.trace)
-            st.subheader(tx("run_detail"))
-            render_search_detail_table(result.trace)
-            st.subheader(tx("run_search_tree"))
-            render_search_tree(result)
+            st.caption(
+                tx(
+                    "run_evidence_guard",
+                    trace=RUN_TRACE_ROWS,
+                    detail=RUN_DETAIL_ROWS,
+                    tree=RUN_TREE_NODES,
+                )
+            )
+            with st.expander(tx("run_trace_steps"), expanded=False):
+                st.caption(tx("trace_notation_help"))
+                render_trace_table(result.trace, max_rows=RUN_TRACE_ROWS)
+            with st.expander(tx("run_detail"), expanded=False):
+                render_search_detail_table(result.trace, max_rows=RUN_DETAIL_ROWS)
+            with st.expander(tx("run_search_tree"), expanded=False):
+                render_search_tree(result, max_nodes=RUN_TREE_NODES)

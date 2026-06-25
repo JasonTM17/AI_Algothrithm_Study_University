@@ -16,6 +16,10 @@ from core.academic_proofs import (
     PROOF_CARDS,
 )
 from core.academic_report import build_grading_report
+from core.algorithm_comparison import (
+    ALGORITHM_COMPARISON_ROWS,
+    comparison_rows_for_group,
+)
 from core.theory import THEORY
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
@@ -31,6 +35,21 @@ def test_taxonomy_covers_all_displayed_algorithms():
     assert len(displayed) == 28
     assert set(ALGORITHM_TAXONOMY) == displayed
     assert len(taxonomy_rows()) == 28
+
+
+def test_complexity_comparison_covers_every_algorithm_by_display_group():
+    compared = {row["Algorithm"] for row in ALGORITHM_COMPARISON_ROWS}
+    displayed = {name for names in ALGORITHM_GROUPS.values() for name in names}
+
+    assert compared == displayed
+    for group, algorithms in ALGORITHM_GROUPS.items():
+        rows = comparison_rows_for_group(group)
+        assert [row["Algorithm"] for row in rows] == algorithms
+        for row in rows:
+            assert row["Time"]
+            assert row["Space"]
+            assert row["Steps / output"]
+            assert row["Guarantee"]
 
 
 def test_standard_solver_pages_exclude_extension_environment_models():
@@ -187,6 +206,24 @@ def test_accessibility_css_contract_is_present():
 
     for token in required_tokens:
         assert token in STYLES
+
+
+def test_interactive_board_buttons_keep_tile_text_and_touch_stable():
+    required_tokens = [
+        'button p',
+        'color: inherit !important',
+        'touch-action: pan-y pinch-zoom',
+        'will-change: transform, box-shadow',
+        '@media (hover: none)',
+        'border-bottom-color: #503720',
+    ]
+
+    for token in required_tokens:
+        assert token in STYLES
+
+    assert 'border-bottom: 2px solid #503720' not in STYLES
+    assert 'border-right: 2px solid #503720' not in STYLES
+    assert 'div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button' not in STYLES
 
 
 def test_exam_path_covers_grading_workflow():

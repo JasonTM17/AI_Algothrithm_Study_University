@@ -308,7 +308,19 @@ def ids(
                 message=f"Node limit exceeded ({max_nodes})", trace=trace, is_complete=True, is_optimal=True,
             )
 
-        result = _dls(start, goal, depth_limit, action_order, t0, timeout, total_expanded, total_generated, total_max_frontier, trace)
+        result = _dls(
+            start,
+            goal,
+            depth_limit,
+            action_order,
+            t0,
+            timeout,
+            max_nodes,
+            total_expanded,
+            total_generated,
+            total_max_frontier,
+            trace,
+        )
 
         total_expanded = result.nodes_expanded
         total_generated = result.nodes_generated
@@ -325,6 +337,14 @@ def ids(
             result.refresh_certificate()
             return result
 
+        if result.termination_reason in {"timeout", "resource_limit"}:
+            result.algorithm = "IDS"
+            result.group = "Uninformed Search"
+            result.is_complete = True
+            result.is_optimal = True
+            result.runtime = time.perf_counter() - t0
+            return result
+
         if result.message and "cutoff" not in result.message.lower():
             break
 
@@ -337,19 +357,22 @@ def ids(
     )
 
 
-def _dls(start, goal, depth_limit, action_order, t0_global, timeout,
+def _dls(start, goal, depth_limit, action_order, t0_global, timeout, max_nodes,
          prev_expanded, prev_generated, prev_max_frontier, global_trace):
     """Depth-Limited Search (helper for IDS)."""
     nodes_expanded = [prev_expanded]
     nodes_generated = [prev_generated]
     max_frontier = [prev_max_frontier]
     found_cutoff = [False]
+    timed_out = [False]
+    resource_limited = [False]
     result_holder = [None]  # Will hold SearchResult if goal found
 
     def recursive_dls(node, limit, path_set):
-        if result_holder[0] is not None:
+        if result_holder[0] is not None or timed_out[0] or resource_limited[0]:
             return
         if time.perf_counter() - t0_global > timeout:
+            timed_out[0] = True
             return
 
         if node.state == goal:
@@ -374,6 +397,10 @@ def _dls(start, goal, depth_limit, action_order, t0_global, timeout,
 
         if node.depth >= limit:
             found_cutoff[0] = True
+            return
+
+        if nodes_expanded[0] >= max_nodes:
+            resource_limited[0] = True
             return
 
         nodes_expanded[0] += 1
@@ -407,6 +434,18 @@ def _dls(start, goal, depth_limit, action_order, t0_global, timeout,
     if result_holder[0] is not None:
         return result_holder[0]
 
+    if timed_out[0]:
+        return SearchResult(
+            success=False, message="Timeout",
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+            max_frontier_size=max_frontier[0], trace=global_trace,
+        )
+    if resource_limited[0]:
+        return SearchResult(
+            success=False, message=f"Node limit exceeded ({max_nodes})",
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+            max_frontier_size=max_frontier[0], trace=global_trace,
+        )
     if found_cutoff[0]:
         return SearchResult(
             success=False, message=f"cutoff at depth {depth_limit}",

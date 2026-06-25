@@ -24,6 +24,41 @@ def test_web_app_initial_playground_renders_without_exception():
     assert app.button(key="btn_prove_optimal")
 
 
+def test_play_image_mode_uses_image_tiles_for_manual_board():
+    app = AppTest.from_file("app.py", default_timeout=10).run()
+
+    markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
+
+    assert any(
+        '<div class="interactive-board-container-image"></div>' in value
+        for value in markdown_values
+    )
+    assert not any(
+        '<div class="interactive-board-container-number"></div>' in value
+        for value in markdown_values
+    )
+    assert app.session_state.image_tiles
+    assert not app.exception
+
+
+def test_play_image_tile_click_moves_without_query_link_reload():
+    app = AppTest.from_file("app.py", default_timeout=15).run()
+    app.session_state.start_state = ONE_MOVE
+    app.run()
+
+    markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
+    style_blob = "\n".join(markdown_values)
+    assert ".st-key-play_game_hit_15_3_3 button" in style_blob
+    assert ":has(.play-image-button-play_game" not in style_blob
+
+    app.button(key="play_game_hit_15_3_3").click().run()
+
+    assert app.session_state.play_state == GOAL_STATE
+    assert app.session_state.play_moves == 1
+    assert "play_slide" not in app.query_params
+    assert not app.exception
+
+
 def test_challenge_mode_produces_verified_optimal_certificate():
     app = AppTest.from_file("app.py", default_timeout=10).run()
     app.session_state.start_state = ONE_MOVE
@@ -114,6 +149,37 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert result.algorithm == "BFS"
     assert result.success and result.path_verified
     assert result.search_tree_edges
+    assert result.random_seed is not None
+    assert sorted(result.variation_action_order) == ["D", "L", "R", "U"]
+    assert [expander.label for expander in app.expander] == [
+        "Academic Evaluation",
+        "Solution Path",
+        "Trace Steps",
+        "Node / Frontier / Reached Detail",
+        "Search Tree Visualization",
+    ]
+    assert not app.exception
+
+
+def test_repeated_standard_solver_runs_get_fresh_variation_metadata():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+
+    app.button(key="btn_run").click().run()
+    first = app.session_state.last_result
+    first_seed = first.random_seed
+    first_order = first.variation_action_order
+
+    app.button(key="btn_run").click().run()
+    second = app.session_state.last_result
+
+    assert second.random_seed != first_seed
+    assert second.variation_action_order != first_order
+    assert sorted(second.variation_action_order) == ["D", "L", "R", "U"]
+    assert second.path_verified
     assert not app.exception
 
 
@@ -176,13 +242,28 @@ def test_run_result_is_cleared_when_solver_limits_change():
 
     assert app.session_state.last_result.algorithm == "BFS"
 
-    app.number_input(key="max_nodes").set_value(55000).run()
+    app.number_input(key="max_nodes").set_value(25000).run()
 
     assert "last_result" not in app.session_state
     assert not app.exception
 
 
-def test_stochastic_run_uses_a_fresh_recorded_seed_each_time():
+def test_run_node_limit_is_bounded_for_readable_layout():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+
+    max_nodes_input = app.number_input(key="max_nodes")
+
+    assert max_nodes_input.value == 20000
+    assert max_nodes_input.min == 1000
+    assert max_nodes_input.max == 50000
+    assert max_nodes_input.step == 1000
+    assert not app.exception
+
+
+def test_stochastic_run_uses_fresh_variation_seed_each_time():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
     app.session_state["global_lang_select"] = "English"
@@ -191,13 +272,14 @@ def test_stochastic_run_uses_a_fresh_recorded_seed_each_time():
     app.selectbox(key="algo_group").set_value("Local Search").run()
     app.selectbox(key="algo_name").set_value("Stochastic Hill Climbing").run()
 
-    assert app.checkbox(key="fresh_seed_each_run").value is True
     app.button(key="btn_run").click().run()
     first_seed = app.session_state.last_result.random_seed
+    first_solver_seed = app.session_state.last_result.variation_solver_seed
     app.button(key="btn_run").click().run()
     second_seed = app.session_state.last_result.random_seed
 
     assert first_seed is not None
+    assert first_solver_seed == first_seed
     assert second_seed is not None
     assert first_seed != second_seed
     assert not app.exception
@@ -230,6 +312,26 @@ def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     assert not app.exception
 
 
+def test_compare_uses_custom_goal_state_for_standard_solvers():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["start_state"] = GOAL_STATE
+    app.session_state["goal_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.run()
+    app.multiselect(key="compare_groups").set_value(["Uninformed Search"]).run()
+    app.multiselect(key="compare_Uninformed Search").set_value(["BFS"]).run()
+    app.button(key="btn_benchmark").click().run()
+
+    result = app.session_state.benchmark_results[0]
+
+    assert result.algorithm == "BFS"
+    assert result.goal_state == ONE_MOVE
+    assert result.path[-1] == ONE_MOVE
+    assert result.path_verified
+    assert not app.exception
+
+
 def test_compare_results_clear_when_benchmark_limits_change():
     preset_name = next(iter(BENCHMARK_PRESETS))
     app = AppTest.from_file("app.py", default_timeout=20)
@@ -248,6 +350,21 @@ def test_compare_results_clear_when_benchmark_limits_change():
 
     assert app.session_state.benchmark_results == []
     assert app.session_state.benchmark_run_seeds == {}
+    assert not app.exception
+
+
+def test_theory_tab_renders_within_group_complexity_table():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "PEAS Theory"
+    app.run()
+
+    markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
+    captions = [getattr(caption, "value", "") for caption in app.caption]
+
+    assert any("Within-group algorithm comparison" in value for value in markdown_values)
+    assert any("academic worst-case bounds" in value for value in captions)
+    assert len(app.dataframe) >= 1
     assert not app.exception
 
 
@@ -279,7 +396,109 @@ def test_ai_vs_ai_tournament_runs_from_advanced_mode():
 
     result = app.session_state.tournament_result
     assert result.rounds[0].optimal_cost == 1
+    assert result.rounds[0].agent_a.path_verified
+    assert app.slider(key="tournament_replay_round_1_slider")
+    assert app.button(key="tournament_replay_round_1_next")
     assert result.winner in {result.agent_a_label, result.agent_b_label, "Draw"}
+    assert not app.exception
+
+
+def test_tournament_replay_advances_both_agents_on_shared_step():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("AI-vs-AI Tournament").run()
+    app.button(key="btn_run_tournament").click().run()
+
+    app.button(key="tournament_replay_round_1_next").click().run()
+
+    assert app.session_state["tournament_replay_round_1_slider"] == 1
+    assert not app.exception
+
+
+def test_tournament_result_clears_when_start_state_changes():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("AI-vs-AI Tournament").run()
+    app.button(key="btn_run_tournament").click().run()
+    assert app.session_state.tournament_result
+
+    app.session_state["start_state"] = GOAL_STATE
+    app.run()
+
+    assert "tournament_result" not in app.session_state
+    assert not app.exception
+
+
+def test_advanced_backtracking_uses_custom_goal_and_variation_metadata():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = GOAL_STATE
+    app.session_state["goal_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("Backtracking & Min-Conflicts").run()
+    app.button(key="adv_run_backtracking___min_conflicts").click().run()
+
+    outputs = app.session_state.advanced_outputs
+    planning = outputs[0]["result"]
+
+    assert planning.algorithm == "Backtracking Search"
+    assert planning.goal_state == ONE_MOVE
+    assert planning.path_verified
+    assert planning.goal_reached
+    assert planning.random_seed is not None
+    assert sorted(planning.variation_action_order) == ["D", "L", "R", "U"]
+    assert not app.exception
+
+
+def test_advanced_partial_observation_renders_observation_evidence():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("Partially Observable").run()
+    app.number_input(key="po_n").set_value(2).run()
+    app.number_input(key="po_steps").set_value(5).run()
+    app.button(key="adv_run_partially_observable").click().run()
+
+    result = app.session_state.advanced_outputs[0]["result"]
+    info_values = "\n".join(getattr(info, "value", "") for info in app.info)
+    metric_labels = [metric.label for metric in app.metric]
+
+    assert result.algorithm == "Partially Observable Search"
+    assert any(step.observation for step in result.trace)
+    assert "Strict criterion" in info_values
+    assert "Belief Size" in metric_labels
+    assert "Observation" in metric_labels
+    assert result.random_seed == result.variation_solver_seed
+    assert not app.exception
+
+
+def test_advanced_csp_ac3_produces_replayable_exact_horizon_path():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Advanced Mode"
+    app.run()
+    app.selectbox(key="complex_mode_v2").set_value("CSP Definition & Propagation").run()
+    app.number_input(key="csp_t").set_value(1).run()
+    app.button(key="adv_run_csp_definition___propagation").click().run()
+
+    propagation = app.session_state.advanced_outputs[1]["result"]
+
+    assert propagation.algorithm == "Constraint Propagation"
+    assert propagation.actions == ["R"]
+    assert propagation.path_verified
+    assert propagation.goal_reached
+    assert propagation.variation_randomizes_path
+    assert "AC-3 State-Chain CSP" in propagation.message
     assert not app.exception
 
 

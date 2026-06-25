@@ -134,6 +134,18 @@ def test_path_certificate_is_legal_path_not_goal_claim():
     assert "Path Verified?" not in result.summary_dict()
 
 
+def test_model_only_success_does_not_report_goal_termination():
+    result = SearchResult(
+        success=True,
+        algorithm="CSP Definition",
+        message="CSP variables and constraints described.",
+    )
+
+    assert result.termination_reason == "model_success"
+    assert not result.goal_reached
+    assert not result.optimality_proven
+
+
 def test_optimality_certificate_requires_a_reported_goal():
     child = _move_blank(START, "D")
     result = SearchResult(

@@ -2,7 +2,12 @@
 
 import pytest
 
-from algorithms.complex_env import and_or_search, no_observation_search, partially_observable_search
+from algorithms.complex_env import (
+    and_or_search,
+    no_observation_search,
+    online_search_lrta,
+    partially_observable_search,
+)
 from core.puzzle import GOAL_STATE
 
 
@@ -124,3 +129,34 @@ def test_belief_generators_scramble_from_custom_goal_parity(solver):
 
     assert result.runtime < 1
     assert result.nodes_expanded == 0
+
+
+@pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
+def test_belief_search_timeout_reports_actual_completed_steps(solver):
+    result = solver(
+        ONE_MOVE,
+        num_belief_states=2,
+        max_steps=20,
+        timeout=0.0,
+        seed=7,
+    )
+
+    assert result.nodes_expanded == 0
+    assert result.nodes_generated == 0
+    assert result.termination_reason == "timeout"
+    assert "Timeout after 0" in result.message
+
+
+def test_lrta_success_reports_requested_goal_certificate():
+    result = online_search_lrta(
+        ONE_MOVE,
+        goal=GOAL_STATE,
+        max_steps=5,
+        timeout=5,
+        action_order="RULD",
+    )
+
+    assert result.success
+    assert result.goal_state == GOAL_STATE
+    assert result.path_verified
+    assert result.goal_reached

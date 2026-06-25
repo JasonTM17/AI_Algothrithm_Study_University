@@ -13,8 +13,10 @@ from core.ai_vs_ai_tournament import (
 )
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE
+from core.randomness import is_randomized_solver
 from ui.components import render_puzzle_board
 from ui.localization import translate
+from ui.tournament_replay import render_tournament_replay
 
 
 def t(key, **kwargs):
@@ -40,7 +42,16 @@ def render_ai_vs_ai_tournament(
             index=solver_labels.index("A*"),
             key="tournament_agent_a",
         )
-        agent_a_seed = st.number_input(t("tournament_agent_a_seed"), 0, 2**31 - 1, 42, key="tournament_agent_a_seed")
+        agent_a_fn = ELIGIBLE_TOURNAMENT_SOLVERS[agent_a_algo]
+        agent_a_seed = st.number_input(
+            t("tournament_agent_a_seed"),
+            0,
+            2**31 - 1,
+            42,
+            key="tournament_agent_a_seed",
+            disabled=not is_randomized_solver(agent_a_fn),
+            help=t("tournament_seed_help"),
+        )
     with col_b:
         agent_b_algo = st.selectbox(
             t("tournament_agent_b_algorithm"),
@@ -48,7 +59,16 @@ def render_ai_vs_ai_tournament(
             index=solver_labels.index("Greedy Best-First"),
             key="tournament_agent_b",
         )
-        agent_b_seed = st.number_input(t("tournament_agent_b_seed"), 0, 2**31 - 1, 99, key="tournament_agent_b_seed")
+        agent_b_fn = ELIGIBLE_TOURNAMENT_SOLVERS[agent_b_algo]
+        agent_b_seed = st.number_input(
+            t("tournament_agent_b_seed"),
+            0,
+            2**31 - 1,
+            99,
+            key="tournament_agent_b_seed",
+            disabled=not is_randomized_solver(agent_b_fn),
+            help=t("tournament_seed_help"),
+        )
 
     col_params_1, col_params_2, col_params_3 = st.columns(3)
     with col_params_1:
@@ -68,30 +88,50 @@ def render_ai_vs_ai_tournament(
         key="tournament_heuristic",
     )
     action_order = st.selectbox(t("run_action_order"), ["LRUD", "UDLR", "RLDU", "DURL"], key="tournament_action_order")
+    run_signature = (
+        tuple(start),
+        tuple(goal),
+        agent_a_fn,
+        int(agent_a_seed),
+        agent_b_fn,
+        int(agent_b_seed),
+        int(rounds),
+        int(round_depth),
+        int(max_nodes),
+        int(max_depth),
+        float(timeout),
+        int(base_seed),
+        heuristic,
+        action_order,
+    )
+    if st.session_state.get("tournament_run_signature") != run_signature:
+        st.session_state.pop("tournament_result", None)
 
     if st.button(t("tournament_run"), key="btn_run_tournament", type="primary"):
-        st.session_state.tournament_result = run_ai_vs_ai_tournament(
-            TournamentAgentConfig(
-                label=f"AI A ({agent_a_algo})",
-                solver_name=ELIGIBLE_TOURNAMENT_SOLVERS[agent_a_algo],
-                seed=int(agent_a_seed),
-            ),
-            TournamentAgentConfig(
-                label=f"AI B ({agent_b_algo})",
-                solver_name=ELIGIBLE_TOURNAMENT_SOLVERS[agent_b_algo],
-                seed=int(agent_b_seed),
-            ),
-            start=start,
-            goal=goal,
-            rounds=int(rounds),
-            round_depth=int(round_depth),
-            base_seed=int(base_seed),
-            timeout=float(timeout),
-            max_nodes=int(max_nodes),
-            max_depth=int(max_depth),
-            heuristic=heuristic,
-            action_order=action_order,
-        )
+        with st.spinner(t("tournament_running")):
+            st.session_state.tournament_result = run_ai_vs_ai_tournament(
+                TournamentAgentConfig(
+                    label=f"AI A ({agent_a_algo})",
+                    solver_name=agent_a_fn,
+                    seed=int(agent_a_seed),
+                ),
+                TournamentAgentConfig(
+                    label=f"AI B ({agent_b_algo})",
+                    solver_name=agent_b_fn,
+                    seed=int(agent_b_seed),
+                ),
+                start=start,
+                goal=goal,
+                rounds=int(rounds),
+                round_depth=int(round_depth),
+                base_seed=int(base_seed),
+                timeout=float(timeout),
+                max_nodes=int(max_nodes),
+                max_depth=int(max_depth),
+                heuristic=heuristic,
+                action_order=action_order,
+            )
+        st.session_state["tournament_run_signature"] = run_signature
 
     result: TournamentResult | None = st.session_state.get("tournament_result")
     if result is None:
@@ -107,6 +147,8 @@ def _render_tournament_summary(result: TournamentResult) -> None:
     metric_b.metric(result.agent_b_label, result.agent_b_total)
     metric_c.metric(t("tournament_winner"), result.winner)
     st.caption(result.tie_break_detail)
+    st.caption(t("tournament_scoring_formula"))
+    st.caption(t("tournament_fairness_note"))
 
 
 def _render_rounds(result: TournamentResult) -> None:
@@ -122,6 +164,7 @@ def _render_rounds(result: TournamentResult) -> None:
                 width="stretch",
                 hide_index=True,
             )
+            render_tournament_replay(round_result)
 
 
 def _score_row(score: AgentRoundScore) -> dict[str, object]:
@@ -133,8 +176,13 @@ def _score_row(score: AgentRoundScore) -> dict[str, object]:
         t("mc_cost"): "-" if score.cost is None else score.cost,
         t("tournament_optimal_cost_col"): "-" if score.optimal_cost is None else score.optimal_cost,
         t("tournament_excess_col"): "-" if score.excess_cost is None else score.excess_cost,
+        t("tournament_efficiency_col"): (
+            "-" if score.efficiency_percent is None else f"{score.efficiency_percent:.1f}%"
+        ),
         t("mc_runtime"): f"{score.runtime:.4f}s",
         t("tournament_nodes_col"): score.nodes,
         t("run_seed"): "Deterministic" if score.random_seed is None else score.random_seed,
+        t("mc_legal_path"): t("tc_yes") if score.path_verified else t("tc_no"),
+        t("mc_reached_goal"): t("tc_yes") if score.goal_reached else t("tc_no"),
         t("tc_reason"): score.reason,
     }

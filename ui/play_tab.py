@@ -14,6 +14,7 @@ from ui.academic_panels import render_academic_header, render_exam_path
 from ui.components import (
     process_uploaded_image,
     render_clickable_board,
+    render_image_board,
     render_puzzle_board,
 )
 
@@ -206,12 +207,20 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         )
         col_board, col_preview = st.columns([1.18, 0.82], gap="large")
         with col_board:
-            st.markdown('<div class="play-number-game-frame">', unsafe_allow_html=True)
-            render_clickable_board(
+            st.markdown('<div class="play-image-game-frame">', unsafe_allow_html=True)
+            render_image_board(
                 st.session_state.play_state,
+                st.session_state.image_tiles,
                 key_prefix="play_game",
                 highlight_correct=True,
                 on_click_fn=_handle_play_slide,
+                show_numbers=st.session_state.get("show_numbers", True),
+                action_labels={
+                    "L": t("slide_right"),
+                    "R": t("slide_left"),
+                    "U": t("slide_down"),
+                    "D": t("slide_up"),
+                },
                 goal=goal,
             )
             st.markdown('</div>', unsafe_allow_html=True)

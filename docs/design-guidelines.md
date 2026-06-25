@@ -31,8 +31,12 @@ Use a tactile solver-laboratory dashboard style:
 ## Content Rules
 
 - Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
+- Present AC-3 as bounded exact-horizon CSP evidence: domain sizes, revisions, removed values, legal replay when found, and domain wipe-out otherwise.
+- Keep group comparison columns stable and scannable: step rule, time, space, steps/output, and guarantee.
 - For game/chance demos, label returned actions as selected variation or sample outcome paths, not full game trees or optimal puzzle certificates.
-- For AI-vs-AI Tournament, show the A* optimal reference, each agent's score reason, legality status, excess cost, runtime, nodes, and tie-break result.
+- For AI-vs-AI Tournament, show the A* optimal reference, path efficiency, score reason, legality status, excess cost, runtime, nodes, and deterministic tie-break result.
+- Replay both certified AI trajectories on one shared step control; a shorter trajectory stays on its final state while the other continues.
+- Do not use raw runtime or cross-family node counts to manufacture a winner when solution quality is tied.
 - State that tournament scoring compares agents on the same puzzle; it is not a natural adversarial PEAS model for 15-puzzle.
 - When an algorithm is not optimal or not complete, state that directly.
 - Prefer concise tables and cards over long paragraphs for exam-facing material.

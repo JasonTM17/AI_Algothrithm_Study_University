@@ -1,5 +1,7 @@
 """UI Components for 15-Puzzle AI Streamlit app — Enhanced game-like experience."""
 
+from html import escape
+
 import streamlit as st
 import pandas as pd
 from core.comparison import compact_action_path, shared_verified_paths, unique_verified_path_count
@@ -100,6 +102,77 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
                             )
 
 
+def _image_tile_button_style(button_key: str, image_src: str, show_numbers: bool) -> str:
+    label_visibility = "flex" if show_numbers else "none"
+    text_color = "#f4efe5" if show_numbers else "transparent"
+    button_scope = f"div.st-key-{button_key} button"
+    return f"""
+    {button_scope} {{
+        position: relative !important;
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 7px !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        border: 3px solid rgba(239,196,119,0.98) !important;
+        border-radius: 8px !important;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.16), transparent 24%),
+            linear-gradient(0deg, rgba(0,0,0,0.22), transparent 46%),
+            url("{image_src}") center / cover no-repeat !important;
+        box-shadow:
+            0 14px 24px rgba(0,0,0,0.42),
+            0 0 0 2px rgba(214,161,95,0.15),
+            inset 0 1px 0 rgba(255,255,255,0.12) !important;
+        color: {text_color} !important;
+        cursor: pointer !important;
+        overflow: hidden !important;
+        transform: translateZ(0) !important;
+        touch-action: manipulation !important;
+        transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, filter 150ms ease !important;
+    }}
+    {button_scope}:hover:not(:disabled) {{
+        transform: translateY(-4px) scale(1.015) !important;
+        border-color: rgba(239,196,119,0.98) !important;
+        filter: saturate(1.08) brightness(1.05) !important;
+    }}
+    {button_scope}:active:not(:disabled) {{
+        transform: translateY(1px) scale(0.99) !important;
+    }}
+    {button_scope} p,
+    {button_scope} div,
+    {button_scope} span {{
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: inherit !important;
+        font: inherit !important;
+    }}
+    {button_scope} p {{
+        position: absolute !important;
+        top: 7px !important;
+        left: 7px !important;
+        display: {label_visibility} !important;
+        width: auto !important;
+        padding: 2px 7px !important;
+        border: 1px solid rgba(214,161,95,0.42) !important;
+        border-radius: 5px !important;
+        background: rgba(3,6,5,0.84) !important;
+        color: #f4efe5 !important;
+        font-family: var(--font-mono) !important;
+        font-size: 12px !important;
+        font-weight: 850 !important;
+        line-height: 1.25 !important;
+        text-align: center !important;
+        box-shadow: 0 2px 6px rgba(4,7,6,0.45) !important;
+    }}
+    """
+
+
 def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                        highlight_correct: bool = True, on_click_fn=None,
                        show_numbers: bool = False, action_labels: dict[str, str] | None = None,
@@ -118,8 +191,10 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
         show_numbers: overlay a small number indicator on top-left of each tile
     """
     goal_state = _active_goal_state(goal)
+    dynamic_styles = []
+    st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="play-board" class="play-board-anchor"></div>', unsafe_allow_html=True)
     with st.container():
-        st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
         for r in range(4):
             cols = st.columns(4, gap="small")
             for c in range(4):
@@ -128,59 +203,55 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                 with cols[c]:
                     if val == 0:
                         st.markdown(
-                            '<div style="width:100%;aspect-ratio:1;border:1px dashed '
-                            'rgba(214,196,166,0.14);border-radius:12px;'
-                            'background:radial-gradient(circle at 50% 45%, rgba(214,161,95,0.08), transparent 55%), #080b0a;'
-                            'box-shadow:inset 0 8px 16px rgba(0,0,0,0.74);">'
+                            '<div class="play-image-cell play-image-cell-blank"></div>',
+                            unsafe_allow_html=True,
+                        )
+                        continue
+
+                    if val not in image_tiles:
+                        st.markdown(
+                            f'<div class="play-image-cell play-image-cell-missing">{escape(str(val))}</div>',
+                            unsafe_allow_html=True,
+                        )
+                        continue
+
+                    is_correct = highlight_correct and val == goal_state[idx]
+                    is_clickable = _is_adjacent_to_blank(state, idx) and on_click_fn
+                    classes = ["play-image-cell"]
+                    if is_correct:
+                        classes.append("is-correct")
+                    if is_clickable:
+                        classes.append("is-clickable")
+
+                    if is_clickable:
+                        direction = _get_slide_direction(state, idx)
+                        dir_labels = action_labels or {
+                            "L": "Slide right",
+                            "R": "Slide left",
+                            "U": "Slide down",
+                            "D": "Slide up",
+                        }
+                        button_key = f"{key_prefix}_hit_{val}_{r}_{c}"
+                        dynamic_styles.append(_image_tile_button_style(button_key, image_tiles[val], show_numbers))
+                        st.button(
+                            str(val) if show_numbers else dir_labels.get(direction, "Slide"),
+                            key=button_key,
+                            on_click=on_click_fn,
+                            args=(direction,),
+                            help=dir_labels.get(direction, "Slide"),
+                            width="stretch",
+                        )
+                    else:
+                        number_badge = f'<span class="play-tile-number">{val}</span>' if show_numbers else ""
+                        st.markdown(
+                            f'<div class="{" ".join(classes)}">'
+                            f'{number_badge}<span class="play-tile-shine"></span>'
+                            f'<img src="{image_tiles[val]}" alt="tile{val}" draggable="false">'
                             '</div>',
                             unsafe_allow_html=True,
                         )
-                        st.button(f" ", key=f"{key_prefix}_blank_btn_{r}_{c}",
-                                  disabled=True, width="stretch")
-                    elif val in image_tiles:
-                        is_correct = highlight_correct and val == goal_state[idx]
-                        border_color = "#697d5f" if is_correct else "#b8793e"
-                        
-                        number_badge = ""
-                        if show_numbers:
-                            number_badge = (
-                                f'<span style="position:absolute;top:6px;left:6px;z-index:9;'
-                                f'background:rgba(8,11,10,0.88);color:#f4efe5;padding:2px 6px;'
-                                f'border-radius:4px;font-size:11px;font-weight:700;line-height:1;'
-                                f'border:1px solid rgba(214,161,95,0.34);box-shadow:0 2px 6px rgba(4,7,6,0.45);'
-                                f'pointer-events:none;">{val}</span>'
-                            )
-                        
-                        img_html = (
-                            f'<div style="width:100%;aspect-ratio:1;border-radius:8px;'
-                            f'overflow:hidden;border:4px solid {border_color};'
-                            f'box-shadow:0 8px 18px rgba(4,7,6,0.52), inset 0 1px 2px rgba(255,255,255,0.18);'
-                            f'cursor:pointer;position:relative;background:#080b0a;">'
-                            f'{number_badge}'
-                            f'<img src="{image_tiles[val]}" style="width:100%;height:100%;'
-                            f'object-fit:cover;" alt="tile{val}">'
-                            f'</div>'
-                        )
-                        if _is_adjacent_to_blank(state, idx) and on_click_fn:
-                            direction = _get_slide_direction(state, idx)
-                            dir_labels = action_labels or {
-                                "L": "Slide right",
-                                "R": "Slide left",
-                                "U": "Slide down",
-                                "D": "Slide up",
-                            }
-                            label = dir_labels.get(direction, "Slide")
-                            st.markdown(img_html, unsafe_allow_html=True)
-                            st.button(label, key=f"{key_prefix}_hit_{val}_{r}_{c}",
-                                      on_click=on_click_fn, args=(direction,),
-                                      type="primary", width="stretch")
-                        else:
-                            st.markdown(img_html, unsafe_allow_html=True)
-                            st.button(f" ", key=f"{key_prefix}_nohit_{val}_{r}_{c}",
-                                      disabled=True, width="stretch")
-                    else:
-                        st.button(str(val), key=f"{key_prefix}_{val}_{r}_{c}",
-                                  disabled=True, width="stretch")
+    if dynamic_styles:
+        st.markdown(f"<style>{''.join(dynamic_styles)}</style>", unsafe_allow_html=True)
 
 
 def render_puzzle_board(
@@ -272,6 +343,50 @@ def render_puzzle_row(
             render_puzzle_board(state, goal=goal)
 
 
+def render_start_goal_contract(start: tuple, goal: tuple, solvable: bool) -> None:
+    """Show the active start/goal pair shared by the current algorithm surface."""
+    st.markdown(f"### {t('active_contract_title')}")
+    st.caption(t("active_contract_caption"))
+    col_start, col_goal, col_status = st.columns([1, 1, 1])
+    with col_start:
+        st.caption(t("active_start"))
+        render_puzzle_board(start, size="small", goal=goal)
+    with col_goal:
+        st.caption(t("active_goal"))
+        render_puzzle_board(goal, highlight_correct=False, size="small", goal=goal)
+    with col_status:
+        st.metric(
+            t("active_solvability"),
+            t("active_solvable") if solvable else t("active_unsolvable"),
+        )
+        st.caption(t("active_solvability_caption"))
+
+
+def render_run_variation_metadata(result) -> None:
+    """Show the randomized run controls that produced this result."""
+    seed = getattr(result, "random_seed", None)
+    action_order = getattr(result, "variation_action_order", None)
+    tie_breaker = getattr(result, "variation_tie_breaker", None)
+    solver_seed = getattr(result, "variation_solver_seed", None)
+    randomizes_path = getattr(result, "variation_randomizes_path", True)
+
+    if seed is None and action_order is None and tie_breaker is None:
+        return
+
+    st.caption(
+        t(
+            "run_variation_caption",
+            seed=seed if seed is not None else "-",
+            action_order=action_order or "-",
+            tie_breaker=tie_breaker or "-",
+        )
+    )
+    if solver_seed is not None:
+        st.caption(t("run_variation_solver_seed", seed=solver_seed))
+    if not randomizes_path:
+        st.info(t("run_variation_no_path"))
+
+
 def render_result_metrics(result):
     """Render search result as metric cards."""
     if result is None:
@@ -280,9 +395,14 @@ def render_result_metrics(result):
     col1, col2, col3, col4 = st.columns(4)
     success = result.success
     icon = "OK" if success else "FAIL"
+    status_text = (
+        t("mc_solved")
+        if success and result.goal_reached
+        else (t("mc_model_success") if success else t("mc_failed"))
+    )
 
     with col1:
-        st.metric(t("mc_status"), f"{icon} {t('mc_solved') if success else t('mc_failed')}")
+        st.metric(t("mc_status"), f"{icon} {status_text}")
     with col2:
         st.metric("Recorded Steps", str(len(result.actions)) if result.path_verified else "-")
     with col3:
@@ -299,6 +419,36 @@ def render_result_metrics(result):
         st.metric(t("mc_reached_size"), str(result.reached_size))
     with col8:
         st.metric(t("mc_depth"), str(result.depth) if success else "-")
+
+    cert_cols = st.columns(4)
+    with cert_cols[0]:
+        st.metric(t("mc_legal_path"), t("tc_yes") if result.path_verified else t("tc_no"))
+    with cert_cols[1]:
+        st.metric(t("mc_reached_goal"), t("tc_yes") if result.goal_reached else t("tc_no"))
+    with cert_cols[2]:
+        st.metric(t("mc_optimality_proven"), t("tc_yes") if result.optimality_proven else t("tc_no"))
+    with cert_cols[3]:
+        st.metric(t("mc_termination"), result.termination_reason or "-")
+
+    model_evidence = next(
+        (
+            step
+            for step in reversed(result.trace)
+            if step.belief_size is not None or step.observation
+        ),
+        None,
+    )
+    if model_evidence is not None:
+        evidence_cols = st.columns(2)
+        with evidence_cols[0]:
+            st.metric(
+                t("mc_belief_size"),
+                str(model_evidence.belief_size)
+                if model_evidence.belief_size is not None
+                else "-",
+            )
+        with evidence_cols[1]:
+            st.metric(t("tc_observation"), model_evidence.observation or "-")
 
     evidence_status = "verified" if result.path_verified else "not verified"
     optimality_status = "proven for this run" if result.optimality_proven else "not proven for this run"
@@ -363,6 +513,8 @@ def render_trace_table(trace: list, max_rows: int = 100):
             row[t("tc_accepted")] = t("tc_yes") if step.accepted else t("tc_no")
         if step.belief_size is not None:
             row[t("tc_belief")] = step.belief_size
+        if step.observation:
+            row[t("tc_observation")] = step.observation
         if step.node_type:
             row[t("tc_type")] = step.node_type
         if step.reason:

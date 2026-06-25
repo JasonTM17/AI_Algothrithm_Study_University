@@ -233,6 +233,7 @@ class TestExpectimax:
         assert result.algorithm == "Expectimax"
         assert result.uses_probability is True
         assert result.uses_randomness is True
+        assert result.uses_adversary is False
         assert result.random_seed == 42
 
     def test_has_probability_trace(self):
@@ -362,6 +363,24 @@ def test_a_star_matches_bfs_and_ids_on_shallow_puzzle():
     assert_valid_solution(EASY_STATE, a_star_result)
 
 
+@pytest.mark.parametrize("solver, kwargs", [
+    (ids, {"max_depth": 20}),
+    (ida_star, {}),
+])
+def test_iterative_deepening_respects_node_budget_inside_recursive_pass(solver, kwargs):
+    result = solver(
+        MEDIUM_STATE,
+        max_nodes=1,
+        timeout=5,
+        **kwargs,
+    )
+
+    assert not result.success
+    assert result.nodes_expanded <= 1
+    assert result.termination_reason == "resource_limit"
+    assert "Node limit exceeded" in result.message
+
+
 def test_contrast_solvers_keep_theoretical_completeness_labels_on_trivial_goal():
     dfs_result = dfs(GOAL_STATE, timeout=2)
     greedy_result = greedy_best_first(GOAL_STATE, timeout=2)
@@ -417,4 +436,20 @@ def test_simulated_annealing_keeps_the_original_path_prefix():
         EASY_STATE, max_iterations=1200, timeout=5, seed=11,
     )
     assert result.path[0] == EASY_STATE
+    assert len(result.path) == len(result.actions) + 1
+
+
+def test_local_beam_failure_keeps_best_legal_partial_trajectory():
+    state = TEACHING_PRESETS["Hill Climbing stuck: local optimum h=4"]["state"]
+    result = local_beam_search(
+        state,
+        beam_width=1,
+        max_iterations=5,
+        timeout=5,
+    )
+
+    assert not result.success
+    assert result.path
+    assert result.path[0] == state
+    assert result.path_verified
     assert len(result.path) == len(result.actions) + 1

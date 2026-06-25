@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from core.algorithm_comparison import comparison_rows_for_group
 from core.theory import THEORY
 from ui.academic_panels import (
     render_academic_header,
@@ -46,6 +47,13 @@ def render_theory_tab(t=None) -> None:
 
     group = st.selectbox(tx("run_group"), list(ALGORITHM_GROUPS.keys()), key="theory_group")
     algorithms = ALGORITHM_GROUPS[group]
+    st.markdown(f"### {tx('theory_group_comparison')}")
+    st.caption(tx("theory_complexity_caveat"))
+    st.dataframe(
+        comparison_rows_for_group(group),
+        width="stretch",
+        hide_index=True,
+    )
     algo_name = st.selectbox(tx("run_algo"), algorithms, key="theory_algo")
 
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)

@@ -95,7 +95,7 @@ CSP mo hinh hoa bai toan bang bien `X`, mien gia tri `D`, va rang buoc `C`. Voi 
 | Thanh phan | Trong app | Y nghia hoc thuat |
 |---|---|---|
 | CSP Definition | Trinh bay X, D, C | Doi cach nhin tu path search sang constraint satisfaction. |
-| Constraint Propagation | Thu hep domain | Giai thich pruning truoc/sau assignment. |
+| Constraint Propagation | AC-3 tren chuoi trang thai `S[0]..S[T]` | Thu hep domain den khi arc-consistent; tra exact-T legal path hoac domain wipe-out. |
 | Path Consistency | Consistency bac cao hon arc consistency | Kiem tra rang buoc giua nhieu bien. |
 | Global Constraints | Vi du AllDifferent | Tom gon nhieu rang buoc nhi phan. |
 | Backtracking Search | Demo planning co gioi han | Minh hoa bounded transition planning, khong phai solver chinh. |
@@ -103,6 +103,10 @@ CSP mo hinh hoa bai toan bang bien `X`, mien gia tri `D`, va rang buoc `C`. Voi 
 | Constraint Graphs | Do thi bien-rang buoc | Giai thich lien ket va do kho. |
 
 Khong con demo to mau ban do trong UI/code. Khi bao ve, chi can noi CSP la cach mo hinh minh hoa, khong phai huong giai tu nhien nhat cho 15-puzzle.
+
+Ban executable AC-3 dung bien trang thai day du de tranh mot bo rang buoc transition `X[t][p]` qua lon trong demo. Mien trung gian gom cac trang thai hop le trong lan can bounded cua start/goal. Rang buoc nhi phan yeu cau `S[t+1]` cach `S[t]` dung mot blank move. Hai dau mut bi co dinh boi start va goal. Do day la constraint graph dang chuoi, sau khi AC-3 khong wipe-out thi app co the trich mot chuoi hop le; tuy nhien ket qua chi cho horizon T da chon, khong tu dong chung minh duong ngan nhat toan cuc.
+
+Moi bang Theory/PEAS so sanh cac thuat toan trong cung nhom bang cung cac cot: quy tac chon buoc, time complexity, space complexity, so buoc/output, va guarantee. Ky hieu Big-O la worst-case ly thuyet; runtime/node count thuc nghiem van phu thuoc input va cach cai dat.
 
 ## 7. Complex Environments
 
@@ -131,12 +135,12 @@ Scoring tournament co dinh:
 | Ket qua agent | Diem |
 |---|---:|
 | Path hop le, toi goal, cost bang optimal cost | +100 |
-| Path hop le, toi goal, cost dai hon optimal | `max(20, 100 - 10 * excess_cost)` |
+| Path hop le, toi goal, cost dai hon optimal | `max(10, round(100 * optimal_cost / actual_cost))` |
 | Path hop le nhung khong toi goal | -10 |
 | Timeout/resource limit/no path | -20 |
 | Exception, path khong verify, action sai luat, state/action mismatch | -50 |
 
-Moi round chay A* lam reference. Neu A* reference khong chung minh duoc optimal path, round do duoc bao `reference failed` va khong cham diem. Tie-break theo thu tu: tong diem, solved rounds, total excess cost thap hon, runtime thap hon, nodes thap hon; neu van hoa thi draw.
+Moi round chay A* lam reference. Neu A* reference khong chung minh duoc optimal path, round do duoc bao `reference failed` va khong cham diem. Hai trajectory hop le duoc replay tren cung timeline de nguoi hoc theo doi tung action. Tie-break theo thu tu: tong diem, so round optimal, so round solved, total excess cost thap hon; neu van hoa thi draw. Runtime va nodes chi la evidence mo ta vi runtime phu thuoc may, con node/iteration khong dong nghia giua cac ho thuat toan.
 
 Cau bao ve quan trong: "AI-vs-AI Tournament danh gia hai solver agent bang thang diem; no khong tao MIN player trong PEAS chuan cua 15-puzzle."
 

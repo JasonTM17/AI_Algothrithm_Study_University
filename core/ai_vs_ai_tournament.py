@@ -78,6 +78,12 @@ class AgentRoundScore:
     runtime: float = 0.0
     nodes: int = 0
     random_seed: int | None = None
+    efficiency_percent: float | None = None
+    path: list[tuple[int, ...]] = field(default_factory=list)
+    actions: list[str] = field(default_factory=list)
+    path_verified: bool = False
+    goal_reached: bool = False
+    termination_reason: str = ""
 
 
 @dataclass
@@ -114,7 +120,7 @@ def score_search_result(
     optimal_cost: int,
     exception_message: str | None = None,
 ) -> AgentRoundScore:
-    """Convert a solver result into fixed tournament points."""
+    """Convert a solver result into certificate-first tournament points."""
     if exception_message:
         return AgentRoundScore(
             agent_label=agent_label,
@@ -135,6 +141,13 @@ def score_search_result(
         )
     runtime = float(result.runtime or 0.0)
     nodes = int(result.nodes_expanded or 0)
+    evidence = {
+        "path": list(result.path),
+        "actions": list(result.actions),
+        "path_verified": bool(result.path_verified),
+        "goal_reached": bool(result.goal_reached),
+        "termination_reason": result.termination_reason,
+    }
     if result.path and not result.path_verified:
         return AgentRoundScore(
             agent_label=agent_label,
@@ -147,16 +160,38 @@ def score_search_result(
             runtime=runtime,
             nodes=nodes,
             random_seed=result.random_seed,
+            **evidence,
         )
     if result.path_verified and result.goal_reached:
         cost = len(result.actions)
-        excess = max(0, cost - optimal_cost)
-        points = 100 if excess == 0 else max(20, 100 - 10 * excess)
+        if cost < optimal_cost:
+            return AgentRoundScore(
+                agent_label=agent_label,
+                algorithm=result.algorithm or algorithm,
+                points=0,
+                status="reference_mismatch",
+                reason=(
+                    f"Legal path cost {cost} is below the certified reference cost "
+                    f"{optimal_cost}; this round needs reference review."
+                ),
+                cost=cost,
+                optimal_cost=optimal_cost,
+                runtime=runtime,
+                nodes=nodes,
+                random_seed=result.random_seed,
+                **evidence,
+            )
+        excess = cost - optimal_cost
+        efficiency = _path_efficiency_percent(cost, optimal_cost)
+        points = 100 if excess == 0 else max(10, round(efficiency))
         status = "optimal" if excess == 0 else "suboptimal"
         reason = (
             "Legal path reaches goal with optimal cost."
             if excess == 0
-            else f"Legal path reaches goal but is {excess} move(s) longer than optimal."
+            else (
+                f"Legal path reaches goal with {efficiency:.1f}% path efficiency "
+                f"and is {excess} move(s) longer than optimal."
+            )
         )
         return AgentRoundScore(
             agent_label=agent_label,
@@ -170,6 +205,8 @@ def score_search_result(
             runtime=runtime,
             nodes=nodes,
             random_seed=result.random_seed,
+            efficiency_percent=efficiency,
+            **evidence,
         )
     if result.path_verified and not result.goal_reached:
         return AgentRoundScore(
@@ -183,6 +220,7 @@ def score_search_result(
             runtime=runtime,
             nodes=nodes,
             random_seed=result.random_seed,
+            **evidence,
         )
     return AgentRoundScore(
         agent_label=agent_label,
@@ -194,7 +232,19 @@ def score_search_result(
         runtime=runtime,
         nodes=nodes,
         random_seed=result.random_seed,
+        **evidence,
     )
+
+
+def _path_efficiency_percent(cost: int, optimal_cost: int) -> float:
+    """Return goal-path efficiency normalized to the round difficulty."""
+    if cost < 0 or optimal_cost < 0:
+        raise ValueError("Path costs must be non-negative")
+    if cost == 0:
+        return 100.0 if optimal_cost == 0 else 0.0
+    if optimal_cost == 0:
+        return 0.0
+    return 100.0 * optimal_cost / cost
 
 
 def run_ai_vs_ai_tournament(
@@ -413,23 +463,25 @@ def _classify_tournament(result: TournamentResult) -> None:
     b_key = _tie_break_key(result, "agent_b")
     if a_key > b_key:
         result.winner = result.agent_a_label
-        result.tie_break_detail = "Winner by solved rounds, excess cost, runtime, then nodes."
+        result.tie_break_detail = "Winner by optimal rounds, solved rounds, then lower excess cost."
     elif b_key > a_key:
         result.winner = result.agent_b_label
-        result.tie_break_detail = "Winner by solved rounds, excess cost, runtime, then nodes."
+        result.tie_break_detail = "Winner by optimal rounds, solved rounds, then lower excess cost."
     else:
         result.winner = "Draw"
-        result.tie_break_detail = "Scores and tie-break metrics are equal."
+        result.tie_break_detail = (
+            "Scores and solution-quality tie-break metrics are equal; runtime and node "
+            "counts remain descriptive evidence, not winner selectors."
+        )
 
 
-def _tie_break_key(result: TournamentResult, field_name: str) -> tuple[int, int, float, int]:
+def _tie_break_key(result: TournamentResult, field_name: str) -> tuple[int, int, int]:
     scores = [
         getattr(round_result, field_name)
         for round_result in result.rounds
         if getattr(round_result, field_name) is not None
     ]
+    optimal = sum(1 for score in scores if score.status == "optimal")
     solved = sum(1 for score in scores if score.status in {"optimal", "suboptimal"})
     excess = sum(score.excess_cost or 0 for score in scores)
-    runtime = sum(score.runtime for score in scores)
-    nodes = sum(score.nodes for score in scores)
-    return (solved, -excess, -runtime, -nodes)
+    return (optimal, solved, -excess)

@@ -61,13 +61,16 @@ The standard 15-puzzle environment is fully observable, deterministic, static, d
 - Single-algorithm runner with trace, metrics, frontier/reached detail, and a parent-linked search graph; even failed or stuck runs expose a certified legal partial trajectory without labeling it as a solution.
 - Benchmark comparison with methodology panels, recorded seeds, compact action paths, and explicit shared-path explanations for unit-cost optimal solvers.
 - Theory/PEAS page with proof cards, taxonomy, decision guide, and grading report export.
+- Theory/PEAS includes a within-group comparison table for step rule, time complexity, space complexity, output steps, and guarantees.
 - Vietnamese full-reference documentation for algorithm groups, PEAS boundaries, heuristic guarantees, CSP modeling, complex environments, and AI-vs-AI scoring.
 - Formal algorithm test plan covering solver oracles, trace evidence, custom goals, stochastic seeds, CSP/game demos, AI-vs-AI scoring, and UI/browser validation.
 - Advanced CSP, complex-environment, game/chance, and AI-vs-AI tournament demonstrations live in a separate Concept Lab and are excluded from standard solver rankings.
-- AI-vs-AI Tournament scores two selected solvers on identical 15-puzzle rounds: optimal paths get full points, legal longer paths get reduced points, partial/failed paths lose points, and invalid paths receive the strongest penalty.
+- Group 5 includes executable AC-3 propagation over a bounded state chain `S[0]..S[T]`; it returns an exact-horizon legal path or a domain-wipe-out certificate.
+- AI-vs-AI Tournament scores two selected solvers on identical 15-puzzle rounds: optimal paths get 100 points, legal longer paths are normalized by `optimal_cost / actual_cost`, partial/failed paths lose points, and invalid paths receive the strongest penalty.
+- Tournament rounds include a synchronized step replay so both certified trajectories can be followed on one timeline before comparing the final score.
 - Hand-tracing practice for oral/written exam preparation, including an explicit Graphviz expansion tree built from the learner's verified choices.
 - Teaching presets for Greedy suboptimality and Hill Climbing local optimum.
-- Stochastic demos use a fresh recorded seed by default, while deterministic solvers remain reproducible under the same state, action order, and tie-breaker.
+- Run and Advanced demos record a fresh variation seed on each click, randomizing action order and tie-breaks where supported while preserving legal-path and optimality certificates. Compare, Tournament, and Hand-Tracing keep explicit seeds/orderings for reproducible grading.
 - Accessibility-oriented UI: focus states, reduced-motion support, responsive cards, and mobile sidebar safeguards.
 
 ## Project Structure

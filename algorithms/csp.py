@@ -7,9 +7,11 @@ it as a CSP planning problem for academic illustration.
 import time
 import random
 from typing import Optional
+from algorithms.csp_ac3 import run_state_chain_ac3
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
 from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
+from core.randomness import active_action_order
 
 
 def csp_definition(
@@ -77,69 +79,66 @@ def constraint_propagation(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     time_horizon: int = 3,
 ) -> SearchResult:
-    """Apply constraint propagation (AC-3 style) to reduce domains."""
-    trace: list[TraceStep] = []
+    """Run AC-3 on a bounded chain of full 15-puzzle state variables."""
+    action_order = active_action_order()
+    ac3 = run_state_chain_ac3(
+        start,
+        goal,
+        time_horizon=time_horizon,
+        action_order=action_order,
+    )
+    trace = [
+        TraceStep(
+            step=time_index,
+            state=next(iter(domain)) if domain else start,
+            belief_size=len(domain),
+            event="revise",
+            reason=f"AC-3 domain S[{time_index}] has {len(domain)} state(s)",
+        )
+        for time_index, domain in enumerate(ac3.domains)
+    ]
 
-    # Initialize domains
-    domains = {}
-    for t in range(time_horizon + 1):
-        for p in range(16):
-            var = f"X[{t}][{p}]"
-            if t == 0:
-                domains[var] = [start[p]]
-            elif t == time_horizon:
-                domains[var] = [goal[p]]
-            else:
-                domains[var] = list(range(16))
-
-    # Apply AllDifferent: if a variable is assigned, remove from others at same time
-    changed = True
-    iterations = 0
-    while changed and iterations < 100:
-        changed = False
-        iterations += 1
-        for t in range(1, time_horizon):  # Only free time steps
-            # Find assigned variables (domain size 1)
-            assigned = {}
-            for p in range(16):
-                var = f"X[{t}][{p}]"
-                if len(domains[var]) == 1:
-                    assigned[var] = domains[var][0]
-
-            # Remove assigned values from other variables at same time
-            for p in range(16):
-                var = f"X[{t}][{p}]"
-                if len(domains[var]) > 1:
-                    for assigned_var, val in assigned.items():
-                        if val in domains[var]:
-                            domains[var].remove(val)
-                            changed = True
-
-    # Report
-    total_before = 16 * (time_horizon - 1) * 16  # max domain size
-    total_after = sum(len(domains[f"X[{t}][{p}]"]) for t in range(1, time_horizon) for p in range(16))
-
-    trace.append(TraceStep(step=0, state=start,
-                           reason=f"Propagation: {iterations} iterations, domains reduced"))
-
-    msg = "Constraint Propagation Results\n\n"
-    msg += f"Time horizon T={time_horizon}\n"
-    msg += f"Propagation iterations: {iterations}\n\n"
-    msg += "Domain reductions:\n"
-    for t in range(time_horizon + 1):
-        changes = []
-        for p in range(16):
-            var = f"X[{t}][{p}]"
-            d = domains[var]
-            if len(d) <= 5:
-                changes.append(f"  {var}: {d}")
-        if changes:
-            msg += f"  Time {t}:\n" + "\n".join(changes) + "\n"
+    domain_sizes = ", ".join(
+        f"|D(S[{index}])|={len(domain)}"
+        for index, domain in enumerate(ac3.domains)
+    )
+    status = (
+        "Arc-consistent state chain found."
+        if ac3.consistent
+        else "Domain wipe-out: no exact-horizon legal path exists."
+    )
+    msg = (
+        f"AC-3 State-Chain CSP for 15-Puzzle (T={time_horizon})\n\n"
+        "Variables: S[0]..S[T], where each value is a complete legal puzzle state.\n"
+        "Binary constraint: consecutive values must differ by exactly one legal blank move.\n"
+        "Endpoints: S[0]=start and S[T]=goal.\n"
+        "This compact executable model is separate from the full X[t][p] teaching encoding.\n\n"
+        f"{status}\n"
+        f"Candidate states: {ac3.candidate_states}\n"
+        f"Arc checks: {ac3.arc_checks}\n"
+        f"Revisions: {ac3.revisions}\n"
+        f"Values removed: {ac3.values_removed}\n"
+        f"Final domains: {domain_sizes}\n"
+        f"Action order: {action_order}\n"
+    )
 
     return SearchResult(
-        success=True, algorithm="Constraint Propagation", group="CSP",
-        message=msg, trace=trace, suitable_for_puzzle=False,
-        is_complete=False, is_optimal=False,
+        success=ac3.consistent,
+        algorithm="Constraint Propagation",
+        group="CSP",
+        path=ac3.path,
+        actions=ac3.actions,
+        goal_state=goal,
+        cost=len(ac3.actions),
+        depth=len(ac3.actions),
+        nodes_expanded=ac3.arc_checks,
+        nodes_generated=ac3.candidate_states,
+        reached_size=sum(len(domain) for domain in ac3.domains),
+        message=msg,
+        trace=trace,
+        suitable_for_puzzle=False,
+        is_complete=False,
+        is_optimal=False,
     )
 
 
@@ -195,7 +194,7 @@ that value is removed from all other variables at the same time step.
 Implementation check:"""
 
     # Verify AllDifferent on goal state
-    is_valid = len(set(GOAL_STATE)) == 16
+    is_valid = len(set(goal)) == 16
     msg += f"\n  Goal state AllDifferent: {is_valid}"
 
     # Verify on start state
@@ -229,7 +228,7 @@ def backtracking_search(
 
     if start == goal:
         return SearchResult(success=True, algorithm="Backtracking Search", group="CSP",
-                            path=[start], actions=[], cost=0, depth=0,
+                            path=[start], actions=[], goal_state=goal, cost=0, depth=0,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             suitable_for_puzzle=False, is_complete=False, is_optimal=False)
 
@@ -260,7 +259,7 @@ def backtracking_search(
                 return state == goal
 
             ps = PuzzleState(state)
-            neighbors = ps.get_neighbors("LRUD")
+            neighbors = ps.get_neighbors(active_action_order())
             # Heuristic value ordering: try neighbors closer to goal first.
             neighbors.sort(key=lambda x: h_fn(x[0]))
 
@@ -292,7 +291,8 @@ def backtracking_search(
         if solved:
             return SearchResult(
                 success=True, algorithm="Backtracking Search", group="CSP",
-                path=list(path), actions=list(actions), cost=len(actions), depth=len(actions),
+                path=list(path), actions=list(actions), goal_state=goal,
+                cost=len(actions), depth=len(actions),
                 nodes_expanded=total_steps, nodes_generated=total_steps,
                 runtime=time.perf_counter() - t0,
                 message=(f"Bounded transition-planning demo found a path with T={T}. "
@@ -321,7 +321,8 @@ def min_conflicts(
 
     if start == goal:
         return SearchResult(success=True, algorithm="Min-Conflicts", group="CSP",
-                            path=[start], actions=[], runtime=time.perf_counter() - t0,
+                            path=[start], actions=[], goal_state=goal,
+                            runtime=time.perf_counter() - t0,
                             message="Already at goal", suitable_for_puzzle=False)
 
     trace: list[TraceStep] = []

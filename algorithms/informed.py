@@ -285,7 +285,8 @@ def ida_star(
 
         result, next_threshold = _ida_dfs(
             start, goal, threshold, h_fn, action_order,
-            t0, timeout, total_expanded, total_generated, max_frontier, trace,
+            t0, timeout, max_nodes,
+            total_expanded, total_generated, max_frontier, trace,
         )
 
         total_expanded = result.nodes_expanded
@@ -304,6 +305,15 @@ def ida_star(
             result.refresh_certificate()
             return result
 
+        if result.termination_reason in {"timeout", "resource_limit"}:
+            result.algorithm = "IDA*"
+            result.group = "Informed Search"
+            result.is_complete = True
+            result.is_optimal = True
+            result.uses_heuristic = True
+            result.runtime = time.perf_counter() - t0
+            return result
+
         if next_threshold == float("inf"):
             break
 
@@ -317,7 +327,7 @@ def ida_star(
 
 
 def _ida_dfs(start, goal, threshold, h_fn, action_order,
-             t0, timeout, prev_expanded, prev_generated,
+             t0, timeout, max_nodes, prev_expanded, prev_generated,
              prev_max_frontier, global_trace):
     """DFS with f-limit for IDA*."""
     nodes_expanded = [prev_expanded]
@@ -325,11 +335,14 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
     max_frontier = [prev_max_frontier]
     next_threshold = [float("inf")]
     result_holder = [None]
+    timed_out = [False]
+    resource_limited = [False]
 
     def recursive_search(node, path_set):
-        if result_holder[0] is not None:
+        if result_holder[0] is not None or timed_out[0] or resource_limited[0]:
             return
         if time.perf_counter() - t0 > timeout:
+            timed_out[0] = True
             return
 
         if node.f > threshold:
@@ -346,6 +359,10 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
                 max_frontier_size=max_frontier[0], trace=global_trace,
                 message=f"Found with threshold={threshold}",
             )
+            return
+
+        if nodes_expanded[0] >= max_nodes:
+            resource_limited[0] = True
             return
 
         nodes_expanded[0] += 1
@@ -380,6 +397,18 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
     if result_holder[0] is not None:
         return result_holder[0], next_threshold[0]
 
+    if timed_out[0]:
+        return SearchResult(
+            success=False, message="Timeout",
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+            max_frontier_size=max_frontier[0], trace=global_trace,
+        ), next_threshold[0]
+    if resource_limited[0]:
+        return SearchResult(
+            success=False, message=f"Node limit exceeded ({max_nodes})",
+            nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
+            max_frontier_size=max_frontier[0], trace=global_trace,
+        ), next_threshold[0]
     return SearchResult(
         success=False, message=f"cutoff at threshold {threshold}",
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],

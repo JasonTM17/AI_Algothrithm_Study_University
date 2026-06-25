@@ -165,9 +165,12 @@ def no_observation_search(
     trace: list[TraceStep] = []
     trace.append(TraceStep(step=0, state=start, reason=f"Initial belief size={len(belief)}",
                            belief_size=len(belief)))
+    steps_completed = 0
+    timed_out = False
 
     for step in range(max_steps):
         if time.perf_counter() - t0 > timeout:
+            timed_out = True
             break
 
         # Choose action that reduces average h in belief
@@ -205,6 +208,7 @@ def no_observation_search(
                 representative_path.append(representative)
 
         belief = best_new_belief
+        steps_completed = step + 1
 
         if len(trace) < 200:
             trace.append(TraceStep(step=step + 1, state=start, action=best_action,
@@ -227,14 +231,22 @@ def no_observation_search(
                 is_complete=False, is_optimal=False, suitable_for_puzzle=False,
             )
 
+    message = (
+        f"Timeout after {steps_completed} belief-action step(s)."
+        if timed_out
+        else (
+            f"Belief size={len(belief)} after {steps_completed} steps. "
+            "No observation is harder than standard search."
+        )
+    )
     return SearchResult(
         success=False, algorithm="No Observation Search", group="Complex Environments",
         path=representative_path if representative_path_valid else [],
         actions=actions_taken if representative_path_valid else [],
         goal_state=goal, depth=len(actions_taken), random_seed=seed,
-        nodes_expanded=max_steps, nodes_generated=max_steps,
+        nodes_expanded=steps_completed, nodes_generated=steps_completed,
         runtime=time.perf_counter() - t0,
-        message=f"Belief size={len(belief)} after {max_steps} steps. No observation is harder than standard search.",
+        message=message,
         trace=trace, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
@@ -296,15 +308,21 @@ def partially_observable_search(
             is_complete=False, is_optimal=False, suitable_for_puzzle=False,
         )
 
+    steps_completed = 0
+    timed_out = False
     for step in range(max_steps):
         if time.perf_counter() - t0 > timeout:
+            timed_out = True
             break
 
-        action = action_order[0]  # Simplified: choose first valid action
-        for a in action_order:
-            if _move_blank(actual_state, a) is not None:
-                action = a
-                break
+        # Select from the belief state, not from hidden access to actual_state.
+        action = min(
+            action_order,
+            key=lambda candidate: sum(
+                h_fn(_move_blank(state, candidate) or state)
+                for state in belief
+            ) / max(len(belief), 1),
+        )
 
         # Move actual state
         ns = _move_blank(actual_state, action)
@@ -332,6 +350,7 @@ def partially_observable_search(
                 filtered.add(state)
 
         belief = filtered if filtered else new_belief
+        steps_completed = step + 1
 
         if len(trace) < 200:
             trace.append(TraceStep(step=step + 1, state=actual_state, action=action,
@@ -350,13 +369,21 @@ def partially_observable_search(
                 is_complete=False, is_optimal=False, suitable_for_puzzle=False,
             )
 
+    message = (
+        f"Timeout after {steps_completed} partial-observation step(s)."
+        if timed_out
+        else (
+            f"Belief={len(belief)} after {steps_completed} steps. "
+            "Partial observation narrows belief via filtering."
+        )
+    )
     return SearchResult(
         success=False, algorithm="Partially Observable Search", group="Complex Environments",
         path=actual_path, actions=actual_actions, goal_state=goal,
         depth=len(actual_actions), random_seed=seed,
-        nodes_expanded=max_steps, nodes_generated=max_steps,
+        nodes_expanded=steps_completed, nodes_generated=steps_completed,
         runtime=time.perf_counter() - t0,
-        message=f"Belief={len(belief)} after {max_steps} steps. Partial observation narrows belief via filtering.",
+        message=message,
         trace=trace, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
@@ -388,6 +415,7 @@ def online_search_lrta(
         if time.perf_counter() - t0 > timeout:
             return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken, depth=len(actions_taken),
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -398,6 +426,7 @@ def online_search_lrta(
         if current == goal:
             return SearchResult(success=True, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="Goal reached online", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -410,6 +439,7 @@ def online_search_lrta(
         if not neighbors:
             return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken,
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded,
                                 runtime=time.perf_counter() - t0, message="No valid moves", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
@@ -443,6 +473,7 @@ def online_search_lrta(
 
     return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                         path=path, actions=actions_taken, depth=len(actions_taken),
+                        goal_state=goal,
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
                         runtime=time.perf_counter() - t0, message=f"Max steps reached, visited {len(visited_states)} states",
                         trace=trace, uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)

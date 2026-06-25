@@ -20,7 +20,7 @@ The standard 15-puzzle environment is deterministic, fully observable, static, d
 - AI-vs-AI/game-chance demos: AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax.
 
 This distinction is required so the app stays academically truthful while still covering broad AI topics.
-AI-vs-AI Tournament is handled as a scoring layer over two 15-puzzle solver agents. Each round uses an A* reference optimal certificate; optimal legal paths receive full points, legal longer paths receive reduced points, failed paths lose points, and invalid paths receive the strongest penalty.
+AI-vs-AI Tournament is handled as a scoring layer over two 15-puzzle solver agents. Each round uses an A* reference optimal certificate; optimal legal paths receive 100 points, longer legal paths are scored by relative path efficiency, failed paths lose points, and invalid paths receive the strongest penalty. Certified trajectories are replayed side by side on a shared step timeline.
 
 ## Academic Documentation
 
@@ -32,12 +32,14 @@ AI-vs-AI Tournament is handled as a scoring layer over two 15-puzzle solver agen
 ## Success Criteria
 
 - The app runs without Streamlit runtime errors.
+- Theory/PEAS compares algorithms inside each group by time complexity, space complexity, step/output behavior, and guarantees.
+- Group 5 AC-3 reports an exact-horizon legal path or domain wipe-out without claiming global shortest-path optimality.
 - The browser app is the only supported product surface.
 - Every reported puzzle solution has a legal edge-by-edge path certificate.
 - Search visualization contains explicit parent/child edges rather than inferred indentation.
 - Hand-Tracing records the learner's chosen expansions as explicit parent/child graph edges.
 - Advanced game/chance demos return only a legal selected variation or sample outcome path, and label it separately from full-tree evidence or optimal puzzle certificates.
-- AI-vs-AI Tournament shows reference optimal cost, per-agent score reason, winner/draw, and tie-break detail.
+- AI-vs-AI Tournament shows reference optimal cost, per-agent path efficiency and score reason, synchronized replay, winner/draw, and deterministic tie-break detail.
 - Challenge Mode first certifies the recorded player history as a legal trajectory, then compares completed solutions against an A* optimality certificate.
 - Compare and Theory views clearly identify guarantees, environment assumptions, and solver role.
 - PEAS is presented as a structured model, not only prose.
