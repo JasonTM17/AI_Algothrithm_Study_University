@@ -977,6 +977,10 @@ div[data-testid="stElementContainer"]:has(.number-board-row) .number-board-row {
     display: none !important;
 }
 
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .number-board-row) {
+    gap: 6px !important;
+}
+
 div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] {
     margin: 0 0 6px !important;
 }
