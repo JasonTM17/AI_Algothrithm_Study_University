@@ -71,6 +71,19 @@ CI trên GitHub dùng Python 3.12, cài `requirements-dev.txt`, chạy compile, 
 | Mở rộng minh họa | CSP, AND-OR, No Observation, Partial Observation, LRTA* | Đổi mô hình bài toán hoặc môi trường để học thêm AI; không phải solver tự nhiên nhất của 15-puzzle chuẩn. |
 | Tournament/game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Tournament là lớp chấm điểm; Minimax/Alpha-Beta/Expectimax là extension game/chance. |
 
+## Thuật toán dùng hợp lý và không hợp lý cho 15-puzzle
+
+| Mức sử dụng | Thuật toán | Có hợp lý để giải 15-puzzle chuẩn? | Lý do chuẩn khi bảo vệ |
+|---|---|---:|---|
+| Rất hợp lý làm solver chuẩn | A*, IDA* | Có | Bám đúng mô hình state-space search; dùng `g+h` hoặc threshold `f`; có thể chứng minh tối ưu với heuristic admissible/consistent và đủ tài nguyên. |
+| Hợp lý làm solver chuẩn cho puzzle nông | BFS, UCS, IDS | Có | Không cần heuristic; complete/optimal với unit step cost. Caveat là BFS/UCS tốn bộ nhớ, IDS expand lại node. |
+| Hợp lý để minh họa trade-off, không nên chọn làm solver chính | DFS | Không nên | DFS tiết kiệm bộ nhớ nhưng không optimal và bị giới hạn bởi depth/resource cap. |
+| Hợp lý để minh họa heuristic-only failure | Greedy Best-First | Không nên | Greedy chỉ nhìn `h(n)`, bỏ qua `g(n)`, nên có thể nhanh nhưng không có optimality certificate. |
+| Hợp lý để dạy local optimum/plateau/randomness | Simple/Steepest/Stochastic/Random-Restart Hill Climbing, Local Beam, Simulated Annealing | Không nên | Local search không giữ frontier toàn cục, dễ kẹt hoặc phụ thuộc seed; dùng làm demo đối chiếu thay vì solver đáng tin cậy. |
+| Hợp lý như mô hình hóa hoặc concept lab | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs | Không nên gọi là solver chuẩn | CSP planning cần horizon/time-step; AC-3 chỉ chứng minh exact-horizon, Min-Conflicts dùng swap không phải legal blank move. |
+| Hợp lý khi cố ý đổi environment/sensor | AND-OR, No Observation, Partial Observation, LRTA* | Không phải solver chuẩn | Chúng thay đổi transition, observability hoặc agent model; dùng để giải thích AI nâng cao. |
+| Hợp lý để chấm điểm hoặc dạy game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Không phải solver chuẩn | Tournament là scoring layer; game/chance model thêm đối thủ hoặc xác suất không có trong PEAS chuẩn của 15-puzzle. |
+
 ## Heuristic trong repo
 
 | Heuristic | Ý tưởng | Ưu điểm | Caveat |

@@ -42,7 +42,22 @@ Khi bảo vệ, luôn tách ba tầng bằng chứng:
 2. Goal reachability: path kết thúc đúng goal hay chỉ là partial/model/sample path.
 3. Optimality certificate: thuật toán và heuristic có đủ điều kiện để chứng minh cost tối ưu hay không.
 
-## 3. Các bước search nên nói theo thứ tự
+## 3. Dùng thuật toán nào là hợp lý cho 15-puzzle?
+
+| Kết luận sử dụng | Thuật toán | Mức hợp lý cho 15-puzzle chuẩn | Cách nói chính xác |
+|---|---|---:|---|
+| Nên dùng làm solver chính khi cần lời giải có chứng cứ | A*, IDA* | Rất cao | Đây là lựa chọn hợp lý nhất cho demo solver: state-space search đúng bản chất bài toán, tận dụng heuristic, có optimality certificate khi điều kiện heuristic và tài nguyên thỏa. |
+| Nên dùng để chứng minh nền tảng trên puzzle nông | BFS, UCS, IDS | Cao | BFS/UCS/IDS hợp lý vì bài toán có unit step cost; chúng complete/optimal trong điều kiện hữu hạn, nhưng BFS/UCS dễ bùng nổ bộ nhớ. |
+| Dùng được để đối chiếu, không dùng làm kết luận solver tốt | DFS | Thấp | DFS phù hợp để nói về memory trade-off và depth limit; không được nói DFS tối ưu. |
+| Dùng được để chứng minh heuristic không đủ | Greedy Best-First | Thấp | Greedy hợp lý như baseline nhanh hoặc ví dụ sai lầm; không được nói Greedy tối ưu vì nó bỏ qua `g(n)`. |
+| Dùng được để dạy failure mode của local search | Hill Climbing variants, Local Beam, Simulated Annealing | Thấp cho solving, cao cho minh họa | Các thuật toán này hợp lý khi mục tiêu là local optimum, plateau, ridge, randomness; không hợp lý nếu xem là solver chuẩn đáng tin cậy. |
+| Chỉ dùng như mô hình hóa CSP hoặc bằng chứng horizon nhỏ | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs | Không phải solver chuẩn | CSP hợp lý để học `X, D, C`, AllDifferent và AC-3; không hợp lý nếu claim là hướng tự nhiên nhất để giải 15-puzzle sâu. |
+| Chỉ dùng khi cố ý đổi sensor/environment | AND-OR, No Observation, Partial Observation, LRTA* | Không phải solver chuẩn | Các thuật toán này hợp lý cho nondeterministic, belief-state, partial sensor hoặc online agent; không nên so trực tiếp với A*/IDA* như cùng mô hình. |
+| Chỉ dùng cho scoring/game/chance extension | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Không phải solver chuẩn | Tournament hợp lý để chấm hai solver bằng A* reference; Minimax/Alpha-Beta/Expectimax hợp lý để dạy game/chance, không hợp lý nếu nói 15-puzzle có đối thủ tự nhiên. |
+
+Quy tắc ngắn: nếu mục tiêu là giải 15-puzzle chuẩn, ưu tiên A*/IDA*, dùng BFS/UCS/IDS cho puzzle nông và chứng minh lý thuyết. Các nhóm còn lại chỉ hợp lý khi mục tiêu là minh họa trade-off, failure mode hoặc mô hình AI mở rộng.
+
+## 4. Các bước search nên nói theo thứ tự
 
 | Bước | Nội dung | Bằng chứng trong app |
 |---|---|---|
@@ -55,7 +70,7 @@ Khi bảo vệ, luôn tách ba tầng bằng chứng:
 
 Tree search xem mỗi đường đi sinh ra là một node riêng, nên có thể lặp state. Graph search ghi nhớ state đã đến hoặc cost tốt nhất để tránh duplicate. App vẽ search tree bằng parent-child edge để minh họa quá trình sinh node, còn các solver chuẩn vẫn dùng duplicate handling để giữ tính đúng thực thi.
 
-## 4. Uninformed Search
+## 5. Uninformed Search
 
 Uninformed search không dùng heuristic. Frontier được điều khiển bởi depth, stack/queue hoặc path cost.
 
@@ -68,7 +83,7 @@ Uninformed search không dùng heuristic. Frontier được điều khiển bở
 
 `b` là branching factor, `d` là độ sâu lời giải ngắn nhất, `m` là depth tối đa đang xét.
 
-## 5. Informed Search và heuristic
+## 6. Informed Search và heuristic
 
 | Thuật toán | Evaluation | Complete | Optimal | Vai trò |
 |---|---|---:|---:|---|
@@ -86,7 +101,7 @@ Heuristic trong repo:
 
 Admissible nghĩa là `h(n) <= h*(n)`. Consistent nghĩa là `h(n) <= c(n,n') + h(n')` với mọi cạnh hợp lệ. Nếu A* hoặc IDA* bị timeout/node cap, kết quả thực nghiệm không còn là optimality certificate.
 
-## 6. Local Search
+## 7. Local Search
 
 Local search không duy trì frontier đầy đủ. Nó giữ một state hiện tại, một vài state tốt nhất hoặc chấp nhận move xấu theo xác suất.
 
@@ -108,7 +123,7 @@ Các vấn đề hill climbing cần nói rõ:
 | Ridge | Cần đi ngang hoặc tạm thời xấu hơn mới tốt về sau. | Simulated Annealing có xác suất nhận move xấu khi temperature còn cao. |
 | Randomness dependence | Seed khác nhau sinh trajectory khác nhau. | Stochastic HC, Random-Restart HC, Simulated Annealing. |
 
-## 7. CSP trong 15-puzzle
+## 8. CSP trong 15-puzzle
 
 CSP mô hình hóa bài toán bằng biến `X`, miền giá trị `D` và ràng buộc `C`. Với 15-puzzle, có thể mô hình planning bằng biến theo time step, nhưng không tự nhiên bằng state-space search vì số biến/ràng buộc tăng theo horizon.
 
@@ -126,7 +141,7 @@ Backtracking CSP trong app dùng heuristic value ordering. Không gọi là MRV/
 
 AC-3 executable dùng biến trạng thái đầy đủ để tránh bộ ràng buộc `X[t][p]` quá lớn trong demo. Hai đầu mút bị cố định bởi start và goal; mỗi cặp state liên tiếp phải cách nhau đúng một legal blank move. Kết quả chỉ cho horizon `T` đã chọn, không tự động chứng minh đường ngắn nhất toàn cục.
 
-## 8. Complex Environments
+## 9. Complex Environments
 
 Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đề cương. Đây chỉ là alias UI; taxonomy vẫn là `Complex Environments` và vai trò vẫn là `Illustrative Extension`.
 
@@ -139,7 +154,7 @@ Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đ
 
 Nếu sensor, transition hoặc observability thay đổi, biểu diễn state và thuật toán cũng thay đổi. Không so sánh node count của nhóm này với A*/IDA* như thể cùng một bài toán.
 
-## 9. AI-vs-AI Tournament và game/chance extension
+## 10. AI-vs-AI Tournament và game/chance extension
 
 15-puzzle chuẩn là single-agent. Tournament trong app là lớp chấm điểm giữa hai agent giải cùng board, không phải đối kháng tự nhiên trong môi trường puzzle.
 
@@ -162,7 +177,7 @@ Scoring Tournament:
 
 Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh được optimal path, round đó được báo `reference failed` và không chấm điểm. Tie-break theo tổng điểm, số round optimal, số round solved và total excess cost thấp hơn; nếu vẫn hòa thì draw.
 
-## 10. Cách chọn thuật toán khi bảo vệ
+## 11. Cách chọn thuật toán khi bảo vệ
 
 | Nhu cầu | Nên dùng | Tránh nói |
 |---|---|---|
@@ -174,7 +189,7 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 | Giải thích CSP | CSP planning, AC-3, constraint graph | "CSP là cách tự nhiên nhất cho 15-puzzle" |
 | So sánh hai AI | AI-vs-AI Tournament | "15-puzzle có đối thủ tự nhiên" |
 
-## 11. Checklist vấn đáp
+## 12. Checklist vấn đáp
 
 - Nêu PEAS trước khi chọn thuật toán.
 - Phân biệt solver chuẩn, demo đối chiếu, extension và tournament/game demo.
@@ -185,7 +200,7 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 - Với CSP/game/chance/tournament, nói rõ đây là đổi mô hình hoặc lớp đánh giá.
 - Khi dùng benchmark/tournament, nêu seed, depth, heuristic, max nodes, timeout và caveat.
 
-## 12. Câu trả lời ngắn cho giảng viên
+## 13. Câu trả lời ngắn cho giảng viên
 
 | Câu hỏi | Câu trả lời gợi ý |
 |---|---|
