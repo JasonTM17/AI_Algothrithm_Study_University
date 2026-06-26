@@ -14,6 +14,9 @@ from core.metrics import SearchResult, TraceStep
 from core.randomness import active_action_order
 
 
+TRACE_LIMIT = 200
+
+
 def csp_definition(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     time_horizon: int = 3,
@@ -245,6 +248,7 @@ def backtracking_search(
         reason=f"Bounded transition planning: T=1..{max_t}, heuristic value ordering, h(start)={h}",
     ))
     total_steps = 0
+    total_generated = 1
 
     for T in range(1, max_t + 1):
         if time.perf_counter() - t0 > timeout:
@@ -256,6 +260,7 @@ def backtracking_search(
         visited = {start}
 
         def backtrack(state: tuple, depth: int, steps_count: list[int]) -> bool:
+            nonlocal total_generated
             if time.perf_counter() - t0 > timeout or steps_count[0] > max_steps:
                 return False
             if depth == T:
@@ -265,19 +270,36 @@ def backtracking_search(
             neighbors = ps.get_neighbors(active_action_order())
             # Heuristic value ordering: try neighbors closer to goal first.
             neighbors.sort(key=lambda x: h_fn(x[0]))
+            total_generated += len(neighbors)
 
             for ns, action, cost in neighbors:
                 steps_count[0] += 1
-                if ns in visited:
+                is_ancestor = ns in visited
+                if len(trace) < TRACE_LIMIT and not is_ancestor:
+                    nh = h_fn(ns)
+                    trace.append(TraceStep(
+                        step=steps_count[0],
+                        state=ns,
+                        action=action,
+                        g=depth + cost,
+                        h=nh,
+                        f=nh,
+                        depth=depth + cost,
+                        node_state=state,
+                        frontier_size=sum(1 for child, _, _ in neighbors if child not in visited),
+                        frontier_states=[child for child, _, _ in neighbors if child not in visited],
+                        event="generate",
+                        reason=(
+                            f"T={T}, depth={depth}, generated child action={action}, "
+                            f"Manhattan h={nh:.1f}"
+                        ),
+                    ))
+                if is_ancestor:
                     continue
 
                 actions.append(action)
                 path.append(ns)
                 visited.add(ns)
-
-                if len(trace) < 200:
-                    trace.append(TraceStep(step=steps_count[0], state=ns, action=action,
-                                           h=h_fn(ns), reason=f"T={T}, depth={depth}, action={action}"))
 
                 if backtrack(ns, depth + 1, steps_count):
                     return True
@@ -296,17 +318,17 @@ def backtracking_search(
                 success=True, algorithm="Backtracking Search", group="CSP",
                 path=list(path), actions=list(actions), goal_state=goal,
                 cost=len(actions), depth=len(actions),
-                nodes_expanded=total_steps, nodes_generated=total_steps,
+                nodes_expanded=total_steps, nodes_generated=total_generated,
                 runtime=time.perf_counter() - t0,
                 message=(f"Bounded transition-planning demo found a path with T={T}. "
-                         "This run uses heuristic value ordering, not MRV/forward checking."),
+                         "This run orders child nodes by Manhattan Distance heuristic, not MRV/forward checking."),
                 trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False,
             )
 
     return SearchResult(
         success=False, algorithm="Backtracking Search", group="CSP",
         goal_state=goal,
-        nodes_expanded=total_steps, nodes_generated=total_steps,
+        nodes_expanded=total_steps, nodes_generated=total_generated,
         runtime=time.perf_counter() - t0,
         message=(f"No path found within bounded horizon T={max_t}. This is not a proof of "
                  "unsolvability; graph search is the standard 15-puzzle formulation."),

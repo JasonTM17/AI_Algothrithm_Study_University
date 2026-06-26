@@ -11,12 +11,19 @@ from ui.styles import SOLVER_GROUPS
 
 
 AND_OR_ALGORITHM = "AND-OR Search"
+NO_OBSERVATION_ALGORITHM = "Searching with no observation"
+PARTIALLY_OBSERVABLE_ALGORITHM = "Searching for partially observable problems"
+COMPLEX_ENVIRONMENT_ALGORITHMS = [
+    AND_OR_ALGORITHM,
+    NO_OBSERVATION_ALGORITHM,
+    PARTIALLY_OBSERVABLE_ALGORITHM,
+]
 
 
 def run_algorithm_groups(t: Callable[[str], str]) -> dict[str, list[str]]:
     """Return Run-tab groups, keeping Compare's standard solver groups separate."""
     groups = {name: list(algorithms) for name, algorithms in SOLVER_GROUPS.items()}
-    groups[t("run_group_complex_alias")] = [AND_OR_ALGORITHM]
+    groups[t("run_group_complex_alias")] = list(COMPLEX_ENVIRONMENT_ALGORITHMS)
     return groups
 
 

@@ -286,14 +286,39 @@ def test_run_tab_exposes_group_3_and_or_extension():
     app.session_state["main_tab_label"] = "Run Algorithm"
     app.run()
 
-    assert "Group 3 - Complex Environments" in app.selectbox(key="algo_group").options
+    assert "Search in Complex Environments" in app.selectbox(key="algo_group").options
 
-    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+    app.selectbox(key="algo_group").set_value("Search in Complex Environments").run()
 
-    assert app.selectbox(key="algo_name").options == ["AND-OR Search"]
+    assert app.selectbox(key="algo_name").options == [
+        "AND-OR Search",
+        "Searching with no observation",
+        "Searching for partially observable problems",
+    ]
     assert app.selectbox(key="algo_name").value == "AND-OR Search"
     assert app.slider(key="run_andor_prob").value == 0.3
     assert not app.exception
+
+
+def test_run_tab_runs_added_complex_environment_algorithms():
+    cases = [
+        ("Searching with no observation", "No Observation Search"),
+        ("Searching for partially observable problems", "Partially Observable Search"),
+    ]
+    for label, expected_algorithm in cases:
+        app = AppTest.from_file("app.py", default_timeout=15)
+        app.session_state["start_state"] = ONE_MOVE
+        app.session_state["global_lang_select"] = "English"
+        app.session_state["main_tab_label"] = "Run Algorithm"
+        app.run()
+        app.selectbox(key="algo_group").set_value("Search in Complex Environments").run()
+        app.selectbox(key="algo_name").set_value(label).run()
+        app.number_input(key="max_depth").set_value(1).run()
+
+        app.button(key="btn_run").click().run()
+
+        assert app.session_state.last_result.algorithm == expected_algorithm
+        assert not app.exception
 
 
 def test_run_and_or_deterministic_support_outputs_conditional_plan_without_goal_claim():
@@ -302,7 +327,7 @@ def test_run_and_or_deterministic_support_outputs_conditional_plan_without_goal_
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Run Algorithm"
     app.run()
-    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+    app.selectbox(key="algo_group").set_value("Search in Complex Environments").run()
     app.number_input(key="max_depth").set_value(1).run()
     app.slider(key="run_andor_prob").set_value(0.0).run()
 
@@ -330,7 +355,7 @@ def test_run_and_or_deflection_support_requires_all_outcomes():
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Run Algorithm"
     app.run()
-    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+    app.selectbox(key="algo_group").set_value("Search in Complex Environments").run()
     app.number_input(key="max_depth").set_value(1).run()
     app.slider(key="run_andor_prob").set_value(0.3).run()
 
@@ -662,6 +687,7 @@ def test_ai_vs_ai_tournament_runs_from_advanced_mode():
     assert result.rounds[0].agent_a.path_verified
     assert app.slider(key="tournament_replay_round_1_slider")
     assert app.button(key="tournament_replay_round_1_next")
+    assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert result.winner in {result.agent_a_label, result.agent_b_label, "Draw"}
     assert not app.exception
 
@@ -705,8 +731,8 @@ def test_advanced_backtracking_uses_custom_goal_and_variation_metadata():
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Advanced Mode"
     app.run()
-    app.selectbox(key="complex_mode_v2").set_value("Backtracking & Min-Conflicts").run()
-    app.button(key="adv_run_backtracking___min_conflicts").click().run()
+    app.selectbox(key="complex_mode_v2").set_value("Backtracking Search + Manhattan Distance heuristic").run()
+    app.button(key="adv_run_backtracking_search___manhattan_distance_heuristic").click().run()
 
     outputs = app.session_state.advanced_outputs
     planning = outputs[0]["result"]
@@ -715,8 +741,10 @@ def test_advanced_backtracking_uses_custom_goal_and_variation_metadata():
     assert planning.goal_state == ONE_MOVE
     assert planning.path_verified
     assert planning.goal_reached
+    assert planning.search_tree_edges
     assert planning.random_seed is not None
     assert sorted(planning.variation_action_order) == ["D", "L", "R", "U"]
+    assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert not app.exception
 
 
@@ -740,6 +768,7 @@ def test_advanced_partial_observation_renders_observation_evidence():
     assert "Strict criterion" in info_values
     assert "Belief Size" in metric_labels
     assert "Observation" in metric_labels
+    assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert result.random_seed == result.variation_solver_seed
     assert not app.exception
 
@@ -760,7 +789,9 @@ def test_advanced_csp_ac3_produces_replayable_exact_horizon_path():
     assert propagation.actions == ["R"]
     assert propagation.path_verified
     assert propagation.goal_reached
+    assert propagation.search_tree_edges
     assert propagation.variation_randomizes_path
+    assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert "AC-3 State-Chain CSP" in propagation.message
     assert not app.exception
 

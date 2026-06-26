@@ -1,6 +1,15 @@
 """Tests for auditable solution and search-tree evidence."""
 
 from algorithms.informed import a_star
+from algorithms.csp import backtracking_search
+from algorithms.local_search import (
+    local_beam_search,
+    random_restart_hill_climbing,
+    simple_hill_climbing,
+    simulated_annealing,
+    steepest_ascent_hill_climbing,
+    stochastic_hill_climbing,
+)
 from algorithms.uninformed import bfs
 from core.metrics import SearchResult, TraceStep, search_tree_to_dot
 from core.puzzle import GOAL_STATE, _move_blank
@@ -54,6 +63,79 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert result.goal_state == GOAL_STATE
     assert result.goal_reached
     assert result.optimality_proven
+
+
+def test_local_search_exposes_generated_neighbor_edges():
+    result = simple_hill_climbing(START, max_iterations=1, timeout=5)
+    nodes = {node.node_id: node for node in result.search_tree_nodes}
+    start_node = next(node for node in nodes.values() if node.state == START)
+    generated_children = [
+        edge for edge in result.search_tree_edges
+        if edge.parent_id == start_node.node_id
+    ]
+
+    assert len(generated_children) > 1
+    for edge in generated_children:
+        child = nodes[edge.child_id]
+        assert _move_blank(START, edge.action) == child.state
+
+
+def test_local_search_tree_does_not_draw_reverse_arrow_to_parent():
+    result = simple_hill_climbing(START, max_iterations=2, timeout=5)
+    assert len(result.path) >= 2
+
+    parent_state = result.path[0]
+    child_state = result.path[1]
+    nodes = {node.node_id: node for node in result.search_tree_nodes}
+    reverse_edges = [
+        edge for edge in result.search_tree_edges
+        if nodes[edge.parent_id].state == child_state
+        and nodes[edge.child_id].state == parent_state
+    ]
+
+    assert not reverse_edges
+
+
+def test_all_local_search_variants_produce_legal_search_tree_edges():
+    cases = [
+        simple_hill_climbing(START, max_iterations=2, timeout=5),
+        steepest_ascent_hill_climbing(START, max_iterations=2, timeout=5),
+        stochastic_hill_climbing(START, max_iterations=2, timeout=5, seed=1),
+        random_restart_hill_climbing(START, max_iterations=2, max_restarts=1, timeout=5, seed=1),
+        local_beam_search(START, beam_width=2, max_iterations=2, timeout=5),
+        simulated_annealing(START, max_iterations=2, timeout=5, seed=1),
+    ]
+
+    for result in cases:
+        nodes = {node.node_id: node for node in result.search_tree_nodes}
+        assert result.search_tree_edges, result.algorithm
+        assert result.nodes_generated > result.nodes_expanded
+        for edge in result.search_tree_edges:
+            parent = nodes[edge.parent_id]
+            child = nodes[edge.child_id]
+            assert _move_blank(parent.state, edge.action) == child.state
+
+
+def test_backtracking_search_exposes_generated_child_edges_without_reverse_parent_arrow():
+    result = backtracking_search(START, max_steps=50, timeout=5)
+    nodes = {node.node_id: node for node in result.search_tree_nodes}
+
+    assert result.search_tree_edges
+    assert result.nodes_generated > result.nodes_expanded
+    for edge in result.search_tree_edges:
+        parent = nodes[edge.parent_id]
+        child = nodes[edge.child_id]
+        assert _move_blank(parent.state, edge.action) == child.state
+
+    if len(result.path) >= 2:
+        parent_state = result.path[0]
+        child_state = result.path[1]
+        reverse_edges = [
+            edge for edge in result.search_tree_edges
+            if nodes[edge.parent_id].state == child_state
+            and nodes[edge.child_id].state == parent_state
+        ]
+        assert not reverse_edges
 
 
 def test_solution_highlight_requires_exact_recorded_action_edge():

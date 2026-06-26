@@ -445,7 +445,7 @@ THEORY["AND-OR"] = {
     outcomes = get_possible_outcomes(state, action)
     plans = [AND-OR-Search(outcome) for outcome in outcomes]
     if all plans found: return (action, {outcome: plan for outcome, plan in zip(outcomes, plans)})""",
-    "application": "15-puzzle chuẩn là deterministic. AND-OR chỉ cần khi action có thể bị lệch. Trong Run Algorithm, nó có alias Nhóm 3 - Môi trường phức tạp theo đề cương nhưng taxonomy vẫn là Complex Environments.",
+    "application": "15-puzzle chuẩn là deterministic. AND-OR chỉ cần khi action có thể bị lệch. Trong Run Algorithm, nó nằm trong nhóm Search in Complex Environments nhưng taxonomy vẫn là Complex Environments.",
     "suitable": "KHÔNG phải thuật toán chuẩn cho 15-puzzle. Đây là mở rộng minh họa cho môi trường nondeterministic.",
     "pros": ["Hoạt động trong môi trường không xác định", "Tìm conditional plan"],
     "cons": ["Phức tạp hơn search thường", "Kích thước AND-OR tree lớn", "Không cần cho 15-puzzle chuẩn"],

@@ -120,14 +120,14 @@ SYLLABUS_COVERAGE_ROWS = [
     },
     {
         "Syllabus topic": "Backtracking search",
-        "App surface": "Advanced -> Backtracking & Min-Conflicts",
+        "App surface": "Advanced -> Backtracking Search + Manhattan Distance heuristic",
         "Evidence": "Bounded DFS transition planning with heuristic value ordering.",
         "Defense note": "Do not call this MRV/forward-checking; failure is not a proof of unsolvability.",
     },
     {
         "Syllabus topic": "Min-conflicts algorithm",
-        "App surface": "Advanced -> Backtracking & Min-Conflicts",
-        "Evidence": "Tile-placement repair contrast with explicit non-legal-move caveat.",
+        "App surface": "Not implemented in current version",
+        "Evidence": "Tile-placement repair concept (deprecated).",
         "Defense note": "Min-conflicts is more natural for N-Queens than for legal blank-slide planning.",
     },
     {
