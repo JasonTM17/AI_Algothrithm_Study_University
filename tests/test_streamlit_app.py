@@ -21,10 +21,15 @@ def state_text(state):
 def test_web_app_initial_playground_renders_without_exception():
     app = AppTest.from_file("app.py", default_timeout=10).run()
     assert not app.exception
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     assert any(
         "Bàn cờ Tương tác" in title.value or "Interactive Board" in title.value
         for title in app.title
     )
+    assert app.button(key="btn_ai_solve")
+    assert app.button(key="btn_play_reset")
+    assert app.button(key="btn_play_undo")
+    assert "play-status-grid" in markdown_text
     assert app.button(key="btn_prove_optimal")
 
 

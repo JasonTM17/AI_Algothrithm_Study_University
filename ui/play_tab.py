@@ -236,13 +236,29 @@ def _render_play_board_panel(t, goal, solvable: bool) -> None:
         goal=goal,
     )
 
+
+def _render_play_status_controls(t, goal, solvable: bool) -> None:
     h_play = HEURISTICS["Manhattan Distance"](st.session_state.play_state, goal=goal)
     correct = sum(1 for i, v in enumerate(st.session_state.play_state) if v == goal[i] and v != 0)
-    metric_cols = st.columns(4)
-    metric_cols[0].metric(t("play_moves"), st.session_state.play_moves)
-    metric_cols[1].metric(t("play_manhattan"), h_play)
-    metric_cols[2].metric(t("play_tiles_correct"), f"{correct}/15")
-    metric_cols[3].metric(t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no"))
+    status_items = [
+        (t("play_moves"), st.session_state.play_moves),
+        (t("play_manhattan"), h_play),
+        (t("play_tiles_correct"), f"{correct}/15"),
+        (t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no")),
+    ]
+    status_markup = "".join(
+        f"""
+        <div class="play-status-card">
+            <div class="play-status-label">{escape(str(label))}</div>
+            <div class="play-status-value">{escape(str(value))}</div>
+        </div>
+        """
+        for label, value in status_items
+    )
+    st.markdown(
+        f'<div class="play-status-grid">{status_markup}</div>',
+        unsafe_allow_html=True,
+    )
 
     _render_victory_notice(t)
 
@@ -424,6 +440,7 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
         _render_play_board_panel(t, goal, solvable)
     with solver_col:
         _render_ai_solver_panel(t, goal)
+    _render_play_status_controls(t, goal, solvable)
 
 
 def _render_play_workbench(t, goal, solvable: bool) -> None:

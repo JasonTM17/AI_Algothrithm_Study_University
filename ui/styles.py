@@ -975,11 +975,12 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     margin-right: auto !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stColumn"] {
-    width: 100% !important;
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+    width: auto !important;
     min-width: 0 !important;
-    max-width: 100% !important;
-    flex: initial !important;
+    max-width: none !important;
+    flex: none !important;
+    align-self: stretch !important;
 }
 
 div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stColumn"] > div,
@@ -1402,7 +1403,7 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
 }
 .play-compact-strip h2 {
     margin: 2px 0 6px !important;
-    font-size: clamp(20px, 2.1vw, 28px) !important;
+    font-size: 26px !important;
     line-height: 1.18 !important;
 }
 .play-compact-strip p {
@@ -1433,6 +1434,37 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     color: var(--text-secondary) !important;
     font-size: 13.5px;
     line-height: 1.5;
+}
+.play-status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0 10px;
+}
+.play-status-card {
+    min-height: 78px;
+    border: 1px solid rgba(214,196,166,0.18);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    background:
+        linear-gradient(180deg, rgba(244,239,229,0.055), rgba(244,239,229,0.012)),
+        rgba(18,21,20,0.88);
+}
+.play-status-label {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+.play-status-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 850;
+    line-height: 1.15;
+    margin-top: 9px;
 }
 .action-state {
     border: 1px solid rgba(214,161,95,0.30);
@@ -1539,11 +1571,73 @@ div[data-testid="stAlert"] {
     .advanced-mode-card {
         min-height: auto;
     }
+    .play-status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 640px) {
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
+        width: min(100%, 312px) !important;
+        gap: 6px !important;
+    }
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button,
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] .puzzle-tile {
+        font-size: 22px !important;
+        border-radius: 9px !important;
+    }
+    .play-compact-strip {
+        padding: 10px 12px;
+        margin-bottom: 12px;
+    }
+    .play-compact-strip h2 {
+        font-size: 18px !important;
+        margin-bottom: 0 !important;
+    }
+    .play-compact-strip p {
+        display: none;
+    }
+    .play-panel-heading {
+        margin-bottom: 8px;
+    }
     .play-panel-heading h2 {
-        font-size: 23px !important;
+        font-size: 20px !important;
+        margin-bottom: 0 !important;
+    }
+    .play-panel-heading p {
+        display: none;
+    }
+    .ai-solver-card {
+        padding: 12px !important;
+        margin: 10px 0 !important;
+        border-radius: var(--radius-md) !important;
+    }
+    .ai-solver-header {
+        border-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .ai-solver-title-container {
+        align-items: flex-start !important;
+        flex-direction: column !important;
+        gap: 5px !important;
+    }
+    .ai-solver-title-container h3 {
+        font-size: 17px !important;
+    }
+    .ai-solver-desc {
+        display: none;
+    }
+    .play-status-grid {
+        gap: 8px;
+    }
+    .play-status-card {
+        min-height: 68px;
+        padding: 9px 10px;
+    }
+    .play-status-value {
+        font-size: 22px;
+        margin-top: 6px;
     }
     .advanced-mode-row {
         grid-template-columns: minmax(0, 1fr);
