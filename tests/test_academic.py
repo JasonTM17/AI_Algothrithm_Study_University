@@ -35,6 +35,7 @@ from algorithms.informed import a_star, greedy_best_first, ida_star
 from algorithms.uninformed import bfs, ids, ucs
 from ui.localization import LOC
 from ui.academic_panels import EXAM_PATH_STEPS
+from ui.components import comparison_row_for_algorithm
 from ui.sample_images import SAMPLE_IMAGES
 from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, SOLVER_GROUPS, STYLES
 
@@ -60,6 +61,17 @@ def test_complexity_comparison_covers_every_algorithm_by_display_group():
             assert row["Space"]
             assert row["Steps / output"]
             assert row["Guarantee"]
+
+
+def test_run_evaluation_table_uses_exact_display_algorithm_names():
+    displayed = {name for names in ALGORITHM_GROUPS.values() for name in names}
+    evaluation_rows = {row["Algorithm"] for row in COMPARISON_TABLE}
+
+    assert evaluation_rows == displayed
+    for algorithm in displayed:
+        row = comparison_row_for_algorithm(algorithm)
+        assert row is not None
+        assert row["Algorithm"] == algorithm
 
 
 def test_syllabus_coverage_matrix_covers_uploaded_screenshot_topics():
@@ -130,7 +142,7 @@ def test_foundation_panels_have_academic_evidence_rows():
 def test_csp_backtracking_label_does_not_claim_mrv_lcv():
     backtracking_rows = [
         row for row in COMPARISON_TABLE
-        if row["Group"] == "CSP" and row["Algorithm"] == "Backtracking"
+        if row["Group"] == "CSP" and row["Algorithm"] == "Backtracking Search"
     ]
 
     assert backtracking_rows

@@ -1124,9 +1124,21 @@ def process_uploaded_image(image_file, grid_size: int = 4):
         logging.warning(f"process_uploaded_image failed: {e}")
         return {}
 
+
+def comparison_row_for_algorithm(algo_name: str) -> dict[str, str] | None:
+    """Return the exact academic evaluation row for a displayed algorithm name."""
+    from ui.styles import COMPARISON_TABLE
+
+    normalized_name = algo_name.lower()
+    for row in COMPARISON_TABLE:
+        if row["Algorithm"].lower() == normalized_name:
+            return row
+    return None
+
+
 def render_algorithm_evaluation(algo_name: str):
     """Render a dedicated academic evaluation table for the selected algorithm."""
-    from ui.styles import THEORY_KEY_MAP, COMPARISON_TABLE
+    from ui.styles import THEORY_KEY_MAP
     from core.theory import THEORY
     import pandas as pd
 
@@ -1136,23 +1148,7 @@ def render_algorithm_evaluation(algo_name: str):
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
     theory_data = THEORY.get(theory_key)
 
-    # Find the algorithm row in COMPARISON_TABLE — exact match first
-    row_data = None
-    for row in COMPARISON_TABLE:
-        if row["Algorithm"].lower() == algo_name.lower():
-            row_data = row
-            break
-    if not row_data:
-        for row in COMPARISON_TABLE:
-            if row["Algorithm"].lower() in algo_name.lower() or algo_name.lower() in row["Algorithm"].lower():
-                row_data = row
-                break
-    # Fallback search
-    if not row_data and theory_data:
-        for row in COMPARISON_TABLE:
-            if row["Group"].lower() in theory_data.get("group", "").lower():
-                row_data = row
-                break
+    row_data = comparison_row_for_algorithm(algo_name)
 
     st.markdown("---")
     st.markdown(f"### {t('eval_title')}")

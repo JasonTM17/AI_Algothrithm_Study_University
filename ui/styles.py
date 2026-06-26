@@ -965,7 +965,7 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
-div[data-testid="stVerticalBlock"]:has(.number-board-row) div[data-testid="stHorizontalBlock"] {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: clamp(6px, 1.1vw, 10px) !important;
@@ -975,7 +975,24 @@ div[data-testid="stVerticalBlock"]:has(.number-board-row) div[data-testid="stHor
     margin-right: auto !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stColumn"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: initial !important;
+}
+
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stColumn"] > div,
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stVerticalBlock"],
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stElementContainer"],
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stButton"],
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stMarkdown"],
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stMarkdownContainer"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;
@@ -1006,16 +1023,16 @@ div[data-testid="stVerticalBlock"]:has(.number-board-row) button {
     touch-action: pan-y pinch-zoom;
 }
 
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button p,
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button div,
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button span {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button p,
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button div,
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button span {
     color: inherit !important;
     font: inherit !important;
     line-height: 1 !important;
     margin: 0 !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button:hover {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:hover {
     transform: translateY(-3px) rotate(-0.25deg) !important;
     box-shadow: 
         0 12px 22px rgba(4,7,6,0.58),
@@ -1023,7 +1040,7 @@ div[data-testid="stVerticalBlock"]:has(.number-board-row) button:hover {
     background: linear-gradient(145deg, #f6ddb0, #c88543) !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.number-board-row) button:active {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:active {
     transform: translateY(1px) scale(0.985) !important;
     border-bottom-color: #503720 !important;
     border-right-color: #503720 !important;
@@ -1031,23 +1048,23 @@ div[data-testid="stVerticalBlock"]:has(.number-board-row) button:active {
 }
 
 @media (hover: none) {
-    div[data-testid="stVerticalBlock"]:has(.number-board-row) button {
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button {
         transition: transform 90ms ease-out, box-shadow 90ms ease-out, filter 90ms ease-out !important;
     }
-    div[data-testid="stVerticalBlock"]:has(.number-board-row) button:hover {
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:hover {
         transform: translateZ(0) !important;
         background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
         box-shadow:
             0 5px 12px rgba(4,7,6,0.48),
             inset 0 1px 0 rgba(255,255,255,0.35) !important;
     }
-    div[data-testid="stVerticalBlock"]:has(.number-board-row) button:active {
+    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:active {
         transform: translateY(1px) scale(0.99) !important;
     }
 }
 
 /* Ensure puzzle tiles in the number container are responsive squares */
-div[data-testid="stVerticalBlock"]:has(.number-board-row) .puzzle-tile {
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] .puzzle-tile {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;
@@ -1633,29 +1650,29 @@ COMPARISON_TABLE = [
     {"Group": "Uninformed", "Algorithm": "DFS", "Complete": "No", "Optimal": "No", "Heuristic": "No", "Random": "No", "Suitable": "No"},
     {"Group": "Uninformed", "Algorithm": "UCS", "Complete": "Yes", "Optimal": "Yes", "Heuristic": "No", "Random": "No", "Suitable": "Same as BFS"},
     {"Group": "Uninformed", "Algorithm": "IDS", "Complete": "Yes", "Optimal": "Yes*", "Heuristic": "No", "Random": "No", "Suitable": "Good (low memory)"},
-    {"Group": "Informed", "Algorithm": "Greedy", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Fast, suboptimal"},
+    {"Group": "Informed", "Algorithm": "Greedy Best-First", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Fast, suboptimal"},
     {"Group": "Informed", "Algorithm": "A*", "Complete": "Yes", "Optimal": "Yes", "Heuristic": "g+h", "Random": "No", "Suitable": "Best choice"},
     {"Group": "Informed", "Algorithm": "IDA*", "Complete": "Yes", "Optimal": "Yes", "Heuristic": "g+h", "Random": "No", "Suitable": "Memory efficient"},
-    {"Group": "Local", "Algorithm": "Hill Climbing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Gets stuck"},
-    {"Group": "Local", "Algorithm": "Steepest HC", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Gets stuck"},
-    {"Group": "Local", "Algorithm": "Stochastic HC", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "Gets stuck"},
-    {"Group": "Local", "Algorithm": "Random-Restart HC", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "May find solution"},
-    {"Group": "Local", "Algorithm": "Beam Search", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Better than HC"},
-    {"Group": "Local", "Algorithm": "Sim. Annealing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "Unreliable"},
-    {"Group": "Complex", "Algorithm": "AND-OR", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Extended env"},
-    {"Group": "Complex", "Algorithm": "No Observation", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Illustrative"},
-    {"Group": "Complex", "Algorithm": "Partial Obs.", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Illustrative"},
+    {"Group": "Local", "Algorithm": "Simple Hill Climbing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Gets stuck"},
+    {"Group": "Local", "Algorithm": "Steepest-Ascent Hill Climbing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Gets stuck"},
+    {"Group": "Local", "Algorithm": "Stochastic Hill Climbing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "Gets stuck"},
+    {"Group": "Local", "Algorithm": "Random-Restart Hill Climbing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "May find solution"},
+    {"Group": "Local", "Algorithm": "Local Beam Search", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Better than HC"},
+    {"Group": "Local", "Algorithm": "Simulated Annealing", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "Yes", "Suitable": "Unreliable"},
+    {"Group": "Complex", "Algorithm": "AND-OR Search", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Extended env"},
+    {"Group": "Complex", "Algorithm": "No Observation Search", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Illustrative"},
+    {"Group": "Complex", "Algorithm": "Partially Observable Search", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "Complex", "Algorithm": "LRTA*", "Complete": "No", "Optimal": "No", "Heuristic": "h(n)", "Random": "No", "Suitable": "Online demo"},
     {"Group": "CSP", "Algorithm": "CSP Definition", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
-    {"Group": "CSP", "Algorithm": "Propagation", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
+    {"Group": "CSP", "Algorithm": "Constraint Propagation", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Path Consistency", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Global Constraints", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Constraint Graphs", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
-    {"Group": "CSP", "Algorithm": "Backtracking", "Complete": "No", "Optimal": "No", "Heuristic": "Heuristic value ordering", "Random": "No", "Suitable": "Planning demo"},
+    {"Group": "CSP", "Algorithm": "Backtracking Search", "Complete": "No", "Optimal": "No", "Heuristic": "Heuristic value ordering", "Random": "No", "Suitable": "Planning demo"},
     {"Group": "CSP", "Algorithm": "Min-Conflicts", "Complete": "No", "Optimal": "No", "Heuristic": "Conflicts", "Random": "Yes", "Suitable": "N-Queens better"},
-    {"Group": "AI-vs-AI", "Algorithm": "Tournament", "Complete": "Reference-bound", "Optimal": "Scored by A*", "Heuristic": "Depends on agents", "Random": "Optional", "Suitable": "Competition demo"},
+    {"Group": "AI-vs-AI", "Algorithm": "AI-vs-AI Tournament", "Complete": "Reference-bound", "Optimal": "Scored by A*", "Heuristic": "Depends on agents", "Random": "Optional", "Suitable": "Competition demo"},
     {"Group": "Game/Chance", "Algorithm": "Minimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Artificial extension"},
-    {"Group": "Game/Chance", "Algorithm": "Alpha-Beta", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Pruning demo"},
+    {"Group": "Game/Chance", "Algorithm": "Alpha-Beta Pruning", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Pruning demo"},
     {"Group": "Game/Chance", "Algorithm": "Expectimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "Chance", "Suitable": "Stochastic demo"},
 ]
 
