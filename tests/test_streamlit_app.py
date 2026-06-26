@@ -796,6 +796,17 @@ def test_empty_states_are_actionable_not_blank():
     assert not hand_app.exception
 
 
+def test_hand_tracing_exam_path_uses_selected_language():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "Tiếng Việt"
+    app.session_state["main_tab_label"] = "Luyện chạy tay"
+    app.run()
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    assert "Bước 1" in markdown_text
+    assert "STEP 1" not in markdown_text
+    assert not app.exception
+
+
 def test_hand_tracing_builds_explicit_graph_edges():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"

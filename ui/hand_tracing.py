@@ -167,7 +167,7 @@ def init_tracing_challenge(algorithm, heuristic_name, tie_breaker, scramble_dept
 def render_hand_tracing_page():
     goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(t("ht_title"))
-    render_exam_path("Hand-Tracing")
+    render_exam_path("Hand-Tracing", t=t)
     st.markdown(t("ht_desc"))
 
     # ── Configuration Panel ──
