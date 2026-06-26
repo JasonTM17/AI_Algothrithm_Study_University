@@ -89,10 +89,14 @@ def test_non_path_models_record_variation_without_claiming_path_randomness(monke
     monkeypatch.setattr("core.randomness.secrets.randbits", lambda _: 77)
 
     variation = make_run_variation("csp_definition")
+    and_or_variation = make_run_variation("and_or_search")
 
     assert variation.seed == 77
     assert sorted(variation.action_order) == ["D", "L", "R", "U"]
     assert not variation.randomizes_path
+    assert and_or_variation.seed == 77
+    assert sorted(and_or_variation.action_order) == ["D", "L", "R", "U"]
+    assert not and_or_variation.randomizes_path
 
 
 def test_ac3_constraint_propagation_can_randomize_a_legal_path(monkeypatch):

@@ -20,13 +20,23 @@ from core.algorithm_comparison import (
     ALGORITHM_COMPARISON_ROWS,
     comparison_rows_for_group,
 )
+from core.syllabus_coverage import (
+    HEURISTIC_GENERATION_ROWS,
+    HILL_CLIMBING_ISSUE_ROWS,
+    REQUIRED_SYLLABUS_TOPICS,
+    SEARCH_FOUNDATION_ROWS,
+    SYLLABUS_COVERAGE_ROWS,
+    TREE_GRAPH_SEARCH_ROWS,
+)
 from core.theory import THEORY
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
+from algorithms.informed import a_star, greedy_best_first, ida_star
+from algorithms.uninformed import bfs, ids, ucs
 from ui.localization import LOC
 from ui.academic_panels import EXAM_PATH_STEPS
 from ui.sample_images import SAMPLE_IMAGES
-from ui.styles import ALGORITHM_GROUPS, SOLVER_GROUPS, STYLES
+from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, SOLVER_GROUPS, STYLES
 
 
 def test_taxonomy_covers_all_displayed_algorithms():
@@ -50,6 +60,82 @@ def test_complexity_comparison_covers_every_algorithm_by_display_group():
             assert row["Space"]
             assert row["Steps / output"]
             assert row["Guarantee"]
+
+
+def test_syllabus_coverage_matrix_covers_uploaded_screenshot_topics():
+    required_topics = {
+        "Main steps of search algorithms",
+        "Tree search and graph search",
+        "Uninformed search algorithms",
+        "Breadth-first search, Depth-first search and variants",
+        "Best-first search",
+        "A* search",
+        "Heuristic functions generation",
+        "Hill-climbing search",
+        "Issues of hill-climbing search",
+        "Local beam search",
+        "Simulated annealing",
+        "AND-OR search",
+        "Searching with no observation",
+        "Searching for partially observable problems",
+        "Online search",
+        "Definition of a constraint satisfaction problem",
+        "Constraint propagation",
+        "Path consistency",
+        "Global constraints",
+        "Backtracking search",
+        "Min-conflicts algorithm",
+        "Solve CSPs using constraint graphs",
+        "Minimax",
+        "Alpha-Beta",
+        "Expectimax",
+    }
+
+    assert required_topics <= set(REQUIRED_SYLLABUS_TOPICS)
+    assert len(SYLLABUS_COVERAGE_ROWS) == len(REQUIRED_SYLLABUS_TOPICS)
+    for row in SYLLABUS_COVERAGE_ROWS:
+        assert row["Syllabus topic"]
+        assert row["App surface"]
+        assert row["Evidence"]
+        assert row["Defense note"]
+
+
+def test_foundation_panels_have_academic_evidence_rows():
+    assert [row["Step"] for row in SEARCH_FOUNDATION_ROWS] == [
+        "1. Initial state",
+        "2. Goal test",
+        "3. Frontier selection",
+        "4. Expansion",
+        "5. Reached handling",
+        "6. Termination/certificate",
+    ]
+    assert {row["Model"] for row in TREE_GRAPH_SEARCH_ROWS} == {
+        "Tree search",
+        "Graph search",
+        "Hand tracing",
+    }
+    assert {row["Heuristic"] for row in HEURISTIC_GENERATION_ROWS} == {
+        "Misplaced Tiles",
+        "Manhattan Distance",
+        "Linear Conflict",
+    }
+    assert {
+        "Local optimum",
+        "Plateau / shoulder",
+        "Ridge",
+        "Randomness dependence",
+    } <= {row["Issue"] for row in HILL_CLIMBING_ISSUE_ROWS}
+
+
+def test_csp_backtracking_label_does_not_claim_mrv_lcv():
+    backtracking_rows = [
+        row for row in COMPARISON_TABLE
+        if row["Group"] == "CSP" and row["Algorithm"] == "Backtracking"
+    ]
+
+    assert backtracking_rows
+    assert backtracking_rows[0]["Heuristic"] == "Heuristic value ordering"
+    assert "MRV+LCV" not in " ".join(str(row) for row in COMPARISON_TABLE)
 
 
 def test_standard_solver_pages_exclude_extension_environment_models():
@@ -157,12 +243,55 @@ def test_benchmark_presets_are_deterministic_and_solvable():
         second_state = scramble(depth=preset["depth"], seed=preset["seed"])
 
         assert first_state == second_state
+        assert preset["start_state"] == first_state
+        assert preset["goal_state"] == GOAL_STATE
         assert is_solvable(first_state)
         assert first_state != GOAL_STATE
-        assert preset["max_nodes"] > 0
-        assert preset["timeout"] > 0
+        assert 0 < preset["max_nodes"] <= 20000
+        assert 0 < preset["timeout"] <= 30
         assert preset["heuristic"]
+        assert preset["comparison_goal"]
+        assert preset["recommended_algorithms"]
+        assert preset["expected_outcome"]
         assert preset["caveat"]
+
+
+def test_recommended_benchmark_algorithms_reach_explicit_goal():
+    solver_map = {
+        "BFS": bfs,
+        "UCS": ucs,
+        "IDS": ids,
+        "Greedy Best-First": greedy_best_first,
+        "A*": a_star,
+        "IDA*": ida_star,
+    }
+
+    for preset in BENCHMARK_PRESETS.values():
+        start = preset["start_state"]
+        goal = preset["goal_state"]
+        for algorithm in preset["recommended_algorithms"]:
+            fn = solver_map[algorithm]
+            kwargs = {
+                "start": start,
+                "goal": goal,
+                "timeout": preset["timeout"],
+                "action_order": preset.get("action_order", "LRUD"),
+            }
+            if algorithm in {"BFS", "UCS"}:
+                kwargs["max_nodes"] = preset["max_nodes"]
+            elif algorithm == "IDS":
+                kwargs["max_nodes"] = preset["max_nodes"]
+                kwargs["max_depth"] = 30
+            else:
+                kwargs["max_nodes"] = preset["max_nodes"]
+                kwargs["heuristic"] = preset["heuristic"]
+
+            result = fn(**kwargs)
+
+            assert result.success, f"{algorithm} failed preset {preset['comparison_goal']}: {result.message}"
+            assert result.goal_state == goal
+            assert result.goal_reached
+            assert result.path_verified
 
 
 def test_decision_guide_has_actionable_exam_paths():

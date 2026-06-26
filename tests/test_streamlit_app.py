@@ -14,6 +14,10 @@ ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
 
 
+def state_text(state):
+    return " ".join(str(tile) for tile in state)
+
+
 def test_web_app_initial_playground_renders_without_exception():
     app = AppTest.from_file("app.py", default_timeout=10).run()
     assert not app.exception
@@ -41,13 +45,16 @@ def test_play_image_mode_uses_image_tiles_for_manual_board():
 
     markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
 
+    assert not any('<div class="interactive-board-container-image"></div>' in value for value in markdown_values)
+    assert any('<div class="interactive-board-container-number"></div>' in value for value in markdown_values)
+    assert not app.session_state.image_tiles
+
+    app.button(key="btn_load_sample").click().run()
+
+    image_markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
     assert any(
         '<div class="interactive-board-container-image"></div>' in value
-        for value in markdown_values
-    )
-    assert not any(
-        '<div class="interactive-board-container-number"></div>' in value
-        for value in markdown_values
+        for value in image_markdown_values
     )
     assert app.session_state.image_tiles
     assert not app.exception
@@ -55,15 +62,16 @@ def test_play_image_mode_uses_image_tiles_for_manual_board():
 
 def test_play_image_tile_click_moves_without_query_link_reload():
     app = AppTest.from_file("app.py", default_timeout=15).run()
+    app.button(key="btn_load_sample").click().run()
     app.session_state.start_state = ONE_MOVE
     app.run()
 
     markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
     style_blob = "\n".join(markdown_values)
-    assert ".st-key-play_game_hit_15_3_3 button" in style_blob
-    assert ":has(.play-image-button-play_game" not in style_blob
+    assert ".st-key-play_image_hit_15_3_3 button" in style_blob
+    assert ":has(.play-image-button-play_image" not in style_blob
 
-    app.button(key="play_game_hit_15_3_3").click().run()
+    app.button(key="play_image_hit_15_3_3").click().run()
 
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_moves == 1
@@ -114,22 +122,17 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
 
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
-    info_text = "\n".join(getattr(info, "value", "") for info in app.info)
-    subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
 
-    assert "hands-on puzzle work" in info_text
-    assert "AI replay board" in subheaders
+    assert "hands-on puzzle work" in markdown_text
     assert "Click Find Solution" in caption_text
     assert "**A* Search**" not in markdown_text
 
     app.button(key="btn_ai_solve").click().run()
 
     solved_markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
-    solved_caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
-    solved_subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
+    expander_labels = [expander.label for expander in app.expander]
     assert app.session_state.play_solution_path
-    assert "A* Node / Frontier / Reached Evidence" in solved_subheaders
-    assert "actual expansion trace" in solved_caption_text
+    assert "A* Node / Frontier / Reached Evidence" in expander_labels
     assert "Search Tree Visualization" in solved_markdown_text
     assert "Next action" in solved_markdown_text
     assert app.button(key="btn_play_next")
@@ -247,6 +250,98 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert not app.exception
 
 
+def test_run_contract_editor_updates_start_and_goal_and_clears_stale_result():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.button(key="btn_run").click().run()
+    assert "last_result" in app.session_state
+
+    app.text_area(key="active_contract_start_manual_input").set_value(state_text(TWO_MOVE)).run()
+    app.button(key="active_contract_apply_start").click().run()
+
+    assert app.session_state.start_state == TWO_MOVE
+    assert "last_result" not in app.session_state
+    assert app.session_state.benchmark_results == []
+
+    app.text_area(key="active_contract_goal_manual_input").set_value(state_text(ONE_MOVE)).run()
+    app.button(key="active_contract_apply_goal").click().run()
+
+    assert app.session_state.goal_state == ONE_MOVE
+    assert not app.exception
+
+
+def test_run_tab_exposes_group_3_and_or_extension():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+
+    assert "Group 3 - Complex Environments" in app.selectbox(key="algo_group").options
+
+    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+
+    assert app.selectbox(key="algo_name").options == ["AND-OR Search"]
+    assert app.selectbox(key="algo_name").value == "AND-OR Search"
+    assert app.slider(key="run_andor_prob").value == 0.3
+    assert not app.exception
+
+
+def test_run_and_or_deterministic_support_outputs_conditional_plan_without_goal_claim():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+    app.number_input(key="max_depth").set_value(1).run()
+    app.slider(key="run_andor_prob").set_value(0.0).run()
+
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+
+    assert result.algorithm == "AND-OR Search"
+    assert result.success
+    assert "Conditional plan found" in result.message
+    assert "OR: choose action" in result.message
+    assert not result.goal_reached
+    assert not result.optimality_proven
+    assert result.actions == []
+    assert "OR node" in markdown_text
+    assert "AND node" in markdown_text
+    assert "conditional plan, not a linear 15-puzzle path" in markdown_text
+    assert not app.exception
+
+
+def test_run_and_or_deflection_support_requires_all_outcomes():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.selectbox(key="algo_group").set_value("Group 3 - Complex Environments").run()
+    app.number_input(key="max_depth").set_value(1).run()
+    app.slider(key="run_andor_prob").set_value(0.3).run()
+
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+
+    assert result.algorithm == "AND-OR Search"
+    assert not result.success
+    assert "No conditional plan found" in result.message
+    assert not result.goal_reached
+    assert not result.optimality_proven
+    assert result.nodes_expanded > 0
+    assert result.nodes_generated > 1
+    assert not app.exception
+
+
 def test_repeated_standard_solver_runs_get_fresh_variation_metadata():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
@@ -346,7 +441,7 @@ def test_run_result_is_cleared_when_solver_limits_change():
 
     assert app.session_state.last_result.algorithm == "BFS"
 
-    app.number_input(key="max_nodes").set_value(25000).run()
+    app.number_input(key="max_nodes").set_value(15000).run()
 
     assert "last_result" not in app.session_state
     assert not app.exception
@@ -360,10 +455,40 @@ def test_run_node_limit_is_bounded_for_readable_layout():
 
     max_nodes_input = app.number_input(key="max_nodes")
 
-    assert max_nodes_input.value == 20000
+    assert max_nodes_input.value == 10000
     assert max_nodes_input.min == 1000
-    assert max_nodes_input.max == 50000
+    assert max_nodes_input.max == 20000
     assert max_nodes_input.step == 1000
+    assert not app.exception
+
+
+def test_compare_preset_declares_start_goal_and_recommended_algorithms():
+    preset_name = next(iter(BENCHMARK_PRESETS))
+    preset = BENCHMARK_PRESETS[preset_name]
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.run()
+
+    caption_values = "\n".join(getattr(caption, "value", "") for caption in app.caption)
+
+    assert "Preset start" in caption_values
+    assert "Preset goal" in caption_values
+    assert preset["comparison_goal"] in caption_values
+    assert ", ".join(preset["recommended_algorithms"]) in caption_values
+    assert app.multiselect(key="compare_groups").value == list(preset["recommended_groups"])
+    for group in preset["recommended_groups"]:
+        expected = [
+            algorithm
+            for algorithm in preset["recommended_algorithms"]
+            if algorithm in app.multiselect(key=f"compare_{group}").options
+        ]
+        assert app.multiselect(key=f"compare_{group}").value == expected
+
+    app.button(key="btn_load_benchmark_preset").click().run()
+
+    assert app.session_state.start_state == preset["start_state"]
+    assert app.session_state.goal_state == preset["goal_state"]
     assert not app.exception
 
 
@@ -464,10 +589,19 @@ def test_theory_tab_renders_within_group_complexity_table():
     app.run()
 
     markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
+    subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
     captions = [getattr(caption, "value", "") for caption in app.caption]
 
     assert any("Within-group algorithm comparison" in value for value in markdown_values)
     assert any("academic worst-case bounds" in value for value in captions)
+    assert "Syllabus Coverage Matrix" in subheaders
+    assert "Search Foundations" in subheaders
+    assert "Tree Search vs Graph Search" in subheaders
+    assert "Heuristic Generation" in subheaders
+    assert "Hill-Climbing Issues" in subheaders
+    assert any("Direct Syllabus Audit" in value for value in markdown_values)
+    assert any("Main steps of search algorithms" in value for value in markdown_values)
+    assert any("Heuristic functions generation" in value for value in markdown_values)
     assert len(app.dataframe) >= 1
     assert not app.exception
 
@@ -615,6 +749,44 @@ def test_trace_tab_exposes_csv_download():
     rows = trace_rows(app.session_state["last_result"].trace)
     assert rows and "Event" in rows[0]
     assert not app.exception
+
+
+def test_empty_states_are_actionable_not_blank():
+    trace_app = AppTest.from_file("app.py", default_timeout=15)
+    trace_app.session_state["global_lang_select"] = "English"
+    trace_app.session_state["main_tab_label"] = "Step Trace"
+    trace_app.run()
+    trace_markdown = "\n".join(getattr(markdown, "value", "") for markdown in trace_app.markdown)
+    assert "No Trace has been produced yet" in trace_markdown
+    assert trace_app.button(key="trace_empty_go_run")
+    assert not trace_app.exception
+
+    compare_app = AppTest.from_file("app.py", default_timeout=20)
+    compare_app.session_state["global_lang_select"] = "English"
+    compare_app.session_state["main_tab_label"] = "Compare"
+    compare_app.run()
+    compare_markdown = "\n".join(getattr(markdown, "value", "") for markdown in compare_app.markdown)
+    compare_info = "\n".join(getattr(info, "value", "") for info in compare_app.info)
+    assert "Benchmark table is waiting for a run" in compare_markdown
+    assert "Run benchmarks to see the comparison table." not in compare_info
+    assert not compare_app.exception
+
+    advanced_app = AppTest.from_file("app.py", default_timeout=15)
+    advanced_app.session_state["global_lang_select"] = "English"
+    advanced_app.session_state["main_tab_label"] = "Advanced Mode"
+    advanced_app.run()
+    advanced_markdown = "\n".join(getattr(markdown, "value", "") for markdown in advanced_app.markdown)
+    assert "Choose an advanced concept to inspect" in advanced_markdown
+    assert advanced_app.button(key="adv_pick_ai_vs_ai_tournament")
+    assert not advanced_app.exception
+
+    hand_app = AppTest.from_file("app.py", default_timeout=15)
+    hand_app.session_state["global_lang_select"] = "English"
+    hand_app.session_state["main_tab_label"] = "Hand-Tracing Practice"
+    hand_app.run()
+    hand_markdown = "\n".join(getattr(markdown, "value", "") for markdown in hand_app.markdown)
+    assert "No hand-tracing challenge is active" in hand_markdown
+    assert not hand_app.exception
 
 
 def test_hand_tracing_builds_explicit_graph_edges():
