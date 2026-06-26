@@ -965,7 +965,7 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) div[data-testid="stHorizontalBlock"] {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) div[data-testid="stHorizontalBlock"] {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: clamp(6px, 1.1vw, 10px) !important;
@@ -975,14 +975,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) div[
     margin-right: auto !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) div[data-testid="column"] {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: initial !important;
-}
-
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;
@@ -1013,16 +1006,16 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) butt
     touch-action: pan-y pinch-zoom;
 }
 
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button p,
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button div,
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button span {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button p,
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button div,
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button span {
     color: inherit !important;
     font: inherit !important;
     line-height: 1 !important;
     margin: 0 !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:hover {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button:hover {
     transform: translateY(-3px) rotate(-0.25deg) !important;
     box-shadow: 
         0 12px 22px rgba(4,7,6,0.58),
@@ -1030,7 +1023,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) butt
     background: linear-gradient(145deg, #f6ddb0, #c88543) !important;
 }
 
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:active {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) button:active {
     transform: translateY(1px) scale(0.985) !important;
     border-bottom-color: #503720 !important;
     border-right-color: #503720 !important;
@@ -1038,23 +1031,23 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) butt
 }
 
 @media (hover: none) {
-    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button {
+    div[data-testid="stVerticalBlock"]:has(.number-board-row) button {
         transition: transform 90ms ease-out, box-shadow 90ms ease-out, filter 90ms ease-out !important;
     }
-    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:hover {
+    div[data-testid="stVerticalBlock"]:has(.number-board-row) button:hover {
         transform: translateZ(0) !important;
         background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
         box-shadow:
             0 5px 12px rgba(4,7,6,0.48),
             inset 0 1px 0 rgba(255,255,255,0.35) !important;
     }
-    div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button:active {
+    div[data-testid="stVerticalBlock"]:has(.number-board-row) button:active {
         transform: translateY(1px) scale(0.99) !important;
     }
 }
 
 /* Ensure puzzle tiles in the number container are responsive squares */
-div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puzzle-tile {
+div[data-testid="stVerticalBlock"]:has(.number-board-row) .puzzle-tile {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;

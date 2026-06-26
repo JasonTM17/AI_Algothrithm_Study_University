@@ -92,6 +92,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
     with st.container():
         st.markdown('<div class="interactive-board-container-number"></div>', unsafe_allow_html=True)
         for r in range(4):
+            st.markdown('<div class="number-board-row"></div>', unsafe_allow_html=True)
             cols = st.columns(4, gap="small")
             for c in range(4):
                 idx = r * 4 + c
