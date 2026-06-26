@@ -30,6 +30,7 @@ def test_web_app_initial_playground_renders_without_exception():
     assert app.button(key="btn_play_reset")
     assert app.button(key="btn_play_undo")
     assert "play-status-grid" in markdown_text
+    assert '\n    <div class="play-status-card">' not in markdown_text
     assert app.button(key="btn_prove_optimal")
 
 

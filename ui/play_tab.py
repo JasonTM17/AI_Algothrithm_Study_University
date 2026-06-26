@@ -247,12 +247,10 @@ def _render_play_status_controls(t, goal, solvable: bool) -> None:
         (t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no")),
     ]
     status_markup = "".join(
-        f"""
-        <div class="play-status-card">
-            <div class="play-status-label">{escape(str(label))}</div>
-            <div class="play-status-value">{escape(str(value))}</div>
-        </div>
-        """
+        '<div class="play-status-card">'
+        f'<div class="play-status-label">{escape(str(label))}</div>'
+        f'<div class="play-status-value">{escape(str(value))}</div>'
+        "</div>"
         for label, value in status_items
     )
     st.markdown(
