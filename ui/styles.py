@@ -965,6 +965,22 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
+div[data-testid="stElementContainer"]:has(.number-board-row) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+div[data-testid="stElementContainer"]:has(.number-board-row) .number-board-row {
+    display: none !important;
+}
+
+div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] {
+    margin: 0 0 6px !important;
+}
+
 div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
