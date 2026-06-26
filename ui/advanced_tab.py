@@ -1,5 +1,7 @@
 """Advanced 15-puzzle concept and tournament Streamlit tab."""
 
+from html import escape
+
 import streamlit as st
 
 from algorithms.adversarial import alpha_beta_pruning, expectimax, minimax
@@ -20,6 +22,7 @@ from algorithms.csp import (
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable
 from core.randomness import activate_run_variation, apply_run_variation, make_run_variation
+from ui.action_states import render_action_state
 from ui.academic_panels import render_academic_header, render_extension_warning
 from ui.ai_vs_ai_tournament import render_ai_vs_ai_tournament
 from ui.components import (
@@ -33,6 +36,32 @@ from ui.localization import translate
 
 
 ADVANCED_TRACE_ROWS = 80
+ADVANCED_MODES = [
+    "AI-vs-AI Tournament",
+    "CSP Definition & Propagation",
+    "Backtracking & Min-Conflicts",
+    "Constraint Graphs & Path Consistency",
+    "AND-OR Search (Nondeterministic)",
+    "No Observation (Belief State)",
+    "Partially Observable",
+    "Online Search (LRTA*)",
+    "Minimax Game",
+    "Alpha-Beta Pruning Game",
+    "Expectimax (Stochastic)",
+]
+ADVANCED_MODE_CARDS = [
+    ("AI-vs-AI Tournament", "adv_card_tournament_desc", "A* optimal reference"),
+    ("CSP Definition & Propagation", "adv_card_csp_desc", "AC-3 horizon evidence"),
+    ("Backtracking & Min-Conflicts", "adv_card_csp_desc", "Legal path when found"),
+    ("Constraint Graphs & Path Consistency", "adv_card_csp_desc", "CSP consistency evidence"),
+    ("AND-OR Search (Nondeterministic)", "adv_card_uncertainty_desc", "Contingency plan sample"),
+    ("No Observation (Belief State)", "adv_card_uncertainty_desc", "Belief evidence only"),
+    ("Partially Observable", "adv_card_uncertainty_desc", "Observation trace"),
+    ("Online Search (LRTA*)", "adv_card_online_desc", "Online trajectory"),
+    ("Minimax Game", "adv_card_game_desc", "Artificial game tree"),
+    ("Alpha-Beta Pruning Game", "adv_card_game_desc", "Pruned game tree"),
+    ("Expectimax (Stochastic)", "adv_card_game_desc", "Chance outcome sample"),
+]
 
 
 def t(key, **kwargs):
@@ -114,6 +143,32 @@ def _render_advanced_outputs(outputs: list[dict]) -> None:
                 render_trace_table(result.trace, max_rows=ADVANCED_TRACE_ROWS)
 
 
+def _render_advanced_mode_cards() -> None:
+    render_action_state(
+        title=t("adv_empty_title"),
+        body=t("adv_empty_body"),
+        kicker=t("action_state_kicker"),
+    )
+    for row_start in range(0, len(ADVANCED_MODE_CARDS), 3):
+        cols = st.columns(min(3, len(ADVANCED_MODE_CARDS) - row_start))
+        for col, (mode, desc_key, guarantee) in zip(cols, ADVANCED_MODE_CARDS[row_start:row_start + 3]):
+            with col:
+                st.markdown(
+                    f"""
+                    <div class="advanced-mode-card">
+                        <h3>{escape(mode)}</h3>
+                        <p>{escape(t(desc_key))}</p>
+                        <div class="advanced-mode-row"><strong>{escape(t("adv_card_guarantee"))}</strong><span>{escape(guarantee)}</span></div>
+                        <div class="advanced-mode-row"><strong>{escape(t("adv_card_caveat"))}</strong><span>{escape(t("adv_card_standard_caveat"))}</span></div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                if st.button(t("adv_mode_card_cta"), key=f"adv_pick_{_mode_key(mode)}", width="stretch"):
+                    st.session_state["advanced_pending_mode"] = mode
+                    st.rerun()
+
+
 def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE) -> None:
     """Render academic extensions and AI-vs-AI scoring for 15-puzzle."""
     st.title(t("adv_title"))
@@ -126,27 +181,17 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     render_start_goal_contract(start, goal, is_solvable(start, goal))
 
     mode_prompt = t("adv_mode_prompt")
+    pending_mode = st.session_state.pop("advanced_pending_mode", None)
+    if pending_mode:
+        st.session_state["complex_mode_v2"] = pending_mode
     mode = st.selectbox(
         t("adv_model_select"),
-        [
-            mode_prompt,
-            "AI-vs-AI Tournament",
-            "CSP Definition & Propagation",
-            "Backtracking & Min-Conflicts",
-            "Constraint Graphs & Path Consistency",
-            "AND-OR Search (Nondeterministic)",
-            "No Observation (Belief State)",
-            "Partially Observable",
-            "Online Search (LRTA*)",
-            "Minimax Game",
-            "Alpha-Beta Pruning Game",
-            "Expectimax (Stochastic)",
-        ],
+        [mode_prompt, *ADVANCED_MODES],
         key="complex_mode_v2",
     )
 
     if mode == mode_prompt:
-        st.info(t("adv_select_mode_help"))
+        _render_advanced_mode_cards()
         return
 
     if mode == "AI-vs-AI Tournament":

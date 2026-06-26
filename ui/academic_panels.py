@@ -284,13 +284,17 @@ def render_benchmark_methodology(preset_name: str | None = None) -> None:
     st.subheader(_t("academic_benchmark_methodology"))
     if preset_name and preset_name in BENCHMARK_PRESETS:
         preset = BENCHMARK_PRESETS[preset_name]
+        recommended = ", ".join(preset.get("recommended_algorithms", ())) or "-"
         st.markdown(
             f"""
             <div class="academic-card">
                 <div class="academic-card-title">{escape(preset_name)}</div>
                 <div class="academic-card-body">
-                    depth={preset['depth']} | seed={preset['seed']} | max_nodes={preset['max_nodes']} | timeout={preset['timeout']}s | heuristic={escape(preset['heuristic'])}<br>
-                    <em>{escape(preset['caveat'])}</em>
+                    depth={preset['depth']} | seed={preset['seed']} | max_nodes={preset['max_nodes']} | timeout={preset['timeout']}s | heuristic={escape(str(preset['heuristic']))}<br>
+                    recommended={escape(recommended)}<br>
+                    purpose={escape(str(preset.get('comparison_goal', '-')))}<br>
+                    expected={escape(str(preset.get('expected_outcome', '-')))}<br>
+                    <em>{escape(str(preset['caveat']))}</em>
                 </div>
             </div>
             """,

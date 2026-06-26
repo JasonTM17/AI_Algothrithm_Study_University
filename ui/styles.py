@@ -965,6 +965,23 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
+div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) div[data-testid="stHorizontalBlock"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: clamp(6px, 1.1vw, 10px) !important;
+    width: min(100%, 448px) !important;
+    max-width: 448px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) div[data-testid="column"] {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: initial !important;
+}
+
 div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) button {
     width: 100% !important;
     aspect-ratio: 1 !important;
@@ -1363,6 +1380,126 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     line-height: 1.58 !important;
     margin: 0 !important;
 }
+.play-compact-strip {
+    border: 1px solid rgba(214,161,95,0.24);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin: 0 0 16px;
+    background:
+        linear-gradient(90deg, rgba(214,161,95,0.13), rgba(140,161,142,0.05)),
+        rgba(18,21,20,0.86);
+    box-shadow: var(--shadow-sm);
+}
+.play-compact-strip h2 {
+    margin: 2px 0 6px !important;
+    font-size: clamp(20px, 2.1vw, 28px) !important;
+    line-height: 1.18 !important;
+}
+.play-compact-strip p {
+    margin: 0 !important;
+    color: var(--text-secondary) !important;
+    font-size: 13.5px;
+    line-height: 1.55;
+}
+.play-compact-kicker,
+.play-panel-kicker {
+    color: var(--accent-hover) !important;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+.play-panel-heading {
+    margin: 2px 0 12px;
+}
+.play-panel-heading h2 {
+    margin: 2px 0 5px !important;
+    font-size: clamp(24px, 2.6vw, 34px) !important;
+    line-height: 1.08 !important;
+}
+.play-panel-heading p {
+    margin: 0 !important;
+    color: var(--text-secondary) !important;
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.action-state {
+    border: 1px solid rgba(214,161,95,0.30);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    margin: 14px 0 18px;
+    background:
+        linear-gradient(120deg, rgba(214,161,95,0.12), rgba(140,161,142,0.06)),
+        rgba(18,21,20,0.88);
+    box-shadow: var(--shadow-sm);
+}
+.action-state-kicker {
+    color: var(--accent-hover) !important;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+.action-state h3 {
+    margin: 4px 0 7px !important;
+    font-size: 19px !important;
+    line-height: 1.25 !important;
+}
+.action-state p,
+.action-state li {
+    color: var(--text-secondary) !important;
+    font-size: 13.5px;
+    line-height: 1.55;
+}
+.action-state ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+}
+.advanced-mode-card {
+    min-height: 224px;
+    border: 1px solid rgba(214,196,166,0.18);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    margin: 8px 0 10px;
+    background:
+        linear-gradient(180deg, rgba(244,239,229,0.055), rgba(244,239,229,0.012)),
+        rgba(18,21,20,0.88);
+    box-shadow: var(--shadow-sm);
+}
+.advanced-mode-card h3 {
+    margin: 0 0 8px !important;
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+}
+.advanced-mode-card p {
+    margin: 0 0 10px !important;
+    color: var(--text-secondary) !important;
+    font-size: 13px;
+    line-height: 1.48;
+}
+.advanced-mode-row {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 8px;
+    border-top: 1px solid rgba(214,196,166,0.12);
+    padding-top: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.35;
+}
+.advanced-mode-row strong {
+    color: var(--accent) !important;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+}
+.advanced-mode-row span {
+    color: var(--text-secondary) !important;
+    overflow-wrap: anywhere;
+}
 .image-preview-title {
     color: var(--accent) !important;
     font-family: var(--font-mono);
@@ -1381,6 +1518,30 @@ div[data-testid="stImage"] img {
 div[data-testid="stAlert"] {
     border-radius: var(--radius-md) !important;
     border: 1px solid rgba(214,196,166,0.16) !important;
+}
+
+@media (max-width: 900px) {
+    .play-compact-strip,
+    .action-state,
+    .advanced-mode-card {
+        padding: 13px 14px;
+    }
+    .advanced-mode-card {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .play-panel-heading h2 {
+        font-size: 23px !important;
+    }
+    .advanced-mode-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 3px;
+    }
+    div[data-testid="stMetric"] {
+        padding: 10px 11px;
+    }
 }
 </style>
 """
@@ -1497,7 +1658,7 @@ COMPARISON_TABLE = [
     {"Group": "CSP", "Algorithm": "Path Consistency", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Global Constraints", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
     {"Group": "CSP", "Algorithm": "Constraint Graphs", "Complete": "-", "Optimal": "-", "Heuristic": "No", "Random": "No", "Suitable": "Illustrative"},
-    {"Group": "CSP", "Algorithm": "Backtracking", "Complete": "No", "Optimal": "No", "Heuristic": "MRV+LCV", "Random": "No", "Suitable": "Planning demo"},
+    {"Group": "CSP", "Algorithm": "Backtracking", "Complete": "No", "Optimal": "No", "Heuristic": "Heuristic value ordering", "Random": "No", "Suitable": "Planning demo"},
     {"Group": "CSP", "Algorithm": "Min-Conflicts", "Complete": "No", "Optimal": "No", "Heuristic": "Conflicts", "Random": "Yes", "Suitable": "N-Queens better"},
     {"Group": "AI-vs-AI", "Algorithm": "Tournament", "Complete": "Reference-bound", "Optimal": "Scored by A*", "Heuristic": "Depends on agents", "Random": "Optional", "Suitable": "Competition demo"},
     {"Group": "Game/Chance", "Algorithm": "Minimax", "Complete": "No", "Optimal": "No", "Heuristic": "utility h", "Random": "No", "Suitable": "Artificial extension"},

@@ -5,6 +5,7 @@ import pandas as pd
 from core.puzzle import PuzzleState, GOAL_STATE, scramble, is_solvable
 from core.node import Node, reconstruct_path
 from core.heuristics import HEURISTICS, manhattan_distance
+from ui.action_states import render_action_state
 from ui.components import render_puzzle_board, _state_to_mini_grid, _state_to_grid_str
 from ui.academic_panels import render_exam_path
 from ui.localization import translate
@@ -218,12 +219,12 @@ def render_hand_tracing_page():
             st.rerun()
 
     if not st.session_state.get("ht_active", False):
-        idle_message = (
-            "Select an algorithm and press 'Generate New Challenge' to start."
-            if st.session_state.get("global_lang_select") == "English"
-            else "Hãy chọn thuật toán và nhấn 'Tạo Thử Thách Mới' để bắt đầu luyện tập."
+        render_action_state(
+            title=t("ht_idle_title"),
+            body=t("ht_idle_body"),
+            bullets=[t("ht_idle_bullet_frontier"), t("ht_idle_bullet_preview")],
+            kicker=t("action_state_kicker"),
         )
-        st.info(idle_message)
         return
 
     # Tracing challenge is active.
@@ -464,7 +465,7 @@ def render_hand_tracing_page():
         if frontier_rows:
             st.dataframe(pd.DataFrame(frontier_rows), width="stretch", hide_index=True)
         else:
-            st.caption("Trống" if st.session_state.get("global_lang_select") == "Tiếng Việt" else "Empty")
+            st.caption(t("ht_empty_label"))
             
     with col_r:
         st.markdown(t("ht_reached_title", count=len(reached)))
@@ -472,13 +473,13 @@ def render_hand_tracing_page():
         for i, (state_val, g_val) in enumerate(reached.items()):
             reached_rows.append({
                 "STT": i + 1,
-                "Trạng thái" if st.session_state.get("global_lang_select") == "Tiếng Việt" else "State": f"State {str(state_val[:4])}...",
+                t("ht_state_col"): f"State {str(state_val[:4])}...",
                 "Cost g": g_val
             })
         if reached_rows:
             st.dataframe(pd.DataFrame(reached_rows), width="stretch", hide_index=True, height=180)
         else:
-            st.caption("Trống" if st.session_state.get("global_lang_select") == "Tiếng Việt" else "Empty")
+            st.caption(t("ht_empty_label"))
 
     # ── History Tracing Table ──
     if st.session_state.ht_history:

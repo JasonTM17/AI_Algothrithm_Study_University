@@ -8,6 +8,7 @@ from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.randomness import resolve_run_seed
+from ui.action_states import render_action_state
 from ui.academic_panels import (
     render_academic_header,
     render_benchmark_evidence,
@@ -18,7 +19,9 @@ from ui.academic_panels import (
     render_recommendation_rubric,
     render_taxonomy_table,
 )
-from ui.components import render_comparison_table
+from ui.components import render_comparison_table, render_start_goal_contract
+from ui.components import render_puzzle_board
+from ui.start_goal_controls import apply_goal_state, apply_start_state
 from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS, COMPARISON_TABLE, NOTES
 
 
@@ -27,6 +30,72 @@ BENCHMARK_GROUPS = (
     "Informed Search",
     "Local Search",
 )
+COMPARE_MAX_NODES_MIN = 1000
+COMPARE_MAX_NODES_CAP = 20000
+COMPARE_TIMEOUT_MIN = 5
+COMPARE_TIMEOUT_CAP = 120
+
+
+def _preset_state_pair(preset: dict) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    preset_goal = tuple(preset.get("goal_state", GOAL_STATE))
+    preset_start = tuple(
+        preset.get("start_state")
+        or scramble(
+            goal=preset_goal,
+            depth=int(preset["depth"]),
+            seed=int(preset["seed"]),
+        )
+    )
+    return preset_start, preset_goal
+
+
+def _sync_default_selection_for_preset(preset_name: str, preset: dict) -> None:
+    """Reset benchmark selections only when the user picks a different preset."""
+    if st.session_state.get("compare_selection_preset") == preset_name:
+        return
+
+    recommended_groups = list(preset.get("recommended_groups", BENCHMARK_GROUPS))
+    recommended_algorithms = tuple(preset.get("recommended_algorithms", ()))
+    st.session_state["compare_groups"] = recommended_groups
+    for group in BENCHMARK_GROUPS:
+        st.session_state[f"compare_{group}"] = [
+            algorithm
+            for algorithm in recommended_algorithms
+            if algorithm in SOLVER_GROUPS[group]
+        ]
+    st.session_state["compare_selection_preset"] = preset_name
+
+
+def _render_preset_start_goal_preview(t, preset: dict) -> None:
+    preset_start, preset_goal = _preset_state_pair(preset)
+    recommended = ", ".join(preset.get("recommended_algorithms", ())) or "-"
+
+    preview_cols = st.columns([1, 1, 2])
+    with preview_cols[0]:
+        st.caption(t("compare_preset_start"))
+        render_puzzle_board(preset_start, size="mini", goal=preset_goal)
+    with preview_cols[1]:
+        st.caption(t("compare_preset_goal"))
+        render_puzzle_board(
+            preset_goal,
+            highlight_correct=False,
+            size="mini",
+            goal=preset_goal,
+        )
+    with preview_cols[2]:
+        st.caption(
+            t(
+                "compare_preset_goal_desc",
+                purpose=preset.get("comparison_goal", "-"),
+            )
+        )
+        st.caption(t("compare_preset_algorithms", algorithms=recommended))
+        st.caption(
+            t(
+                "compare_preset_expected",
+                expected=preset.get("expected_outcome", "-"),
+            )
+        )
 
 
 def render_compare_tab(t=None) -> None:
@@ -40,6 +109,11 @@ def render_compare_tab(t=None) -> None:
     )
     render_exam_path("Compare", t=t)
     render_extension_warning(t=t)
+    render_start_goal_contract(
+        st.session_state.start_state,
+        goal,
+        is_solvable(st.session_state.start_state, goal),
+    )
 
     preset_name = st.selectbox(
         tx("compare_preset"),
@@ -47,20 +121,21 @@ def render_compare_tab(t=None) -> None:
         key="compare_benchmark_preset",
     )
     preset = BENCHMARK_PRESETS[preset_name]
+    _sync_default_selection_for_preset(preset_name, preset)
+    preset_action_order = str(preset.get("action_order", "LRUD"))
     render_benchmark_methodology(preset_name)
     col_preset, col_preset_note = st.columns([1, 3])
     with col_preset:
         if st.button(tx("compare_load_preset_state"), key="btn_load_benchmark_preset"):
-            st.session_state.start_state = scramble(
-                goal=goal,
-                depth=int(preset["depth"]),
-                seed=int(preset["seed"]),
-            )
+            preset_start, preset_goal = _preset_state_pair(preset)
+            apply_goal_state(preset_goal)
+            apply_start_state(preset_start)
             st.rerun()
     with col_preset_note:
         st.caption(
             tx("compare_preset_caption")
         )
+    _render_preset_start_goal_preview(tx, preset)
 
     st.markdown(tx("compare_select_algorithms_desc"))
     st.caption(
@@ -69,7 +144,7 @@ def render_compare_tab(t=None) -> None:
 
     selected_groups = st.multiselect(
         tx("compare_groups"), list(BENCHMARK_GROUPS),
-        default=["Uninformed Search", "Informed Search"],
+        default=list(preset.get("recommended_groups", ("Uninformed Search", "Informed Search"))),
         key="compare_groups",
     )
 
@@ -78,7 +153,11 @@ def render_compare_tab(t=None) -> None:
         algos = st.multiselect(
             tx("compare_algorithms_from", group=g),
             SOLVER_GROUPS[g],
-            default=SOLVER_GROUPS[g][:2],
+            default=[
+                algorithm
+                for algorithm in preset.get("recommended_algorithms", ())
+                if algorithm in SOLVER_GROUPS[g]
+            ] or SOLVER_GROUPS[g][:2],
             key=f"compare_{g}",
         )
         selected_algos.extend(algos)
@@ -93,15 +172,15 @@ def render_compare_tab(t=None) -> None:
     )
     max_nodes = st.number_input(
         tx("run_max_nodes"),
-        1000,
-        500000,
+        COMPARE_MAX_NODES_MIN,
+        COMPARE_MAX_NODES_CAP,
         int(preset["max_nodes"]),
         key=f"compare_max_nodes_{preset_name}",
     )
     timeout = st.number_input(
         tx("compare_timeout"),
-        5,
-        300,
+        COMPARE_TIMEOUT_MIN,
+        COMPARE_TIMEOUT_CAP,
         int(preset["timeout"]),
         key=f"compare_timeout_{preset_name}",
     )
@@ -184,7 +263,7 @@ def render_compare_tab(t=None) -> None:
                             previous_seed=previous_seed,
                         )
                         kwargs = dict(start=start, goal=goal,
-                                     timeout=float(timeout), action_order="LRUD")
+                                     timeout=float(timeout), action_order=preset_action_order)
                         if run_seed is not None:
                             kwargs["seed"] = run_seed
                             benchmark_seeds[algo] = run_seed
@@ -225,12 +304,20 @@ def render_compare_tab(t=None) -> None:
             st.session_state["last_benchmark_signature"] = benchmark_signature
             progress.empty()
 
-    render_comparison_table(st.session_state.benchmark_results)
-    render_benchmark_evidence(st.session_state.benchmark_results)
+    if st.session_state.benchmark_results:
+        render_comparison_table(st.session_state.benchmark_results)
+        render_benchmark_evidence(st.session_state.benchmark_results)
+    else:
+        render_action_state(
+            title=tx("compare_empty_title"),
+            body=tx("compare_empty_body"),
+            bullets=[tx("compare_empty_bullet_setup"), tx("compare_empty_bullet_scope")],
+            kicker=tx("action_state_kicker"),
+        )
     benchmark_seeds = st.session_state.get("benchmark_run_seeds", {})
     if benchmark_seeds:
-        seed_text = " · ".join(f"{name}: `{seed}`" for name, seed in benchmark_seeds.items())
-        st.caption(f"Recorded stochastic seeds — {seed_text}")
+        seed_text = " | ".join(f"{name}: `{seed}`" for name, seed in benchmark_seeds.items())
+        st.caption(tx("compare_recorded_seeds", seeds=seed_text))
 
     # Static comparison table
     st.markdown("---")

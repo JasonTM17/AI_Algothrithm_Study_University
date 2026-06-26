@@ -9,6 +9,7 @@ from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.utils import format_state_grid
 from ui.styles import STYLES, GROUP_COLORS
 from ui.localization import VIETNAMESE, resolve_language, translate
+from ui.start_goal_controls import render_start_goal_editor
 
 
 def t(key, **kwargs):
@@ -383,7 +384,13 @@ def render_puzzle_row(
             render_puzzle_board(state, goal=goal)
 
 
-def render_start_goal_contract(start: tuple, goal: tuple, solvable: bool) -> None:
+def render_start_goal_contract(
+    start: tuple,
+    goal: tuple,
+    solvable: bool,
+    *,
+    show_editor: bool = True,
+) -> None:
     """Show the active start/goal pair shared by the current algorithm surface."""
     st.markdown(f"### {t('active_contract_title')}")
     st.caption(t("active_contract_caption"))
@@ -400,6 +407,8 @@ def render_start_goal_contract(start: tuple, goal: tuple, solvable: bool) -> Non
             t("active_solvable") if solvable else t("active_unsolvable"),
         )
         st.caption(t("active_solvability_caption"))
+    if show_editor:
+        render_start_goal_editor(key_prefix="active_contract", expanded=True)
 
 
 def render_run_variation_metadata(result) -> None:

@@ -18,12 +18,20 @@ from ui.components import (
     render_start_goal_contract,
     render_trace_table,
 )
-from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS
+from ui.run_and_or_panel import (
+    AND_OR_ALGORITHM,
+    render_and_or_controls,
+    render_and_or_result_explanation,
+    run_algorithm_groups,
+)
+from ui.styles import ALGORITHM_FN_MAP
 
 
 RUN_MAX_NODES_MIN = 1000
-RUN_MAX_NODES_DEFAULT = 20000
-RUN_MAX_NODES_CAP = 50000
+RUN_MAX_NODES_DEFAULT = 10000
+RUN_MAX_NODES_CAP = 20000
+RUN_TIMEOUT_DEFAULT = 30
+RUN_TIMEOUT_CAP = 120
 RUN_TRACE_ROWS = 60
 RUN_DETAIL_ROWS = 30
 RUN_TREE_NODES = 24
@@ -63,21 +71,28 @@ def render_run_algorithm_tab(t=None) -> None:
     )
 
     col_algo, col_params = st.columns([1, 1])
+    available_groups = run_algorithm_groups(tx)
 
     with col_algo:
-        group = st.selectbox(tx("run_group"), list(SOLVER_GROUPS.keys()), key="algo_group")
-        algorithms = SOLVER_GROUPS[group]
+        if st.session_state.get("algo_group") not in available_groups:
+            st.session_state["algo_group"] = next(iter(available_groups))
+        group = st.selectbox(tx("run_group"), list(available_groups.keys()), key="algo_group")
+        algorithms = available_groups[group]
+        if st.session_state.get("algo_name") not in algorithms:
+            st.session_state["algo_name"] = algorithms[0]
         algo_name = st.selectbox(tx("run_algo"), algorithms, key="algo_name")
         selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
         render_algorithm_role_card(algo_name)
 
         # Only show heuristic for algorithms that use it
         heuristic_options = list(HEURISTICS.keys())
-        uninformed_algos = ["BFS", "DFS", "UCS", "IDS"]
-        if algo_name not in uninformed_algos:
+        no_heuristic_select_algos = {"BFS", "DFS", "UCS", "IDS", AND_OR_ALGORITHM}
+        if algo_name not in no_heuristic_select_algos:
             heuristic = st.selectbox(tx("run_heuristic"), heuristic_options, key="heuristic_select")
         else:
             heuristic = "Manhattan Distance"  # default, won't be used
+            if algo_name == AND_OR_ALGORITHM:
+                st.caption(tx("run_andor_heuristic_caption"))
 
         tie_breaker = "FIFO"
 
@@ -95,7 +110,13 @@ def render_run_algorithm_tab(t=None) -> None:
             )
             max_depth = st.number_input(tx("run_max_depth"), 1, 100, 20, key="max_depth")
         with col_p2:
-            timeout = st.number_input(tx("run_timeout"), 5, 600, 60, key="timeout_val")
+            timeout = st.number_input(
+                tx("run_timeout"),
+                5,
+                RUN_TIMEOUT_CAP,
+                RUN_TIMEOUT_DEFAULT,
+                key="timeout_val",
+            )
             st.caption(tx("run_variation_no_path") if not selected_fn_name else tx("run_fresh_seed_help"))
         st.caption(
             tx(
@@ -124,6 +145,8 @@ def render_run_algorithm_tab(t=None) -> None:
         if algo_name == "Expectimax":
             extra_params["depth"] = max_depth
             extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
+        if algo_name == AND_OR_ALGORITHM:
+            extra_params["nondet_prob"] = render_and_or_controls(tx)
 
     run_signature = (
         tuple(st.session_state.start_state), tuple(goal), selected_fn_name, algo_name, heuristic,
@@ -223,6 +246,7 @@ def render_run_algorithm_tab(t=None) -> None:
         result = st.session_state.last_result
         render_result_metrics(result)
         render_run_variation_metadata(result)
+        render_and_or_result_explanation(result, tx)
 
         with st.expander(tx("run_eval_section"), expanded=False):
             render_algorithm_evaluation(result.algorithm)

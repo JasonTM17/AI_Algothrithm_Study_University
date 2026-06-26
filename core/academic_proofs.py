@@ -2,6 +2,55 @@
 
 from __future__ import annotations
 
+from core.puzzle import GOAL_STATE, scramble
+
+
+def _benchmark_preset(
+    *,
+    depth: int,
+    seed: int,
+    max_nodes: int,
+    timeout: int,
+    heuristic: str,
+    comparison_goal: str,
+    recommended_algorithms: tuple[str, ...],
+    caveat: str,
+    expected_outcome: str,
+    goal_state: tuple[int, ...] = GOAL_STATE,
+    action_order: str = "LRUD",
+) -> dict[str, object]:
+    """Build a deterministic, bounded benchmark case with explicit start/goal."""
+    return {
+        "depth": depth,
+        "seed": seed,
+        "start_state": scramble(goal=goal_state, depth=depth, seed=seed),
+        "goal_state": goal_state,
+        "max_nodes": max_nodes,
+        "timeout": timeout,
+        "heuristic": heuristic,
+        "action_order": action_order,
+        "comparison_goal": comparison_goal,
+        "recommended_algorithms": recommended_algorithms,
+        "recommended_groups": tuple(
+            group
+            for group, algorithms in {
+                "Uninformed Search": ("BFS", "DFS", "UCS", "IDS"),
+                "Informed Search": ("Greedy Best-First", "A*", "IDA*"),
+                "Local Search": (
+                    "Simple Hill Climbing",
+                    "Steepest-Ascent Hill Climbing",
+                    "Stochastic Hill Climbing",
+                    "Random-Restart Hill Climbing",
+                    "Local Beam Search",
+                    "Simulated Annealing",
+                ),
+            }.items()
+            if any(algorithm in recommended_algorithms for algorithm in algorithms)
+        ),
+        "caveat": caveat,
+        "expected_outcome": expected_outcome,
+    }
+
 
 PROOF_CARDS = {
     "BFS/UCS optimality": {
@@ -67,7 +116,7 @@ EXAM_ANSWER_TEMPLATES = {
         "frontier": "Conditional plans, belief states, or learned heuristic table.",
         "evaluation": "Uses h(n), belief filtering, or LRTA* heuristic updates.",
         "guarantee": "Educational extension, not a natural standard solver.",
-        "when_to_use": "Use for PEAS/environment discussion.",
+        "when_to_use": "Use for PEAS/environment discussion; AND-OR appears in Run as Group 3 alias for the syllabus.",
         "when_not_to_use": "Do not compare as if the environment matches standard 15-puzzle.",
     },
     "CSP": {
@@ -90,38 +139,50 @@ EXAM_ANSWER_TEMPLATES = {
 
 
 BENCHMARK_PRESETS = {
-    "Shallow proof case": {
-        "depth": 6,
-        "seed": 7,
-        "max_nodes": 20000,
-        "timeout": 20,
-        "heuristic": "Manhattan Distance",
-        "caveat": "Good for BFS/UCS/IDS/A* optimality comparison.",
-    },
-    "Medium heuristic case": {
-        "depth": 15,
-        "seed": 42,
-        "max_nodes": 60000,
-        "timeout": 45,
-        "heuristic": "Linear Conflict",
-        "caveat": "Good for showing informed search efficiency.",
-    },
-    "Heuristic failure case": {
-        "depth": 15,
-        "seed": 1,
-        "max_nodes": 300000,
-        "timeout": 60,
-        "heuristic": "Manhattan Distance",
-        "caveat": "Greedy can be suboptimal while A* remains optimal.",
-    },
-    "Memory pressure case": {
-        "depth": 24,
-        "seed": 12,
-        "max_nodes": 100000,
-        "timeout": 60,
-        "heuristic": "Linear Conflict",
-        "caveat": "Use to discuss why BFS/UCS become impractical and IDA* matters.",
-    },
+    "Shallow proof case": _benchmark_preset(
+        depth=6,
+        seed=7,
+        max_nodes=5000,
+        timeout=10,
+        heuristic="Manhattan Distance",
+        comparison_goal="Prove shortest-path behavior on a tiny deterministic start/goal pair.",
+        recommended_algorithms=("BFS", "UCS", "IDS", "A*"),
+        caveat="Good for BFS/UCS/IDS/A* optimality comparison with low resource limits.",
+        expected_outcome="All recommended solvers reach the preset goal and prove optimality.",
+    ),
+    "Medium heuristic case": _benchmark_preset(
+        depth=10,
+        seed=42,
+        max_nodes=10000,
+        timeout=15,
+        heuristic="Linear Conflict",
+        comparison_goal="Compare uninformed expansion cost against heuristic guidance.",
+        recommended_algorithms=("BFS", "UCS", "IDS", "Greedy Best-First", "A*", "IDA*"),
+        caveat="Good for showing informed search efficiency while every recommended solver still finishes.",
+        expected_outcome="All recommended solvers reach the preset goal; informed search expands far fewer nodes.",
+    ),
+    "Heuristic failure case": _benchmark_preset(
+        depth=15,
+        seed=1,
+        max_nodes=12000,
+        timeout=15,
+        heuristic="Manhattan Distance",
+        comparison_goal="Show that Greedy can find a longer path than A* on the same start/goal pair.",
+        recommended_algorithms=("Greedy Best-First", "A*", "IDA*"),
+        caveat="Greedy can be suboptimal while A* and IDA* remain optimal with the admissible heuristic.",
+        expected_outcome="Greedy reaches the goal with more moves; A* and IDA* prove the shorter path.",
+    ),
+    "Memory pressure case": _benchmark_preset(
+        depth=12,
+        seed=18,
+        max_nodes=20000,
+        timeout=15,
+        heuristic="Linear Conflict",
+        comparison_goal="Show memory-growth pressure without forcing a timeout or resource failure.",
+        recommended_algorithms=("BFS", "UCS", "A*", "IDA*"),
+        caveat="Use to discuss why BFS/UCS expand much more than A*/IDA* even when the case still finishes.",
+        expected_outcome="All recommended solvers reach the goal; BFS/UCS report much larger reached/frontier sizes.",
+    ),
 }
 
 

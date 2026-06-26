@@ -30,6 +30,7 @@ TIE_BREAKER_VARIATION_SOLVERS = frozenset({
 })
 
 NON_PATH_VARIATION_SOLVERS = frozenset({
+    "and_or_search",
     "csp_definition",
     "path_consistency",
     "global_constraints",

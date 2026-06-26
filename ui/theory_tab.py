@@ -4,6 +4,7 @@ import streamlit as st
 
 from core.algorithm_comparison import comparison_rows_for_group
 from core.theory import THEORY
+from ui.action_states import render_action_state
 from ui.academic_panels import (
     render_academic_header,
     render_algorithm_role_card,
@@ -18,6 +19,7 @@ from ui.academic_panels import (
     render_recommendation_rubric,
 )
 from ui.components import render_algorithm_info
+from ui.syllabus_coverage_panels import render_syllabus_coverage_panels
 from ui.styles import ALGORITHM_GROUPS, THEORY_KEY_MAP
 
 
@@ -41,6 +43,7 @@ def render_theory_tab(t=None) -> None:
     render_recommendation_rubric()
     render_proof_cards()
     render_exam_answer_templates()
+    render_syllabus_coverage_panels()
 
     st.markdown("---")
     st.subheader(tx("theory_detail_title"))
@@ -63,6 +66,14 @@ def render_theory_tab(t=None) -> None:
         render_algorithm_role_card(algo_name)
         render_algorithm_info(algo_name, theory_data)
     else:
-        st.info(tx("theory_coming_soon", algo=algo_name))
-        st.markdown(tx("theory_belongs_group", algo=algo_name, group=group))
+        render_algorithm_role_card(algo_name)
+        render_action_state(
+            title=tx("theory_fallback_title", algo=algo_name),
+            body=tx("theory_fallback_body"),
+            bullets=[
+                tx("theory_fallback_bullet_group", group=group),
+                tx("theory_fallback_bullet_compare"),
+            ],
+            kicker=tx("action_state_kicker"),
+        )
 

@@ -445,14 +445,14 @@ THEORY["AND-OR"] = {
     outcomes = get_possible_outcomes(state, action)
     plans = [AND-OR-Search(outcome) for outcome in outcomes]
     if all plans found: return (action, {outcome: plan for outcome, plan in zip(outcomes, plans)})""",
-    "application": "15-puzzle chuẩn là deterministic. AND-OR chỉ cần khi action có thể bị lệch. Ví dụ: chọn U nhưng môi trường có thể thực hiện L thay.",
+    "application": "15-puzzle chuẩn là deterministic. AND-OR chỉ cần khi action có thể bị lệch. Trong Run Algorithm, nó có alias Nhóm 3 - Môi trường phức tạp theo đề cương nhưng taxonomy vẫn là Complex Environments.",
     "suitable": "KHÔNG phải thuật toán chuẩn cho 15-puzzle. Đây là mở rộng minh họa cho môi trường nondeterministic.",
     "pros": ["Hoạt động trong môi trường không xác định", "Tìm conditional plan"],
     "cons": ["Phức tạp hơn search thường", "Kích thước AND-OR tree lớn", "Không cần cho 15-puzzle chuẩn"],
     "complexity": "Thời gian và bộ nhớ: phụ thuộc vào kích thước AND-OR tree, có thể rất lớn.",
     "bad_example": "Với nhiều outcome có thể, AND-OR tree bùng nổ tổ hợp.",
     "comparison": "AND-OR → môi trường nondeterministic. A* → môi trường deterministic. 15-puzzle chuẩn → dùng A*.",
-    "exam_tips": "AND-OR dùng khi action có nhiều outcome có thể. OR node = agent chọn. AND node = môi trường quyết định.",
+    "exam_tips": "AND-OR dùng khi action có nhiều outcome có thể. OR node = agent chọn; AND node = mọi outcome đều phải có plan. Output là conditional plan, không phải path tuyến tính.",
 }
 
 THEORY["No Observation"] = {

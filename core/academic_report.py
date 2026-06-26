@@ -78,13 +78,15 @@ def build_grading_report(
     lines.extend([
         "",
         "## Benchmark Methodology",
-        "| Preset | Depth | Seed | Heuristic | Caveat |",
-        "|---|---:|---:|---|---|",
+        "| Preset | Depth | Seed | Max nodes | Timeout | Heuristic | Recommended | Caveat |",
+        "|---|---:|---:|---:|---:|---|---|---|",
     ])
     for name, preset in BENCHMARK_PRESETS.items():
+        recommended = ", ".join(preset.get("recommended_algorithms", ())) or "-"
         lines.append(
             f"| {name} | {preset['depth']} | {preset['seed']} | "
-            f"{preset['heuristic']} | {preset['caveat']} |"
+            f"{preset['max_nodes']} | {preset['timeout']} | "
+            f"{preset['heuristic']} | {recommended} | {preset['caveat']} |"
         )
 
     lines.extend([

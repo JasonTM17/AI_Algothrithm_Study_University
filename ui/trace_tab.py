@@ -3,6 +3,8 @@
 import pandas as pd
 import streamlit as st
 
+from core.puzzle import GOAL_STATE, is_solvable
+from ui.action_states import render_action_state
 from ui.localization import translate
 from ui.components import (
     _format_trace_state,
@@ -10,6 +12,7 @@ from ui.components import (
     _trace_state_catalog,
     render_search_detail_table,
     render_search_tree,
+    render_start_goal_contract,
     render_trace_table,
 )
 
@@ -53,16 +56,39 @@ def trace_rows(trace) -> list[dict[str, object]]:
 
 def render_step_trace_tab() -> None:
     st.title(t("trace_title"))
+    goal = st.session_state.get("goal_state", GOAL_STATE)
 
     if "last_result" not in st.session_state or not st.session_state.last_result:
-        st.info(t("trace_info"))
+        render_start_goal_contract(
+            st.session_state.start_state,
+            goal,
+            is_solvable(st.session_state.start_state, goal),
+            show_editor=False,
+        )
+        render_action_state(
+            title=t("trace_empty_title"),
+            body=t("trace_empty_body"),
+            bullets=[t("trace_empty_bullet_start"), t("trace_empty_bullet_run")],
+            kicker=t("action_state_kicker"),
+            action_label=t("trace_empty_cta"),
+            action_key="trace_empty_go_run",
+            target_tab_label=t("nav_run"),
+        )
         return
 
     result = st.session_state.last_result
     st.subheader(t("trace_result_title", algorithm=result.algorithm))
 
     if not result.trace:
-        st.info(t("trace_empty_result"))
+        render_action_state(
+            title=t("trace_no_events_title"),
+            body=t("trace_no_events_body"),
+            bullets=[t("trace_empty_bullet_run")],
+            kicker=t("action_state_kicker"),
+            action_label=t("trace_empty_cta"),
+            action_key="trace_no_events_go_run",
+            target_tab_label=t("nav_run"),
+        )
         return
 
     st.caption(t("trace_notation_help"))
