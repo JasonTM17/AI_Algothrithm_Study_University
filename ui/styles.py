@@ -64,7 +64,7 @@ html {
         linear-gradient(135deg, rgba(244,239,229,0.035), transparent 34%),
         var(--bg-app);
     font-family: var(--font-stack);
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
 }
 .stApp::before {
     content: "";
@@ -82,7 +82,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary) !important;
     font-family: var(--font-display);
     font-weight: 650 !important;
-    letter-spacing: -0.035em !important;
+    letter-spacing: 0;
     text-wrap: balance;
 }
 h1 {
@@ -107,7 +107,7 @@ div[data-testid="stMainBlockContainer"] {
     font-size: 11px !important;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0;
 }
 .stMetric [data-testid="stMetricValue"] {
     font-family: var(--font-mono) !important;
@@ -261,7 +261,7 @@ button:disabled {
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.16em;
+    letter-spacing: 0;
     text-transform: uppercase;
     margin-bottom: 10px;
 }
@@ -317,7 +317,7 @@ button:disabled {
     margin: 0 0 8px !important;
     font-size: 15.5px !important;
     line-height: 1.3 !important;
-    letter-spacing: -0.018em !important;
+    letter-spacing: 0;
 }
 .academic-record-row {
     border-top: 1px solid rgba(214,196,166,0.12);
@@ -331,7 +331,7 @@ button:disabled {
     display: block;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.09em;
+    letter-spacing: 0;
     text-transform: uppercase;
     margin-bottom: 3px;
 }
@@ -341,7 +341,7 @@ button:disabled {
     font-weight: 800;
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0;
     margin-bottom: 10px;
 }
 .academic-card-body {
@@ -376,7 +376,7 @@ button:disabled {
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0;
 }
 .exam-path-title {
     color: var(--text-primary) !important;
@@ -400,7 +400,7 @@ button:disabled {
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0;
     text-transform: uppercase;
     border: 1px solid rgba(244,239,229,0.18);
 }
@@ -525,7 +525,7 @@ button:disabled {
     }
 }
 
-/* ── Puzzle Board ───────────────────────────────────────────── */
+/* â”€â”€ Puzzle Board â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .puzzle-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -555,7 +555,7 @@ button:disabled {
     pointer-events: none;
 }
 
-/* ── Game Tile (tactile solver keys) ──────────────────────────── */
+/* â”€â”€ Game Tile (tactile solver keys) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .puzzle-tile {
     width: 72px;
     height: 72px;
@@ -706,7 +706,7 @@ button:disabled {
 }
 .puzzle-grid { animation: boardFadeIn 0.36s var(--ease-lab); }
 
-/* ── Legacy puzzle-cell (for static displays like trace tables) ─ */
+/* â”€â”€ Legacy puzzle-cell (for static displays like trace tables) â”€ */
 .puzzle-cell {
     display: flex;
     align-items: center;
@@ -763,7 +763,7 @@ button:disabled {
 }
 .puzzle-cell.slide-in { animation: slideIn 0.1s ease-out; }
 
-/* ── Mini puzzle grid (trace tables) ────────────────────────── */
+/* â”€â”€ Mini puzzle grid (trace tables) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .puzzle-grid-mini {
     display: inline-grid;
     grid-template-columns: repeat(4, 1fr);
@@ -796,7 +796,7 @@ button:disabled {
     border-bottom: 1px solid #3d5139;
 }
 
-/* ── Result cards ────────────────────────────────────────────── */
+/* â”€â”€ Result cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .result-success {
     border: 1px solid rgba(122,166,106,0.22);
     border-left: 4px solid var(--success);
@@ -816,7 +816,7 @@ button:disabled {
     box-shadow: var(--shadow-sm);
 }
 
-/* ── Group badges ────────────────────────────────────────────── */
+/* â”€â”€ Group badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .group-badge {
     display: inline-block;
     padding: 5px 11px;
@@ -826,7 +826,7 @@ button:disabled {
     font-weight: 800;
     margin-right: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     border: 1px solid rgba(244,239,229,0.16);
 }
 .group-uninformed { background: rgba(214,161,95,0.14); color: #f6d6a7; border-left: 3px solid #d6a15f; }
@@ -836,7 +836,7 @@ button:disabled {
 .group-csp        { background: rgba(111,142,96,0.16); color: #d8f0c5; border-left: 3px solid #6f8e60; }
 .group-adversarial { background: rgba(214,106,95,0.14); color: #f2c1ba; border-left: 3px solid #d66a5f; }
 
-/* ── Scrollbar ───────────────────────────────────────────────── */
+/* â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .scroll-container {
     max-height: 400px;
     overflow-y: auto;
@@ -847,7 +847,7 @@ button:disabled {
 .scroll-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 .scroll-container::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
 
-/* ── Sidebar ─────────────────────────────────────────────────── */
+/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 section[data-testid="stSidebar"] {
     background:
         radial-gradient(circle at 20% 0%, rgba(214,161,95,0.10), transparent 220px),
@@ -858,7 +858,7 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 {
-    letter-spacing: -0.02em !important;
+    letter-spacing: 0;
 }
 section[data-testid="stSidebar"] h1 {
     font-size: 26px !important;
@@ -875,6 +875,21 @@ section[data-testid="stSidebar"] p {
     color: var(--text-secondary) !important;
     font-size: 13.5px !important;
     line-height: 1.38 !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stExpander"] {
+    margin: 0 0 10px !important;
+    border-color: rgba(214,196,166,0.18) !important;
+    background:
+        linear-gradient(180deg, rgba(244,239,229,0.035), transparent),
+        rgba(10,13,12,0.34) !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stExpander"] details summary {
+    min-height: 44px;
+    align-items: center;
+}
+section[data-testid="stSidebar"] div[data-testid="stExpander"] details summary p {
+    color: var(--text-primary) !important;
+    font-weight: 800 !important;
 }
 section[data-testid="stSidebar"] [role="radiogroup"] label {
     border-radius: var(--radius-sm);
@@ -908,7 +923,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     font-size: 13px !important;
 }
 
-/* ── Section dividers ────────────────────────────────────────── */
+/* â”€â”€ Section dividers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .section-divider {
     border: 0;
     height: 1px;
@@ -916,7 +931,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     margin: 20px 0;
 }
 
-/* ── Detail grid text (monospace for trace) ──────────────────── */
+/* â”€â”€ Detail grid text (monospace for trace) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .detail-grid-text {
     font-family: var(--font-mono);
     font-size: 11.5px;
@@ -929,7 +944,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     margin: 3px 0;
 }
 
-/* ── Interactive Play Board alignment and styles ── */
+/* â”€â”€ Interactive Play Board alignment and styles â”€â”€ */
 div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
@@ -1047,7 +1062,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 850;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     text-transform: uppercase;
 }
 .play-game-status {
@@ -1067,6 +1082,26 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     box-shadow:
         0 24px 48px rgba(0,0,0,0.42),
         inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.play-image-game-frame {
+    width: min(100%, 620px);
+    margin: 0 auto;
+    padding: clamp(8px, 1.4vw, 14px);
+    border: 1px solid rgba(214,196,166,0.20);
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(214,161,95,0.12), transparent 44%),
+        linear-gradient(145deg, rgba(21,25,23,0.98), rgba(5,8,7,0.98));
+    box-shadow:
+        0 24px 48px rgba(0,0,0,0.38),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow: hidden;
+}
+.play-image-game-frame div[data-testid="stHorizontalBlock"] {
+    gap: clamp(6px, 1vw, 10px) !important;
+}
+.play-image-game-frame button {
+    min-height: 44px !important;
 }
 .play-board-grid {
     display: grid;
@@ -1090,6 +1125,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
         inset 0 1px 0 rgba(255,255,255,0.12);
     transform: translateZ(0);
     color: inherit;
+    min-height: 44px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     transition:
@@ -1211,7 +1247,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 900;
-    letter-spacing: 0.1em;
+    letter-spacing: 0;
     text-transform: uppercase;
 }
 .play-victory-title {
@@ -1240,12 +1276,25 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     .play-board-shell {
         padding: 8px;
     }
+    .play-image-game-frame {
+        width: min(100%, 430px);
+        padding: 8px;
+    }
     .play-board-grid {
         gap: 6px;
     }
     .play-move-chip {
         padding: 5px 4px;
         font-size: 10px;
+    }
+}
+
+@media (max-width: 420px) {
+    .play-image-game-frame {
+        padding: 6px;
+    }
+    .play-image-game-frame div[data-testid="stHorizontalBlock"] {
+        gap: 5px !important;
     }
 }
 
@@ -1278,7 +1327,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     font-size: 18px !important;
     font-weight: 750 !important;
     color: var(--text-primary) !important;
-    letter-spacing: -0.02em !important;
+    letter-spacing: 0;
 }
 .ai-solver-badge {
     background: rgba(214,161,95,0.16) !important;
@@ -1289,7 +1338,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     font-weight: 800 !important;
     padding: 2px 8px !important;
     border-radius: 5px !important;
-    letter-spacing: 0.09em !important;
+    letter-spacing: 0;
     text-transform: uppercase !important;
 }
 .ai-solver-desc {
@@ -1303,7 +1352,7 @@ div[data-testid="stVerticalBlock"]:has(.interactive-board-container-number) .puz
     font-family: var(--font-mono);
     font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     margin: 0 0 10px;
     text-align: center;
     text-transform: uppercase;

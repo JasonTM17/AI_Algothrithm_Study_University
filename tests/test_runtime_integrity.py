@@ -32,7 +32,7 @@ def test_search_tree_renderer_has_no_legacy_trace_fallback():
 
     assert "_render_legacy_search_trace" not in components_source
     assert "search_tree_to_dot" in components_source
-    assert "Every edge is backed by a legal puzzle action" in components_source
+    assert 't("search_tree_caption")' in components_source
     assert "hand_trace_tree_dot" in hand_tracing_source
     assert "st.graphviz_chart" in hand_tracing_source
     assert "Compatibility for tree display" not in hand_tracing_source

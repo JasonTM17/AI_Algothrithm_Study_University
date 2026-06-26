@@ -21,10 +21,15 @@ from core.academic_proofs import (
     EXAM_ANSWER_TEMPLATES,
     PROOF_CARDS,
 )
+from ui.localization import translate
 
 
 def _role_class(role: str) -> str:
     return "role-" + role.replace("_", "-")
+
+
+def _t(key: str, **kwargs) -> str:
+    return translate(st.session_state.get("global_lang_select"), key, **kwargs)
 
 
 def render_responsive_record_cards(
@@ -129,28 +134,36 @@ def render_grading_summary_panel() -> None:
 
     records = [
         {
-            "Criterion": "Solver truth",
-            "Evidence": "A*, IDA*, BFS, UCS, and IDS are separated from contrast demos.",
-            "How to grade": "Check the role badge before reading runtime metrics.",
+            _t("academic_criterion"): _t("academic_solver_truth"),
+            _t("academic_evidence"): _t("academic_solver_truth_evidence"),
+            _t("academic_how_to_grade"): _t("academic_solver_truth_grade"),
         },
         {
-            "Criterion": "PEAS model",
-            "Evidence": "Performance, Environment, Actuators, and Sensors are rendered as first-class data.",
-            "How to grade": "Verify the environment is deterministic, fully observable, and single-agent.",
+            _t("academic_criterion"): _t("academic_peas_model"),
+            _t("academic_evidence"): _t("academic_peas_evidence"),
+            _t("academic_how_to_grade"): _t("academic_peas_grade"),
         },
         {
-            "Criterion": "Proof readiness",
-            "Evidence": f"{len(PROOF_CARDS)} proof cards plus answer templates for {len(EXAM_ANSWER_TEMPLATES)} groups.",
-            "How to grade": "Ask for optimality, admissibility, consistency, and parity arguments.",
+            _t("academic_criterion"): _t("academic_proof_readiness"),
+            _t("academic_evidence"): _t(
+                "academic_proof_evidence",
+                proof_count=len(PROOF_CARDS),
+                template_count=len(EXAM_ANSWER_TEMPLATES),
+            ),
+            _t("academic_how_to_grade"): _t("academic_proof_grade"),
         },
         {
-            "Criterion": "Coverage",
-            "Evidence": ", ".join(f"{count} {role}" for role, count in role_counts.items()),
-            "How to grade": "Confirm extension algorithms are not presented as natural solvers.",
+            _t("academic_criterion"): _t("academic_coverage"),
+            _t("academic_evidence"): ", ".join(f"{count} {role}" for role, count in role_counts.items()),
+            _t("academic_how_to_grade"): _t("academic_coverage_grade"),
         },
     ]
-    st.subheader("Grading summary")
-    render_responsive_record_cards(records, title_key="Criterion", detail_keys=["Evidence", "How to grade"])
+    st.subheader(_t("academic_grading_summary_title"))
+    render_responsive_record_cards(
+        records,
+        title_key=_t("academic_criterion"),
+        detail_keys=[_t("academic_evidence"), _t("academic_how_to_grade")],
+    )
 
 
 def render_algorithm_role_card(algorithm_name: str) -> None:
@@ -162,43 +175,43 @@ def render_algorithm_role_card(algorithm_name: str) -> None:
     st.markdown(
         f"""
         <div class="academic-card">
-            <div class="academic-card-title">Academic classification</div>
-            <div class="academic-card-body">
-                <span class="role-badge {_role_class(item.role)}">{escape(role_label)}</span>
-                <p><strong>Environment:</strong> {escape(item.environment)}</p>
-                <p><strong>Guarantee:</strong> {escape(item.guarantee)}</p>
-                <p><strong>Exam note:</strong> {escape(item.exam_note)}</p>
+                <div class="academic-card-title">{escape(_t("academic_classification"))}</div>
+                <div class="academic-card-body">
+                    <span class="role-badge {_role_class(item.role)}">{escape(role_label)}</span>
+                    <p><strong>{escape(_t("academic_environment"))}:</strong> {escape(item.environment)}</p>
+                    <p><strong>{escape(_t("academic_guarantee"))}:</strong> {escape(item.guarantee)}</p>
+                    <p><strong>{escape(_t("academic_exam_note"))}:</strong> {escape(item.exam_note)}</p>
+                </div>
             </div>
-        </div>
         """,
         unsafe_allow_html=True,
     )
 
 
 def render_peas_panel() -> None:
-    st.subheader("PEAS model for the 15-puzzle agent")
+    st.subheader(_t("academic_peas_title"))
     render_responsive_record_cards(
         PEAS_TABLE,
         title_key="PEAS",
         detail_keys=["Academic meaning", "15-puzzle instance", "Exam emphasis"],
     )
-    with st.expander("Detailed PEAS table", expanded=False):
+    with st.expander(_t("academic_peas_table"), expanded=False):
         st.dataframe(pd.DataFrame(PEAS_TABLE), width="stretch", hide_index=True)
 
 
 def render_recommendation_rubric() -> None:
-    st.subheader("Algorithm selection rubric")
+    st.subheader(_t("academic_rubric_title"))
     render_responsive_record_cards(
         RECOMMENDATION_RUBRIC,
         title_key="Need",
         detail_keys=["Use", "Avoid", "Reason"],
     )
-    with st.expander("Detailed rubric table", expanded=False):
+    with st.expander(_t("academic_rubric_table"), expanded=False):
         st.dataframe(pd.DataFrame(RECOMMENDATION_RUBRIC), width="stretch", hide_index=True)
 
 
 def render_taxonomy_table() -> None:
-    st.subheader("Academic taxonomy of all algorithms")
+    st.subheader(_t("academic_taxonomy_title"))
     rows = taxonomy_rows()
     render_responsive_record_cards(
         rows,
@@ -206,8 +219,8 @@ def render_taxonomy_table() -> None:
         detail_keys=["Role", "Environment", "Guarantee", "Exam note"],
         limit=9,
     )
-    st.caption("Showing the first 9 algorithms as cards. Open the full table for all 27 algorithms.")
-    with st.expander("Full taxonomy table", expanded=False):
+    st.caption(_t("academic_taxonomy_caption"))
+    with st.expander(_t("academic_taxonomy_table"), expanded=False):
         st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
@@ -233,22 +246,27 @@ def render_extension_warning(t=None) -> None:
 
 
 def render_proof_cards() -> None:
-    st.subheader("Proof cards for oral/written defense")
+    st.subheader(_t("academic_proof_cards_title"))
     records = [
-        {"Proof": title, "Claim": item["claim"], "Reason": item["reason"], "Exam use": item["exam_use"]}
+        {
+            "Proof": title,
+            _t("academic_claim"): item["claim"],
+            _t("academic_reason"): item["reason"],
+            _t("academic_exam_use"): item["exam_use"],
+        }
         for title, item in PROOF_CARDS.items()
     ]
-    render_responsive_record_cards(records, title_key="Proof", detail_keys=["Claim", "Exam use"])
-    with st.expander("Proof reasoning details", expanded=False):
+    render_responsive_record_cards(records, title_key="Proof", detail_keys=[_t("academic_claim"), _t("academic_exam_use")])
+    with st.expander(_t("academic_proof_details"), expanded=False):
         for title, item in PROOF_CARDS.items():
             st.markdown(f"**{title}**")
-            st.markdown(f"**Claim:** {item['claim']}")
-            st.markdown(f"**Reason:** {item['reason']}")
-            st.markdown(f"**Exam use:** {item['exam_use']}")
+            st.markdown(f"**{_t('academic_claim')}:** {item['claim']}")
+            st.markdown(f"**{_t('academic_reason')}:** {item['reason']}")
+            st.markdown(f"**{_t('academic_exam_use')}:** {item['exam_use']}")
 
 
 def render_exam_answer_templates() -> None:
-    st.subheader("Exam answer templates by algorithm group")
+    st.subheader(_t("academic_answer_templates_title"))
     rows = [
         {"Group": group, **template}
         for group, template in EXAM_ANSWER_TEMPLATES.items()
@@ -258,12 +276,12 @@ def render_exam_answer_templates() -> None:
         title_key="Group",
         detail_keys=["goal", "frontier", "evaluation", "guarantee", "when_to_use", "when_not_to_use"],
     )
-    with st.expander("Detailed answer template table", expanded=False):
+    with st.expander(_t("academic_answer_template_table"), expanded=False):
         st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
 def render_benchmark_methodology(preset_name: str | None = None) -> None:
-    st.subheader("Benchmark methodology")
+    st.subheader(_t("academic_benchmark_methodology"))
     if preset_name and preset_name in BENCHMARK_PRESETS:
         preset = BENCHMARK_PRESETS[preset_name]
         st.markdown(
@@ -278,17 +296,17 @@ def render_benchmark_methodology(preset_name: str | None = None) -> None:
             """,
             unsafe_allow_html=True,
         )
-    st.caption("Benchmark output is course evidence, not a production solver leaderboard.")
+    st.caption(_t("academic_benchmark_caption"))
 
 
 def render_decision_guide() -> None:
-    st.subheader("Algorithm decision guide")
+    st.subheader(_t("academic_decision_guide"))
     render_responsive_record_cards(
         DECISION_GUIDE,
         title_key="Question",
         detail_keys=["Use", "Why"],
     )
-    with st.expander("Detailed decision guide table", expanded=False):
+    with st.expander(_t("academic_decision_guide_table"), expanded=False):
         st.dataframe(pd.DataFrame(DECISION_GUIDE), width="stretch", hide_index=True)
 
 
@@ -320,7 +338,7 @@ def render_benchmark_evidence(results: list) -> None:
         rows.append(row)
 
     if rows:
-        st.subheader("Academic evidence metrics")
+        st.subheader(_t("academic_evidence_metrics"))
         render_responsive_record_cards(
             rows,
             title_key="Algorithm",
@@ -333,45 +351,49 @@ def render_benchmark_evidence(results: list) -> None:
                 "Runtime ratio vs A*",
             ],
         )
-        with st.expander("Detailed evidence metrics table", expanded=False):
+        with st.expander(_t("academic_evidence_metrics_table"), expanded=False):
             st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
 def render_exam_defense_panel() -> None:
-    st.subheader("Exam defense guide")
+    st.subheader(_t("academic_exam_defense_guide"))
     records = [
         {
-            "Section": "Demo flow",
-            "What to show": "Start in Play, load a teaching preset, run A*, then compare against Greedy or Hill Climbing.",
-            "Why it matters": "Shows the difference between optimal solvers and contrast demos.",
+            _t("academic_section"): "Demo flow",
+            _t("academic_what_to_show"): "Start in Play, load a teaching preset, run A*, then compare against Greedy or Hill Climbing.",
+            _t("academic_why_it_matters"): "Shows the difference between optimal solvers and contrast demos.",
         },
         {
-            "Section": "Proof map",
-            "What to show": "Use PEAS, proof cards, and the selected algorithm role before opening detailed theory.",
-            "Why it matters": "Lets instructors verify guarantees quickly.",
+            _t("academic_section"): "Proof map",
+            _t("academic_what_to_show"): "Use PEAS, proof cards, and the selected algorithm role before opening detailed theory.",
+            _t("academic_why_it_matters"): "Lets instructors verify guarantees quickly.",
         },
         {
-            "Section": "Boundary statement",
-            "What to show": "Point out CSP, complex, and game modes as extensions.",
-            "Why it matters": "Prevents the common mistake of calling every AI topic a natural 15-puzzle solver.",
+            _t("academic_section"): "Boundary statement",
+            _t("academic_what_to_show"): "Point out CSP, complex, and game modes as extensions.",
+            _t("academic_why_it_matters"): "Prevents the common mistake of calling every AI topic a natural 15-puzzle solver.",
         },
         {
-            "Section": "Evidence",
-            "What to show": "Use benchmark methodology, seed, depth, heuristic, and caveat.",
-            "Why it matters": "Frames results as course evidence rather than production benchmarking.",
+            _t("academic_section"): "Evidence",
+            _t("academic_what_to_show"): "Use benchmark methodology, seed, depth, heuristic, and caveat.",
+            _t("academic_why_it_matters"): "Frames results as course evidence rather than production benchmarking.",
         },
     ]
-    render_responsive_record_cards(records, title_key="Section", detail_keys=["What to show", "Why it matters"])
+    render_responsive_record_cards(
+        records,
+        title_key=_t("academic_section"),
+        detail_keys=[_t("academic_what_to_show"), _t("academic_why_it_matters")],
+    )
 
 
 def render_grading_report_export(start_state: tuple[int, ...], benchmark_results: list | None = None) -> None:
     report = build_grading_report(start_state, benchmark_results)
     st.download_button(
-        "Download grading report (Markdown)",
+        _t("academic_download_report"),
         data=report,
         file_name="15-puzzle-ai-grading-report.md",
         mime="text/markdown",
         key="download_grading_report",
     )
-    with st.expander("Preview grading report", expanded=False):
+    with st.expander(_t("academic_preview_report"), expanded=False):
         st.markdown(report)

@@ -24,6 +24,18 @@ def test_web_app_initial_playground_renders_without_exception():
     assert app.button(key="btn_prove_optimal")
 
 
+def test_vietnamese_navigation_and_advanced_labels_render():
+    app = AppTest.from_file("app.py", default_timeout=15).run()
+
+    assert "Chạy thuật toán" in app.radio(key="main_tab_label").options
+    assert "Nâng cao" in app.radio(key="main_tab_label").options
+
+    app.radio(key="main_tab_label").set_value("Nâng cao").run()
+
+    assert app.selectbox(key="complex_mode_v2").label == "Thuật toán / Mô hình"
+    assert not app.exception
+
+
 def test_play_image_mode_uses_image_tiles_for_manual_board():
     app = AppTest.from_file("app.py", default_timeout=10).run()
 
@@ -151,7 +163,19 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert result.search_tree_edges
     assert result.random_seed is not None
     assert sorted(result.variation_action_order) == ["D", "L", "R", "U"]
-    assert [expander.label for expander in app.expander] == [
+    expander_labels = [expander.label for expander in app.expander]
+    run_expanders = [
+        label
+        for label in expander_labels
+        if label in {
+            "Academic Evaluation",
+            "Solution Path",
+            "Trace Steps",
+            "Node / Frontier / Reached Detail",
+            "Search Tree Visualization",
+        }
+    ]
+    assert run_expanders == [
         "Academic Evaluation",
         "Solution Path",
         "Trace Steps",

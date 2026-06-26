@@ -30,6 +30,9 @@ Use a tactile solver-laboratory dashboard style:
 
 ## Content Rules
 
+- Route all user-facing Streamlit labels, captions, warnings, buttons, and table headers through `ui.localization`; keep only algorithm names, formulas, code, and CSS/HTML constants as hardcoded literals.
+- Keep the sidebar grouped by task: language, start setup, goal setup, teaching presets, puzzle image, and active Start/Goal summary.
+- Keep play-board image tiles square, touch-friendly, and stable on 390px mobile viewports; visible controls must remain available instead of gesture-only interaction.
 - Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
 - Present AC-3 as bounded exact-horizon CSP evidence: domain sizes, revisions, removed values, legal replay when found, and domain wipe-out otherwise.
 - Keep group comparison columns stable and scannable: step rule, time, space, steps/output, and guarantee.

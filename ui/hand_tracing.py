@@ -72,9 +72,7 @@ def render_hand_trace_tree() -> None:
     if not st.session_state.get("ht_node_records"):
         st.info(t("tc_no_trace"))
         return
-    st.caption(
-        "Green nodes were expanded by your choices; every edge is a generated child from a legal blank move."
-    )
+    st.caption(t("hand_trace_tree_caption"))
     st.graphviz_chart(hand_trace_tree_dot(), width="stretch")
 
 

@@ -158,7 +158,7 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     mode_key = _mode_key(mode)
 
     if mode == "CSP Definition & Propagation":
-        horizon = st.number_input("Time Horizon", 1, 5, 3, key="csp_t")
+        horizon = st.number_input(t("adv_time_horizon"), 1, 5, 3, key="csp_t")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("constraint_propagation")
             _store_advanced_outputs(mode, [
@@ -182,17 +182,14 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Backtracking & Min-Conflicts":
-        st.subheader("Bounded Transition-CSP Planning")
-        st.info(
-            "Illustrative depth-first planning with heuristic value ordering; "
-            "not an MRV/forward-checking CSP solver."
-        )
+        st.subheader(t("adv_bounded_transition_planning"))
+        st.info(t("adv_bounded_transition_info"))
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             planning_variation = _next_variation("backtracking_search")
             contrast_variation = _next_variation("min_conflicts")
             _store_advanced_outputs(mode, [
                 _result_entry(
-                    "Bounded Transition-CSP Planning",
+                    t("adv_bounded_transition_planning"),
                     _run_with_variation(
                         planning_variation,
                         backtracking_search,
@@ -210,12 +207,12 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                         ),
                         contrast_variation,
                     ),
-                    note="This contrast may swap arbitrary positions, so it cannot certify a legal 15-puzzle path.",
+                    note=t("adv_min_conflicts_contrast_note"),
                 ),
             ])
 
     elif mode == "Constraint Graphs & Path Consistency":
-        horizon = st.number_input("Time Horizon", 1, 3, 2, key="cg_t")
+        horizon = st.number_input(t("adv_time_horizon"), 1, 3, 2, key="cg_t")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("solve_csp_constraint_graphs")
             _store_advanced_outputs(mode, [
@@ -230,12 +227,9 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "AND-OR Search (Nondeterministic)":
-        depth = st.number_input("Max Depth", 1, 15, 5, key="andor_depth")
-        support = st.slider("Deflection outcome support", 0.0, 1.0, 0.3, key="andor_prob")
-        st.caption(
-            "At 0, only the intended outcome exists. Above 0, modeled deflections are possible; "
-            "AND-OR does not weight branches by probability."
-        )
+        depth = st.number_input(t("adv_max_depth"), 1, 15, 5, key="andor_depth")
+        support = st.slider(t("adv_deflection_support"), 0.0, 1.0, 0.3, key="andor_prob")
+        st.caption(t("adv_andor_support_caption"))
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("and_or_search")
             _store_advanced_outputs(mode, [
@@ -255,8 +249,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "No Observation (Belief State)":
-        count = st.number_input("Belief States", 2, 10, 5, key="no_obs_n")
-        steps = st.number_input("Max Steps", 5, 50, 20, key="no_obs_steps")
+        count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="no_obs_n")
+        steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="no_obs_steps")
         st.info(t("adv_no_observation_note"))
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("no_observation_search")
@@ -279,8 +273,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Partially Observable":
-        count = st.number_input("Belief States", 2, 10, 5, key="po_n")
-        steps = st.number_input("Max Steps", 5, 50, 20, key="po_steps")
+        count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="po_n")
+        steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="po_steps")
         st.info(t("adv_partial_observation_note"))
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("partially_observable_search")
@@ -303,8 +297,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Online Search (LRTA*)":
-        heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="lrta_h")
-        steps = st.number_input("Max Steps", 100, 100000, 10000, key="lrta_steps")
+        heuristic = st.selectbox(t("adv_heuristic"), list(HEURISTICS.keys()), key="lrta_h")
+        steps = st.number_input(t("adv_max_steps"), 100, 100000, 10000, key="lrta_steps")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("online_search_lrta")
             _store_advanced_outputs(mode, [
@@ -324,9 +318,9 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Minimax Game":
-        st.caption("15-puzzle has no natural opponent; this is an artificial MAX/MIN extension.")
-        depth = st.number_input("Game Tree Depth", 1, 5, 3, key="mm_depth")
-        heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="mm_h")
+        st.caption(t("adv_minimax_caption"))
+        depth = st.number_input(t("adv_game_tree_depth"), 1, 5, 3, key="mm_depth")
+        heuristic = st.selectbox(t("adv_heuristic"), list(HEURISTICS.keys()), key="mm_h")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("minimax")
             _store_advanced_outputs(mode, [
@@ -346,9 +340,9 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Alpha-Beta Pruning Game":
-        st.caption("Alpha-Beta is shown as an artificial MAX/MIN extension over 15-puzzle states.")
-        depth = st.number_input("Game Tree Depth", 1, 5, 3, key="ab_depth")
-        heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="ab_h")
+        st.caption(t("adv_alpha_beta_caption"))
+        depth = st.number_input(t("adv_game_tree_depth"), 1, 5, 3, key="ab_depth")
+        heuristic = st.selectbox(t("adv_heuristic"), list(HEURISTICS.keys()), key="ab_h")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("alpha_beta_pruning")
             _store_advanced_outputs(mode, [
@@ -368,9 +362,9 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
             ])
 
     elif mode == "Expectimax (Stochastic)":
-        depth = st.number_input("Game Tree Depth", 1, 5, 3, key="em_depth")
-        heuristic = st.selectbox("Heuristic", list(HEURISTICS.keys()), key="em_h")
-        success_prob = st.slider("Success Probability", 0.5, 1.0, 0.8, key="em_sp")
+        depth = st.number_input(t("adv_game_tree_depth"), 1, 5, 3, key="em_depth")
+        heuristic = st.selectbox(t("adv_heuristic"), list(HEURISTICS.keys()), key="em_h")
+        success_prob = st.slider(t("adv_success_prob"), 0.5, 1.0, 0.8, key="em_sp")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("expectimax")
             _store_advanced_outputs(mode, [

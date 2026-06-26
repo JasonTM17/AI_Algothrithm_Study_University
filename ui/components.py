@@ -8,12 +8,31 @@ from core.comparison import compact_action_path, shared_verified_paths, unique_v
 from core.puzzle import PuzzleState, GOAL_STATE, is_solvable
 from core.utils import format_state_grid
 from ui.styles import STYLES, GROUP_COLORS
-from ui.localization import translate
+from ui.localization import VIETNAMESE, resolve_language, translate
 
 
 def t(key, **kwargs):
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = st.session_state.get("global_lang_select", VIETNAMESE)
     return translate(global_lang, key, **kwargs)
+
+
+GROUP_LABEL_KEYS = {
+    "Uninformed Search": "group_uninformed",
+    "Informed Search": "group_informed",
+    "Local Search": "group_local",
+    "Complex Environments": "group_complex",
+    "CSP": "group_csp",
+    "AI-vs-AI Tournament": "group_ai_vs_ai",
+}
+
+
+def _current_language() -> str:
+    return resolve_language(st.session_state.get("global_lang_select", VIETNAMESE))
+
+
+def _localized_group_name(group: str) -> str:
+    key = GROUP_LABEL_KEYS.get(group)
+    return t(key) if key else group
 
 
 def render_styles():
@@ -112,7 +131,7 @@ def _image_tile_button_style(button_key: str, image_src: str, show_numbers: bool
         width: 100% !important;
         aspect-ratio: 1 / 1 !important;
         height: auto !important;
-        min-height: 0 !important;
+        min-height: 44px !important;
         padding: 7px !important;
         align-items: flex-start !important;
         justify-content: flex-start !important;
@@ -404,7 +423,7 @@ def render_result_metrics(result):
     with col1:
         st.metric(t("mc_status"), f"{icon} {status_text}")
     with col2:
-        st.metric("Recorded Steps", str(len(result.actions)) if result.path_verified else "-")
+        st.metric(t("mc_recorded_steps"), str(len(result.actions)) if result.path_verified else "-")
     with col3:
         st.metric(t("mc_runtime"), f"{result.runtime:.4f}s")
     with col4:
@@ -450,12 +469,19 @@ def render_result_metrics(result):
         with evidence_cols[1]:
             st.metric(t("tc_observation"), model_evidence.observation or "-")
 
-    evidence_status = "verified" if result.path_verified else "not verified"
-    optimality_status = "proven for this run" if result.optimality_proven else "not proven for this run"
+    evidence_status = t("run_cert_verified") if result.path_verified else t("run_cert_not_verified")
+    optimality_status = (
+        t("run_cert_optimality_proven")
+        if result.optimality_proven
+        else t("run_cert_optimality_not_proven")
+    )
     st.caption(
-        f"Run certificate: termination={result.termination_reason} · "
-        f"legal path={evidence_status} · optimality={optimality_status}. "
-        f"Theoretical complete/optimal properties apply only when their assumptions and resource limits hold."
+        t(
+            "run_certificate_caption",
+            termination=result.termination_reason or "-",
+            legal_path=evidence_status,
+            optimality=optimality_status,
+        )
     )
 
     if result.message:
@@ -699,7 +725,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         elif step.state:
             render_puzzle_board(step.state, size="small")
         else:
-            st.caption("(no state)")
+            st.caption(t("no_state"))
 
     with col2:
         st.markdown(f"**{t('tc_frontier')}** ({step.frontier_size} states)")
@@ -814,7 +840,7 @@ def render_path_animation(
         "D": t("dir_D").split(" ")[0],
     }
     if current_step == 0:
-        action_display = "Start"
+        action_display = t("dir_start_short")
     else:
         action_display = actions[current_step - 1]
     display = direction_map.get(action_display, action_display)
@@ -823,7 +849,15 @@ def render_path_animation(
         if reaches_goal and current_step == len(path) - 1
         else ""
     )
-    st.caption(f"Step {current_step}/{len(path)-1}: {display}{goal_suffix}")
+    st.caption(
+        t(
+            "anim_step_caption",
+            current=current_step,
+            total=len(path) - 1,
+            action=display,
+            goal_suffix=goal_suffix,
+        )
+    )
 
     # Navigation buttons
     col1, col2, col3 = st.columns(3)
@@ -852,37 +886,27 @@ def render_path_animation(
 
 def render_comparison_table(results: list):
     """Render comparison table for benchmark results."""
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
     if not results:
         st.info(t("compare_no_data"))
         return
 
     rows = []
     for r in results:
-        group_trans = r.group
-        if global_lang == "Tiếng Việt":
-            if r.group == "Uninformed Search": group_trans = "Tìm kiếm mù"
-            elif r.group == "Informed Search": group_trans = "Tìm kiếm có thông tin"
-            elif r.group == "Local Search": group_trans = "Tìm kiếm cục bộ"
-            elif r.group == "Complex Environments": group_trans = "Môi trường phức tạp"
-            elif r.group == "CSP": group_trans = "Thỏa mãn ràng buộc"
-            elif r.group == "AI-vs-AI Tournament": group_trans = "Thi đấu AI-vs-AI"
-            
         row = {
-            t("compare_group_col"): group_trans,
+            t("compare_group_col"): _localized_group_name(r.group),
             t("run_algo"): r.algorithm,
             t("mc_status"): t("mc_solved") if r.success else t("mc_failed"),
-            "Recorded Steps": len(r.actions) if r.path_verified else "-",
-            "Action Trajectory": compact_action_path(r.actions) if r.path_verified else "-",
+            t("mc_recorded_steps"): len(r.actions) if r.path_verified else "-",
+            t("compare_action_trajectory"): compact_action_path(r.actions) if r.path_verified else "-",
             t("mc_cost"): r.cost if r.success else "-",
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
             t("mc_runtime"): f"{r.runtime:.4f}",
-            "Seed / Mode": r.random_seed if r.random_seed is not None else "Deterministic",
-            f"{t('compare_optimal_col')} (theory)": t("tc_yes") if r.is_optimal else t("tc_no"),
-            f"{t('compare_complete_col')} (theory)": t("tc_yes") if r.is_complete else t("tc_no"),
-            "Run optimality proven": t("tc_yes") if r.optimality_proven else t("tc_no"),
-            "Termination": r.termination_reason,
+            t("compare_seed_mode"): r.random_seed if r.random_seed is not None else t("compare_deterministic"),
+            f"{t('compare_optimal_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_optimal else t("tc_no"),
+            f"{t('compare_complete_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_complete else t("tc_no"),
+            t("compare_run_optimality_proven"): t("tc_yes") if r.optimality_proven else t("tc_no"),
+            t("compare_termination"): r.termination_reason,
         }
         rows.append(row)
 
@@ -904,21 +928,17 @@ def render_comparison_table(results: list):
         verified_count = len([r for r in successful if r.path_verified])
         unique_count = unique_verified_path_count(successful)
         st.caption(
-            f"Verified path evidence: {unique_count} unique trajectory/trajectories "
-            f"across {verified_count} certified successful run(s)."
+            t("compare_verified_path_evidence", unique=unique_count, verified=verified_count)
         )
         for algorithms in shared_verified_paths(successful):
             st.info(
-                "Shared verified solution path: " + ", ".join(algorithms) + ". "
-                "This can be academically correct: with unit-cost moves and the same action order, "
-                "multiple optimal algorithms may select the same optimal solution while expanding "
-                "different frontiers and using different memory."
+                t("compare_shared_path_explanation", algorithms=", ".join(algorithms))
             )
 
 
 def render_algorithm_info(algo_name: str, theory: dict):
     """Render algorithm theory information."""
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = _current_language()
     if not theory:
         st.info(t("theory_coming_soon", algo=algo_name))
         return
@@ -928,14 +948,7 @@ def render_algorithm_info(algo_name: str, theory: dict):
 
     st.markdown(f"### {theory.get('name', algo_name)}")
 
-    group_display = group
-    if global_lang == "Tiếng Việt":
-        if group == "Uninformed Search": group_display = "Tìm kiếm mù"
-        elif group == "Informed Search": group_display = "Tìm kiếm có thông tin"
-        elif group == "Local Search": group_display = "Tìm kiếm cục bộ"
-        elif group == "Complex Environments": group_display = "Môi trường phức tạp"
-        elif group == "CSP": group_display = "Thỏa mãn ràng buộc"
-        elif group == "AI-vs-AI Tournament": group_display = "Thi đấu AI-vs-AI"
+    group_display = _localized_group_name(group)
 
     badge_cls = group_style.get("badge", "")
     if badge_cls:
@@ -946,28 +959,28 @@ def render_algorithm_info(algo_name: str, theory: dict):
     suitable_val = theory.get(suitable_key)
     if suitable_val:
         if "RẤT" in suitable_val or "rất" in suitable_val.lower() or "highly" in suitable_val.lower():
-            props.append(("Phù hợp" if global_lang == "Tiếng Việt" else "Suitable", "#06d6a0"))
+            props.append((t("alg_suitable"), "#06d6a0"))
         elif "KHÔNG" in suitable_val or "không" in suitable_val.lower() or "not" in suitable_val.lower():
-            props.append(("Không phù hợp" if global_lang == "Tiếng Việt" else "Not suitable", "#ef476f"))
+            props.append((t("alg_not_suitable"), "#ef476f"))
         else:
-            props.append(("Hạn chế" if global_lang == "Tiếng Việt" else "Limited", "#ffd166"))
+            props.append((t("alg_limited"), "#ffd166"))
 
     for label, color in props:
         st.markdown(f'<span style="background:{color};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;">{label}</span>', unsafe_allow_html=True)
 
     sections = [
-        ("Mục tiêu" if global_lang == "Tiếng Việt" else "Goal", "goal"),
-        ("Ý tưởng" if global_lang == "Tiếng Việt" else "Idea", "idea"),
-        ("Cấu trúc dữ liệu" if global_lang == "Tiếng Việt" else "Data Structure", "data_structure"),
-        ("Công thức" if global_lang == "Tiếng Việt" else "Formula", "formula"),
-        ("Áp dụng 15-Puzzle" if global_lang == "Tiếng Việt" else "15-Puzzle Application", "application"),
-        ("Phù hợp 15-Puzzle?" if global_lang == "Tiếng Việt" else "Suitable for 15-Puzzle?", "suitable"),
-        ("Ưu điểm" if global_lang == "Tiếng Việt" else "Pros", "pros"),
-        ("Nhược điểm" if global_lang == "Tiếng Việt" else "Cons", "cons"),
-        ("Độ phức tạp" if global_lang == "Tiếng Việt" else "Complexity", "complexity"),
-        ("Ví dụ chạy tệ" if global_lang == "Tiếng Việt" else "Worst-case Example", "bad_example"),
-        ("So sánh" if global_lang == "Tiếng Việt" else "Comparison", "comparison"),
-        ("Điểm cần nhớ khi thi" if global_lang == "Tiếng Việt" else "Exam Tips", "exam_tips"),
+        (t("alg_goal"), "goal"),
+        (t("alg_idea"), "idea"),
+        (t("alg_data_structure"), "data_structure"),
+        (t("alg_formula"), "formula"),
+        (t("alg_application"), "application"),
+        (t("alg_suitable_question"), "suitable"),
+        (t("alg_pros"), "pros"),
+        (t("alg_cons"), "cons"),
+        (t("alg_complexity"), "complexity"),
+        (t("alg_worst_case"), "bad_example"),
+        (t("alg_comparison"), "comparison"),
+        (t("alg_exam_tips"), "exam_tips"),
     ]
 
     for title, key in sections:
@@ -981,7 +994,7 @@ def render_algorithm_info(algo_name: str, theory: dict):
     pseudocode_key = "pseudocode_en" if global_lang == "English" and "pseudocode_en" in theory else "pseudocode"
     pseudocode = theory.get(pseudocode_key)
     if pseudocode:
-        st.markdown("**Pseudocode**")
+        st.markdown(f"**{t('pseudocode_label')}**")
         st.code(pseudocode, language="python")
 
 
@@ -994,18 +1007,14 @@ def render_search_tree(result, max_nodes: int = 40):
         return
 
     st.markdown(f"### {t('run_search_tree')}")
-    st.caption(
-        "Every edge is backed by a legal puzzle action. Green nodes and edges "
-        "show the verified legal result path; the remaining nodes are explored evidence."
-    )
+    st.caption(t("search_tree_caption"))
     st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
     if len(result.search_tree_nodes) > max_nodes:
         st.caption(
-            f"Showing {max_nodes}/{len(result.search_tree_nodes)} recorded nodes. "
-            "The visualization is bounded to keep the web page responsive."
+            t("search_tree_showing", shown=max_nodes, total=len(result.search_tree_nodes))
         )
     if result.trace_truncated:
-        st.warning("Trace display reached its capture limit; run metrics still cover the solver run.")
+        st.warning(t("trace_capture_limit_warning"))
 
 
 def process_uploaded_image(image_file, grid_size: int = 4):
