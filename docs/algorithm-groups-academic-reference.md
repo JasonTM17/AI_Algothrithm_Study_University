@@ -70,7 +70,32 @@ Quy tắc ngắn: nếu mục tiêu là giải 15-puzzle chuẩn, ưu tiên A*/I
 
 Tree search xem mỗi đường đi sinh ra là một node riêng, nên có thể lặp state. Graph search ghi nhớ state đã đến hoặc cost tốt nhất để tránh duplicate. App vẽ search tree bằng parent-child edge để minh họa quá trình sinh node, còn các solver chuẩn vẫn dùng duplicate handling để giữ tính đúng thực thi.
 
-## 5. Uninformed Search
+## 5. Chi tiết tham số kỹ thuật trong code
+
+Các tham số dưới đây là phần dễ bị thiếu khi chỉ đọc lý thuyết. Chúng được đối chiếu từ `algorithms/`, `core/solver_dispatch.py` và `core/randomness.py`.
+
+| Khu vực | Chi tiết triển khai | Ý nghĩa khi bảo vệ |
+|---|---|---|
+| Action order | Solver nhận `action_order`, mặc định `LRUD`; UI có thể đổi thứ tự action mỗi run. | Node count, trace và path có thể đổi theo thứ tự sinh neighbor; benchmark phải ghi action order. |
+| Tie-breaker | UCS, Greedy và A* hỗ trợ `FIFO`, `LIFO`, `Min-g`, `Max-g`. | Tie-breaker chỉ phá hòa trong priority queue; không tự tạo optimality nếu thuật toán không optimal. |
+| Resource limit | BFS/UCS/Greedy mặc định `max_nodes=50000`, A*/IDA* `100000`; DFS/IDS có thêm `max_depth=50`; timeout mặc định thường là `60s`, A*/IDA* là `120s`. | Timeout, node cap hoặc depth cap làm mất chứng cứ thực nghiệm; phải đọc `termination_reason` trước khi claim. |
+| Run variation | `RunVariation` ghi seed, action order, tie-breaker, solver seed và cờ `randomizes_path`. | Run/Advanced có thể thay đổi cách trình bày qua mỗi lần bấm nhưng vẫn giữ certificate path/goal/optimality. |
+| Solver thật sự dùng seed | Stochastic HC, Random-Restart HC, Simulated Annealing, Min-Conflicts, No Observation, Partial Observation và Expectimax. | Không ghi “random” cho BFS/A*/IDA*; deterministic solver chỉ có variation metadata của UI. |
+| Non-path variation | AND-OR, CSP Definition, Path Consistency, Global Constraints và Constraint Graphs không randomize path. | Đây là model/explanation output, không nên diễn giải như trajectory puzzle tuyến tính. |
+| Dispatcher kwargs | `core/solver_dispatch.py` chỉ truyền tham số mà từng solver nhận được; CSP explanatory functions chỉ nhận start/goal, CSP search nhận timeout. | UI tránh truyền sai signature; khi audit lỗi run, kiểm `build_solver_kwargs` trước. |
+| CSP horizon cap | `csp_definition` và `constraint_propagation` bị cap `time_horizon <= 5`; `solve_csp_constraint_graphs` cap `time_horizon <= 3`. | CSP demo cố ý bounded để dễ chạy; AC-3 exact-horizon không phải shortest-path proof toàn cục. |
+| Backtracking CSP | `max_steps` mặc định `5000`, timeout `30s`, dùng heuristic value ordering. | Không gọi là MRV/LCV/forward checking đầy đủ; fail không chứng minh unsolvable. |
+| Min-Conflicts | `max_iterations=10000`, timeout `30s`, seed tùy chọn; thao tác là repair/swap assignment. | Có thể đạt arrangement goal nhưng không phải legal blank-move solution. |
+| Local Beam | `beam_width=3`, `max_iterations=10000`. | Beam hẹp có thể bỏ mất nhánh đúng; đây là demo heuristic/local search. |
+| Random-Restart HC | `max_iterations=5000`, `max_restarts=20`, seed tùy chọn. | Nhiều restart tăng cơ hội nhưng không biến thành complete/optimal solver. |
+| Simulated Annealing | `max_iterations=50000`, `initial_temp=100.0`, `cooling_rate=0.9995`, `min_temp=0.01`, seed tùy chọn. | Probability nhận move xấu phụ thuộc temperature; schedule là caveat quan trọng. |
+| AND-OR | `max_depth=10`, `nondet_prob=0.3`; xác suất chỉ quyết định có deflection outcome hay không, không rank plan. | Output là conditional plan; OR là agent chọn, AND là mọi outcome phải xử lý. |
+| No/Partial Observation | `num_belief_states=5`, `max_steps=20`, seed tùy chọn; heuristic cố định theo Manhattan trong demo belief. | Đây là belief-state/sensor demo, không so node count trực tiếp với A*. |
+| LRTA* | `max_steps=10000`, heuristic mặc định Manhattan, update bảng `H(state)` online. | Agent học khi đi; có thể lặp hoặc đi dài, không thay thế A* offline. |
+| Minimax/Alpha-Beta | `depth=3`, heuristic mặc định Manhattan, timeout `60s`. | Depth-limited game-tree utility, không phải optimal certificate của puzzle chuẩn. |
+| Expectimax | `depth=3`, `success_prob=0.8`, seed tùy chọn; returned actions là một sampled outcome path. | Expected utility cần mô hình xác suất; path hiển thị không phải full stochastic policy. |
+
+## 6. Uninformed Search
 
 Uninformed search không dùng heuristic. Frontier được điều khiển bởi depth, stack/queue hoặc path cost.
 
@@ -83,7 +108,7 @@ Uninformed search không dùng heuristic. Frontier được điều khiển bở
 
 `b` là branching factor, `d` là độ sâu lời giải ngắn nhất, `m` là depth tối đa đang xét.
 
-## 6. Informed Search và heuristic
+## 7. Informed Search và heuristic
 
 | Thuật toán | Evaluation | Complete | Optimal | Vai trò |
 |---|---|---:|---:|---|
@@ -101,7 +126,7 @@ Heuristic trong repo:
 
 Admissible nghĩa là `h(n) <= h*(n)`. Consistent nghĩa là `h(n) <= c(n,n') + h(n')` với mọi cạnh hợp lệ. Nếu A* hoặc IDA* bị timeout/node cap, kết quả thực nghiệm không còn là optimality certificate.
 
-## 7. Local Search
+## 8. Local Search
 
 Local search không duy trì frontier đầy đủ. Nó giữ một state hiện tại, một vài state tốt nhất hoặc chấp nhận move xấu theo xác suất.
 
@@ -123,7 +148,7 @@ Các vấn đề hill climbing cần nói rõ:
 | Ridge | Cần đi ngang hoặc tạm thời xấu hơn mới tốt về sau. | Simulated Annealing có xác suất nhận move xấu khi temperature còn cao. |
 | Randomness dependence | Seed khác nhau sinh trajectory khác nhau. | Stochastic HC, Random-Restart HC, Simulated Annealing. |
 
-## 8. CSP trong 15-puzzle
+## 9. CSP trong 15-puzzle
 
 CSP mô hình hóa bài toán bằng biến `X`, miền giá trị `D` và ràng buộc `C`. Với 15-puzzle, có thể mô hình planning bằng biến theo time step, nhưng không tự nhiên bằng state-space search vì số biến/ràng buộc tăng theo horizon.
 
@@ -141,7 +166,7 @@ Backtracking CSP trong app dùng heuristic value ordering. Không gọi là MRV/
 
 AC-3 executable dùng biến trạng thái đầy đủ để tránh bộ ràng buộc `X[t][p]` quá lớn trong demo. Hai đầu mút bị cố định bởi start và goal; mỗi cặp state liên tiếp phải cách nhau đúng một legal blank move. Kết quả chỉ cho horizon `T` đã chọn, không tự động chứng minh đường ngắn nhất toàn cục.
 
-## 9. Complex Environments
+## 10. Complex Environments
 
 Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đề cương. Đây chỉ là alias UI; taxonomy vẫn là `Complex Environments` và vai trò vẫn là `Illustrative Extension`.
 
@@ -154,7 +179,7 @@ Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đ
 
 Nếu sensor, transition hoặc observability thay đổi, biểu diễn state và thuật toán cũng thay đổi. Không so sánh node count của nhóm này với A*/IDA* như thể cùng một bài toán.
 
-## 10. AI-vs-AI Tournament và game/chance extension
+## 11. AI-vs-AI Tournament và game/chance extension
 
 15-puzzle chuẩn là single-agent. Tournament trong app là lớp chấm điểm giữa hai agent giải cùng board, không phải đối kháng tự nhiên trong môi trường puzzle.
 
@@ -177,7 +202,7 @@ Scoring Tournament:
 
 Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh được optimal path, round đó được báo `reference failed` và không chấm điểm. Tie-break theo tổng điểm, số round optimal, số round solved và total excess cost thấp hơn; nếu vẫn hòa thì draw.
 
-## 11. Cách chọn thuật toán khi bảo vệ
+## 12. Cách chọn thuật toán khi bảo vệ
 
 | Nhu cầu | Nên dùng | Tránh nói |
 |---|---|---|
@@ -189,7 +214,7 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 | Giải thích CSP | CSP planning, AC-3, constraint graph | "CSP là cách tự nhiên nhất cho 15-puzzle" |
 | So sánh hai AI | AI-vs-AI Tournament | "15-puzzle có đối thủ tự nhiên" |
 
-## 12. Checklist vấn đáp
+## 13. Checklist vấn đáp
 
 - Nêu PEAS trước khi chọn thuật toán.
 - Phân biệt solver chuẩn, demo đối chiếu, extension và tournament/game demo.
@@ -200,7 +225,7 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 - Với CSP/game/chance/tournament, nói rõ đây là đổi mô hình hoặc lớp đánh giá.
 - Khi dùng benchmark/tournament, nêu seed, depth, heuristic, max nodes, timeout và caveat.
 
-## 13. Câu trả lời ngắn cho giảng viên
+## 14. Câu trả lời ngắn cho giảng viên
 
 | Câu hỏi | Câu trả lời gợi ý |
 |---|---|
