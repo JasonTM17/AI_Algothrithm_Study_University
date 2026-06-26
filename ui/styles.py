@@ -525,7 +525,7 @@ button:disabled {
     }
 }
 
-/* â”€â”€ Puzzle Board â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Puzzle Board */
 .puzzle-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -555,7 +555,7 @@ button:disabled {
     pointer-events: none;
 }
 
-/* â”€â”€ Game Tile (tactile solver keys) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Game Tile (tactile solver keys) */
 .puzzle-tile {
     width: 72px;
     height: 72px;
@@ -706,7 +706,7 @@ button:disabled {
 }
 .puzzle-grid { animation: boardFadeIn 0.36s var(--ease-lab); }
 
-/* â”€â”€ Legacy puzzle-cell (for static displays like trace tables) â”€ */
+/* Legacy puzzle-cell (for static displays like trace tables) */
 .puzzle-cell {
     display: flex;
     align-items: center;
@@ -763,7 +763,7 @@ button:disabled {
 }
 .puzzle-cell.slide-in { animation: slideIn 0.1s ease-out; }
 
-/* â”€â”€ Mini puzzle grid (trace tables) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Mini puzzle grid (trace tables) */
 .puzzle-grid-mini {
     display: inline-grid;
     grid-template-columns: repeat(4, 1fr);
@@ -796,7 +796,7 @@ button:disabled {
     border-bottom: 1px solid #3d5139;
 }
 
-/* â”€â”€ Result cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Result cards */
 .result-success {
     border: 1px solid rgba(122,166,106,0.22);
     border-left: 4px solid var(--success);
@@ -816,7 +816,7 @@ button:disabled {
     box-shadow: var(--shadow-sm);
 }
 
-/* â”€â”€ Group badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Group badges */
 .group-badge {
     display: inline-block;
     padding: 5px 11px;
@@ -836,7 +836,7 @@ button:disabled {
 .group-csp        { background: rgba(111,142,96,0.16); color: #d8f0c5; border-left: 3px solid #6f8e60; }
 .group-adversarial { background: rgba(214,106,95,0.14); color: #f2c1ba; border-left: 3px solid #d66a5f; }
 
-/* â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Scrollbar */
 .scroll-container {
     max-height: 400px;
     overflow-y: auto;
@@ -847,7 +847,7 @@ button:disabled {
 .scroll-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 .scroll-container::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
 
-/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Sidebar */
 section[data-testid="stSidebar"] {
     background:
         radial-gradient(circle at 20% 0%, rgba(214,161,95,0.10), transparent 220px),
@@ -923,7 +923,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     font-size: 13px !important;
 }
 
-/* â”€â”€ Section dividers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Section dividers */
 .section-divider {
     border: 0;
     height: 1px;
@@ -931,7 +931,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     margin: 20px 0;
 }
 
-/* â”€â”€ Detail grid text (monospace for trace) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Detail grid text (monospace for trace) */
 .detail-grid-text {
     font-family: var(--font-mono);
     font-size: 11.5px;
@@ -944,7 +944,7 @@ section[data-testid="stSidebar"] .puzzle-cell {
     margin: 3px 0;
 }
 
-/* â”€â”€ Interactive Play Board alignment and styles â”€â”€ */
+/* Interactive Play Board alignment and styles */
 div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
