@@ -42,6 +42,35 @@ Khi bao ve, nen noi ro ba tang bang chung:
 2. Goal reachability: path ket thuc dung goal hay chi la partial/selected/sample path.
 3. Optimality certificate: thuat toan va heuristic co du dieu kien de chung minh cost toi uu hay khong.
 
+## 2.1. Doi chieu truc tiep voi de cuong trong anh
+
+Theory/PEAS co them nhom panel "Direct Syllabus Audit" de map tung muc trong de cuong sang web:
+
+| Cum noi dung trong de cuong | Noi xem tren web | Bang chung can chi |
+|---|---|---|
+| Main steps of search algorithms | Theory/PEAS -> Search Foundations; Run Algorithm | Initial state, goal test, frontier, expand, reached, termination/certificate. |
+| Tree search and graph search | Theory/PEAS -> Tree Search vs Graph Search; Step Trace; Hand-Tracing | Cay Graphviz co parent-child edge; graph search co reached/best_g. |
+| Best-first search, A* search | Theory/PEAS -> Informed Search; Run Algorithm | Greedy dung h(n), A* dung f(n)=g(n)+h(n). |
+| Heuristic functions generation | Theory/PEAS -> Heuristic Generation | Misplaced, Manhattan, Linear Conflict va ly do admissible/consistent. |
+| Issues of hill-climbing search | Theory/PEAS -> Hill-Climbing Issues; teaching preset | Local optimum, plateau/shoulder, ridge, randomness/sideways caveat. |
+| CSP continuation | Advanced -> CSP modes | AC-3 exact horizon, path consistency, global constraints, bounded backtracking, min-conflicts, constraint graph. |
+| Tim kiem doi khang | Advanced -> Minimax/Alpha-Beta/Expectimax | Game/chance extension, khong phai solver tu nhien cua 15-puzzle. |
+
+Quy tac bao ve: neu giang vien chi vao mot dong trong de cuong, hay mo panel coverage matrix truoc, roi chuyen sang Run/Advanced de cho bang chung chay duoc.
+
+## 2.2. Cac buoc search nen noi theo thu tu
+
+| Buoc | Noi dung | Bang chung trong app |
+|---|---|---|
+| 1 | Initial state va goal | Start/Goal contract tren moi trang chay. |
+| 2 | Goal test | `goal_reached` tach rieng voi `success`. |
+| 3 | Frontier selection | Queue, stack, priority queue, beam, hoac temperature rule. |
+| 4 | Expand legal actions | Chi sinh L/R/U/D hop le cua blank. |
+| 5 | Reached/duplicate handling | `reached`, `best_g`, hoac path-set tuy thuat toan. |
+| 6 | Termination/certificate | `termination_reason`, `path_verified`, `optimality_proven`. |
+
+Tree search xem moi duong di sinh ra la mot node rieng, nen de lap lai state. Graph search ghi nho state da den hoac cost tot nhat (`reached`, `best_g`) de tranh duplicate bi tri. App ve search tree bang parent-child edge de minh hoa qua trinh sinh node, nhung cac solver chuan van dung duplicate handling de giu tinh dung.
+
 ## 3. Uninformed Search
 
 Nhom uninformed search khong dung heuristic. Frontier duoc dieu khien boi depth, stack/queue, hoac path cost.
@@ -73,6 +102,14 @@ Heuristic trong repo:
 
 Admissible nghia la `h(n) <= h*(n)`. Consistent nghia la `h(n) <= c(n,n') + h(n')` voi moi canh hop le. Neu A* bi timeout hoac node cap, ket qua thuc nghiem khong con la optimality certificate.
 
+Heuristic generation trong 15-puzzle:
+
+| Heuristic | Cach sinh hoc thuat | Bao ve ngan |
+|---|---|---|
+| Misplaced Tiles | Relax khoang cach, chi dem tile sai vi tri. | Moi tile sai can it nhat mot dong thai de sua, nen khong overestimate. |
+| Manhattan Distance | Relax viec bi tile khac chan duong, moi tile van phai di theo hang/cot toi goal. | Moi slide chi giam/tang tong Manhattan toi da 1, nen consistent voi unit cost. |
+| Linear Conflict | Them chi phi bat buoc khi hai tile cung goal-row/goal-column bi nguoc thu tu. | Conflict can it nhat 2 move them, nen manh hon Manhattan ma van admissible trong app. |
+
 ## 5. Local Search
 
 Local search khong duy tri frontier day du. No giu mot state hien tai, mot vai state tot nhat, hoac chap nhan move xau theo xac suat.
@@ -87,6 +124,17 @@ Local search khong duy tri frontier day du. No giu mot state hien tai, mot vai s
 | Simulated Annealing | Co the nhan move xau theo temperature | Khong huu han | Khong | Schedule kem co the hoi tu kem. |
 
 Trong 15-puzzle, nhom nay huu ich nhat o vai tro giao duc: heuristic tot khong du neu thuat toan chi toi uu cuc bo.
+
+Issues of hill-climbing nen noi ro:
+
+| Van de | Y nghia | Cach app minh hoa |
+|---|---|---|
+| Local optimum | Khong neighbor nao tot hon current, dung truoc goal. | Teaching preset `Hill Climbing stuck: local optimum h=4`. |
+| Plateau/shoulder | Nhieu neighbor co cung h, strict improvement khong co huong di. | Theory/PEAS -> Hill-Climbing Issues. |
+| Ridge | Can di ngang hoac tam thoi xau hon moi xuong duoc heuristic ve sau. | Simulated Annealing co xac suat nhan move xau khi T con cao. |
+| Randomness dependence | Seed khac nhau sinh trajectory khac nhau. | Stochastic HC, Random-Restart HC, Simulated Annealing hien seed. |
+
+Backtracking CSP trong app la bounded transition planning voi heuristic value ordering. Khong goi la MRV/LCV hay forward-checking day du, vi code khong cai dat day du cac heuristic CSP do.
 
 ## 6. CSP trong 15-puzzle
 
@@ -109,6 +157,8 @@ Ban executable AC-3 dung bien trang thai day du de tranh mot bo rang buoc transi
 Moi bang Theory/PEAS so sanh cac thuat toan trong cung nhom bang cung cac cot: quy tac chon buoc, time complexity, space complexity, so buoc/output, va guarantee. Ky hieu Big-O la worst-case ly thuyet; runtime/node count thuc nghiem van phu thuoc input va cach cai dat.
 
 ## 7. Complex Environments
+
+Trong man Run Algorithm, AND-OR duoc hien bang alias `Nhom 3 - Moi truong phuc tap` de khop de cuong bao ve. Day chi la alias UI; taxonomy van la `Complex Environments` va vai tro van la `Illustrative Extension`, khong phai Local Search.
 
 | Thuat toan | Moi truong | Output | Ranh gioi |
 |---|---|---|---|

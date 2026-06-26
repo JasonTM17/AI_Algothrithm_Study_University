@@ -58,7 +58,7 @@ Tai lieu nay dinh nghia ke hoach kiem thu co he thong cho dashboard 15-Puzzle AI
 | Man hinh | Checklist |
 |---|---|
 | Play | Start/Goal preview ro, nhap goal tuy chinh, solvability cap nhat, warning khong tron ngon ngu. |
-| Run Algorithm | Start/goal contract ro, moi lan bam co variation seed/action order/tie-break, result metric khong che trace, Frontier co legend ky hieu. |
+| Run Algorithm | Start/goal contract ro, moi lan bam co variation seed/action order/tie-break, result metric khong che trace, Frontier co legend ky hieu; AND-OR hien trong alias `Nhom 3 - Moi truong phuc tap` va tra conditional plan thay vi path 15-puzzle tuyen tinh. |
 | Step Trace | Empty state chi ro can chay thuat toan truoc; CSV export ton tai; detail slider khong crash khi trace co 1 dong. |
 | Compare | Benchmark reset khi thay input/goal/seed; seed stochastic duoc ghi; bang khong tran ngang o mobile. |
 | Theory/PEAS | Khong co thuat toan trong taxonomy thieu theory data; moi group co bang so sanh Time/Space/Steps; ranh gioi CSP/game/no-observation/tournament duoc nhac ro. |
