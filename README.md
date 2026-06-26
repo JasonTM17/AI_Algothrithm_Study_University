@@ -46,7 +46,7 @@ CI trên GitHub dùng Python 3.12, cài `requirements-dev.txt`, chạy compile, 
 | Thành phần | Mô tả |
 |---|---|
 | State | Tuple 16 phần tử, là hoán vị của `0..15`; `0` là ô trống. |
-| Goal mặc định | `(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)`. |
+| Goal mặc định | Ma trận 4x4, `_` là ô trống:<br>` 1  2  3  4`<br>` 5  6  7  8`<br>` 9 10 11 12`<br>`13 14 15  _` |
 | Action | `L`, `R`, `U`, `D`: trượt ô trống sang trái/phải/lên/xuống nếu hợp lệ. |
 | Transition | Xác định: cùng state và action hợp lệ luôn sinh đúng một next state. |
 | Cost | Mỗi move có cost `1`, nên path cost bằng số action. |
