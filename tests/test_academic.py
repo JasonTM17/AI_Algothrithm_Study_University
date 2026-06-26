@@ -367,6 +367,18 @@ def test_interactive_board_buttons_keep_tile_text_and_touch_stable():
     assert 'div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button' not in STYLES
 
 
+def test_play_title_compaction_keeps_semantic_heading_accessible():
+    title_selector = (
+        'div[data-testid="stElementContainer"]:has(h1):has(~ '
+        'div[data-testid="stElementContainer"] .play-compact-strip)'
+    )
+    title_rule = STYLES[STYLES.index(title_selector):STYLES.index(".play-compact-strip h2")]
+
+    assert "position: absolute !important" in title_rule
+    assert "clip: rect(0, 0, 0, 0) !important" in title_rule
+    assert "display: none !important" not in title_rule
+
+
 def test_exam_path_covers_grading_workflow():
     steps = [step for step, _, _ in EXAM_PATH_STEPS]
 

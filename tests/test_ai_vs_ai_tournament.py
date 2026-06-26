@@ -12,6 +12,7 @@ from core.ai_vs_ai_tournament import (
 )
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE
+from ui.ai_vs_ai_tournament import _score_row
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
@@ -84,6 +85,23 @@ def test_score_timeout_without_path_gets_failure_penalty():
 
     assert score.points == -20
     assert score.status == "timeout"
+
+
+def test_tournament_score_row_keeps_optional_numeric_fields_text_stable():
+    score = AgentRoundScore(
+        agent_label="AI A",
+        algorithm="bfs",
+        points=-20,
+        status="timeout",
+        reason="Timeout",
+        random_seed=123,
+    )
+
+    row = _score_row(score)
+
+    values = list(row.values())
+    assert values.count("-") >= 4
+    assert "123" in values
 
 
 def test_score_invalid_path_gets_hard_penalty():

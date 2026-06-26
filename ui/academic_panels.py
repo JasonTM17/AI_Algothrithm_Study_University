@@ -400,4 +400,4 @@ def render_grading_report_export(start_state: tuple[int, ...], benchmark_results
         key="download_grading_report",
     )
     with st.expander(_t("academic_preview_report"), expanded=False):
-        st.markdown(report)
+        st.code(report, language="markdown")

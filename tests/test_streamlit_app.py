@@ -544,8 +544,9 @@ def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     assert set(seeds) == {"Stochastic Hill Climbing", "Simulated Annealing"}
     assert len(set(seeds.values())) == 2
     assert all(result.random_seed is not None for result in app.session_state.benchmark_results)
-    seed_mode_column = app.dataframe[0].value["Seed / Mode"]
-    assert all(isinstance(value, str) for value in seed_mode_column)
+    comparison_frame = app.dataframe[0].value
+    for column in ("Recorded Steps", "Cost", "Seed / Mode"):
+        assert all(isinstance(value, str) for value in comparison_frame[column])
     assert not app.exception
 
 
@@ -611,6 +612,22 @@ def test_theory_tab_renders_within_group_complexity_table():
     assert any("Main steps of search algorithms" in value for value in markdown_values)
     assert any("Heuristic functions generation" in value for value in markdown_values)
     assert len(app.dataframe) >= 1
+    assert not app.exception
+
+
+def test_theory_grading_report_preview_does_not_inject_page_headings():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "PEAS Theory"
+    app.run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    code_text = "\n".join(getattr(code, "value", "") for code in app.code)
+
+    assert "15-Puzzle AI Final Exam Grading Report" not in markdown_text
+    assert "Current Start State" not in markdown_text
+    assert "15-Puzzle AI Final Exam Grading Report" in code_text
+    assert "Current Start State" in code_text
     assert not app.exception
 
 
