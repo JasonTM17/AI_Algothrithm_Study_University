@@ -701,8 +701,10 @@ button:disabled {
     from { transform: translate(var(--slide-from-x, 0), var(--slide-from-y, 0)); opacity: 0.9; }
     to   { transform: translate(0, 0); opacity: 1; }
 }
-.puzzle-tile.slide-anim {
-    animation: tileSlideFrom 0.12s cubic-bezier(0.25, 1, 0.5, 1);
+.puzzle-tile.slide-anim,
+.puzzle-cell.slide-anim {
+    animation: tileSlideFrom 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
 }
 
 /* Goal pulse */
@@ -718,6 +720,7 @@ button:disabled {
     to   { opacity: 1; transform: scale(1); }
 }
 .puzzle-grid { animation: boardFadeIn 0.36s var(--ease-lab); }
+.puzzle-grid:has(.puzzle-cell.slide-anim) { animation: none; }
 
 /* Legacy puzzle-cell (for static displays like trace tables) */
 .puzzle-cell {

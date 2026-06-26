@@ -16,6 +16,8 @@ from ui.components import (
     render_clickable_board,
     render_image_board,
     render_puzzle_board,
+    render_search_detail_table,
+    render_search_tree,
 )
 
 VICTORY_MESSAGE_KEYS = (
@@ -282,6 +284,10 @@ def _render_ai_solver_panel(t, goal) -> None:
                 disabled=(idx >= len(path) - 1),
                 width="stretch",
             )
+
+        st.subheader(t("play_ai_evidence_title"))
+        st.caption(t("play_ai_evidence_desc"))
+        render_search_detail_table(res.trace, max_rows=24, key="play_ai_detail_step_slider")
     else:
         auto_clicked = False
         st.caption(t("play_ai_replay_hint"))
@@ -289,17 +295,28 @@ def _render_ai_solver_panel(t, goal) -> None:
     st.subheader(t("play_ai_replay_board"))
     board_slot = st.empty()
     if auto_clicked and path:
-        for frame_idx in range(idx, len(path)):
+        for frame_idx in range(idx + 1, len(path)):
             with board_slot.container():
-                render_puzzle_board(path[frame_idx], size="small", goal=goal)
-            time.sleep(0.35)
+                render_puzzle_board(
+                    path[frame_idx],
+                    size="small",
+                    goal=goal,
+                    previous_state=path[frame_idx - 1],
+                )
+            time.sleep(0.24)
         _apply_ai_replay_step(len(path) - 1)
         st.session_state["play_slider_val"] = len(path) - 1
         st.session_state["play_auto_done_pending"] = True
         st.rerun()
     else:
         with board_slot.container():
-            render_puzzle_board(replay_state, size="small", goal=goal)
+            previous_state = path[idx - 1] if path and idx > 0 else None
+            render_puzzle_board(
+                replay_state,
+                size="small",
+                goal=goal,
+                previous_state=previous_state,
+            )
 
     if path and res:
         slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key="play_slider_val")
@@ -311,6 +328,8 @@ def _render_ai_solver_panel(t, goal) -> None:
             act_label = _direction_label(t, res.actions[idx - 1])
             st.markdown(t("play_action_performed", step=idx, total=len(res.actions), act=act_label))
 
+        render_search_tree(res, max_nodes=24)
+
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     goal = st.session_state.get("goal_state", GOAL_STATE)
@@ -321,6 +340,7 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
         t("play_hero_kicker"),
     )
     render_exam_path("Play", t=t)
+    st.info(t("play_page_purpose"))
 
     col1, col2 = st.columns([1, 1])
     with col1:

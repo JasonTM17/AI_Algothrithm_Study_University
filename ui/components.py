@@ -278,6 +278,7 @@ def render_puzzle_board(
     highlight_correct: bool = True,
     size: str = "normal",
     goal: tuple | None = None,
+    previous_state: tuple | None = None,
 ):
     """Render 4x4 puzzle board as HTML with game-like styling.
 
@@ -285,13 +286,33 @@ def render_puzzle_board(
         state: 16-element tuple representing the puzzle state
         highlight_correct: Whether to highlight tiles in goal position (green)
         size: 'normal' (70px cells) or 'small' (50px cells) or 'mini' (28px cells)
+        previous_state: optional previous board used to animate the moved tile
     """
     cell_size = {"normal": 70, "small": 50, "mini": 28}[size]
     font_size = {"normal": 22, "small": 16, "mini": 10}[size]
 
     goal_state = _active_goal_state(goal)
+    moved_tile = None
+    moved_from = None
+    if previous_state and previous_state != state:
+        for tile in state:
+            if tile != 0 and previous_state.index(tile) != state.index(tile):
+                moved_tile = tile
+                moved_from = previous_state.index(tile)
+                break
+
     cells = []
     for i, val in enumerate(state):
+        slide_style = ""
+        slide_class = ""
+        if moved_tile == val and moved_from is not None:
+            old_row, old_col = divmod(moved_from, 4)
+            new_row, new_col = divmod(i, 4)
+            slide_class = " slide-anim"
+            slide_style = (
+                f"--slide-from-x: calc({old_col - new_col} * (100% + 9px));"
+                f"--slide-from-y: calc({old_row - new_row} * (100% + 9px));"
+            )
         if val == 0:
             cells.append(
                 f'<div class="puzzle-cell blank" style="width:{cell_size}px;height:{cell_size}px;'
@@ -299,10 +320,10 @@ def render_puzzle_board(
             )
         else:
             correct = (val == goal_state[i]) if highlight_correct else False
-            cls = "correct" if correct else "filled"
+            cls = ("correct" if correct else "filled") + slide_class
             cells.append(
                 f'<div class="puzzle-cell {cls}" style="width:{cell_size}px;height:{cell_size}px;'
-                f'font-size:{font_size}px;"><span class="tile-number">{val}</span></div>'
+                f'font-size:{font_size}px;{slide_style}"><span class="tile-number">{val}</span></div>'
             )
 
     html = f'<div class="puzzle-grid">{"".join(cells)}</div>'
@@ -750,40 +771,40 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
     st.markdown(f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
                 f"g={step.g} h={step.h:.1f} f={step.f:.1f}")
 
-    col1, col2, col3 = st.columns([1, 2, 2])
+    st.markdown(f"**{t('det_curr_node')}**")
+    current_state = step.node_state or step.state
+    if current_state:
+        render_puzzle_board(current_state, size="small")
+    else:
+        st.caption(t("no_state"))
 
+    def render_state_collection(title: str, total: int, states: list, empty_text: str) -> None:
+        st.markdown(f"**{title}** ({total} states)")
+        if states:
+            visible_states = states[:6]
+            for state in visible_states:
+                st.caption(_format_trace_state(state, labels, details, include_parent=True))
+                st.markdown(_state_to_mini_grid(state), unsafe_allow_html=True)
+            if len(states) > 6:
+                st.caption(t("det_more", count=len(states) - 6))
+        else:
+            st.caption(empty_text)
+
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f"**{t('det_curr_node')}**")
-        if step.node_state:
-            render_puzzle_board(step.node_state, size="small")
-        elif step.state:
-            render_puzzle_board(step.state, size="small")
-        else:
-            st.caption(t("no_state"))
-
+        render_state_collection(
+            t("tc_frontier"),
+            step.frontier_size,
+            step.frontier_states or [],
+            t("det_empty"),
+        )
     with col2:
-        st.markdown(f"**{t('tc_frontier')}** ({step.frontier_size} states)")
-        if step.frontier_states and len(step.frontier_states) > 0:
-            frontier_display = step.frontier_states[:6]
-            for i, fs in enumerate(frontier_display):
-                st.caption(_format_trace_state(fs, labels, details, include_parent=True))
-                st.markdown(_state_to_mini_grid(fs), unsafe_allow_html=True)
-            if len(step.frontier_states) > 6:
-                st.caption(t("det_more", count=len(step.frontier_states) - 6))
-        else:
-            st.caption(t("det_empty"))
-
-    with col3:
-        st.markdown(f"**{t('tc_reached')}** ({step.reached_size} states)")
-        if step.reached_states and len(step.reached_states) > 0:
-            reached_display = step.reached_states[:6]
-            for i, rs in enumerate(reached_display):
-                st.caption(_format_trace_state(rs, labels, details, include_parent=True))
-                st.markdown(_state_to_mini_grid(rs), unsafe_allow_html=True)
-            if len(step.reached_states) > 6:
-                st.caption(t("det_more", count=len(step.reached_states) - 6))
-        else:
-            st.caption(t("det_not_captured"))
+        render_state_collection(
+            t("tc_reached"),
+            step.reached_size,
+            step.reached_states or [],
+            t("det_not_captured"),
+        )
 
 
 def _set_slider_step(slider_key: str, step: int, max_step: int) -> None:

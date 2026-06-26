@@ -114,8 +114,10 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
 
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
+    info_text = "\n".join(getattr(info, "value", "") for info in app.info)
     subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
 
+    assert "hands-on puzzle work" in info_text
     assert "AI replay board" in subheaders
     assert "Click Find Solution" in caption_text
     assert "**A* Search**" not in markdown_text
@@ -123,7 +125,12 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     app.button(key="btn_ai_solve").click().run()
 
     solved_markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    solved_caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
+    solved_subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
     assert app.session_state.play_solution_path
+    assert "A* Node / Frontier / Reached Evidence" in solved_subheaders
+    assert "actual expansion trace" in solved_caption_text
+    assert "Search Tree Visualization" in solved_markdown_text
     assert "Next action" in solved_markdown_text
     assert app.button(key="btn_play_next")
     assert app.button(key="btn_play_auto")
@@ -136,6 +143,22 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     success_values = [getattr(success, "value", "") for success in app.success]
     assert "AI Auto-solving complete!" in success_values
     assert "Replay reached the requested goal." in success_values
+    assert not app.exception
+
+
+def test_play_ai_search_detail_controls_advance_step():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = TWO_MOVE
+    app.run()
+
+    app.button(key="btn_ai_solve").click().run()
+    app.button(key="play_ai_detail_step_slider_next").click().run()
+
+    assert app.session_state["play_ai_detail_step_slider"] == 1
+    assert app.session_state.play_solution_res.trace
+    assert app.session_state.play_solution_res.search_tree_edges
     assert not app.exception
 
 

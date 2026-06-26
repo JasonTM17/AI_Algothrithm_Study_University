@@ -162,6 +162,13 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
              'play_ai_solver': 'AI Auto-Solver',
              'play_ai_desc': 'Uses A* Search with Manhattan Distance heuristic to find an optimal path from '
                              'the current board to the selected goal.',
+             'play_page_purpose': 'This Play page is for hands-on puzzle work: inspect the Start/Goal boards, '
+                                  'move tiles manually, then ask A* to solve and inspect Node / Frontier / '
+                                  'Reached evidence. Use Run/Compare when you want algorithm benchmarks.',
+             'play_ai_evidence_title': 'A* Node / Frontier / Reached Evidence',
+             'play_ai_evidence_desc': 'This is the actual expansion trace behind the auto-solver. Move the '
+                                      'evidence stepper to watch the current node, frontier, reached set, and '
+                                      'parent-linked Search Tree.',
              'play_ai_replay_board': 'AI replay board',
              'play_ai_replay_hint': 'Click Find Solution, then use Next Step or Auto Play to watch this board '
                                     'solve in place.',
@@ -773,6 +780,12 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
                 'play_ai_solver': 'Giải tự động bằng AI',
                 'play_ai_desc': 'Dùng A* Search với heuristic Manhattan Distance để tìm đường đi tối ưu từ '
                                 'board hiện tại tới bảng đích đã chọn.',
+                'play_page_purpose': 'Trang Play dùng để thao tác trực tiếp: xem Start/Goal, tự trượt ô, rồi '
+                                     'cho A* giải và kiểm tra bằng chứng Node / Frontier / Reached. Muốn '
+                                     'benchmark nhiều thuật toán thì dùng Run/Compare.',
+                'play_ai_evidence_title': 'Bằng chứng A* Node / Frontier / Reached',
+                'play_ai_evidence_desc': 'Đây là trace mở rộng thật phía sau auto-solver. Dùng stepper để xem '
+                                         'current node, frontier, reached set và Search Tree có liên kết parent.',
                 'play_ai_replay_board': 'Bảng AI đang giải',
                 'play_ai_replay_hint': 'Bấm Tìm lời giải, rồi dùng Bước tiếp hoặc Chạy tự động để xem board '
                                        'này giải ngay tại chỗ.',
