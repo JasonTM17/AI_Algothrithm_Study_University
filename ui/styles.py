@@ -1421,6 +1421,22 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
         rgba(18,21,20,0.86);
     box-shadow: var(--shadow-sm);
 }
+div[data-testid="stElementContainer"]:has(h1[id="tro-choi-15-puzzle-ban-co-tuong-tac"]),
+div[data-testid="stElementContainer"]:has(h1[id="15-puzzle-interactive-board"]),
+div[data-testid="stHeading"]:has(h1[id="tro-choi-15-puzzle-ban-co-tuong-tac"]),
+div[data-testid="stHeading"]:has(h1[id="15-puzzle-interactive-board"]),
+h1[id="tro-choi-15-puzzle-ban-co-tuong-tac"],
+h1[id="15-puzzle-interactive-board"] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
 .play-compact-strip h2 {
     margin: 2px 0 6px !important;
     font-size: 26px !important;
@@ -1597,8 +1613,11 @@ div[data-testid="stAlert"] {
 }
 
 @media (max-width: 640px) {
+    div[data-testid="stHorizontalBlock"]:has(.play-panel-heading):has(.ai-solver-card) {
+        gap: 8px !important;
+    }
     div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
-        width: min(100%, 312px) !important;
+        width: min(100%, 296px) !important;
         gap: 6px !important;
     }
     div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button,
@@ -1607,18 +1626,18 @@ div[data-testid="stAlert"] {
         border-radius: 9px !important;
     }
     .play-compact-strip {
-        padding: 10px 12px;
-        margin-bottom: 12px;
+        padding: 8px 11px;
+        margin-bottom: 10px;
     }
     .play-compact-strip h2 {
-        font-size: 18px !important;
+        font-size: 17px !important;
         margin-bottom: 0 !important;
     }
     .play-compact-strip p {
         display: none;
     }
     .play-panel-heading {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .play-panel-heading h2 {
         font-size: 20px !important;
@@ -1628,8 +1647,8 @@ div[data-testid="stAlert"] {
         display: none;
     }
     .ai-solver-card {
-        padding: 12px !important;
-        margin: 10px 0 !important;
+        padding: 10px 11px !important;
+        margin: 7px 0 !important;
         border-radius: var(--radius-md) !important;
     }
     .ai-solver-header {

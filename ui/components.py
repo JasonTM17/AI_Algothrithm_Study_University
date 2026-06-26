@@ -963,7 +963,7 @@ def render_comparison_table(results: list):
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
             t("mc_runtime"): f"{r.runtime:.4f}",
-            t("compare_seed_mode"): r.random_seed if r.random_seed is not None else t("compare_deterministic"),
+            t("compare_seed_mode"): str(r.random_seed) if r.random_seed is not None else t("compare_deterministic"),
             f"{t('compare_optimal_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_optimal else t("tc_no"),
             f"{t('compare_complete_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_complete else t("tc_no"),
             t("compare_run_optimality_proven"): t("tc_yes") if r.optimality_proven else t("tc_no"),

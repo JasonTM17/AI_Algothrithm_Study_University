@@ -543,6 +543,8 @@ def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     assert set(seeds) == {"Stochastic Hill Climbing", "Simulated Annealing"}
     assert len(set(seeds.values())) == 2
     assert all(result.random_seed is not None for result in app.session_state.benchmark_results)
+    seed_mode_column = app.dataframe[0].value["Seed / Mode"]
+    assert all(isinstance(value, str) for value in seed_mode_column)
     assert not app.exception
 
 
