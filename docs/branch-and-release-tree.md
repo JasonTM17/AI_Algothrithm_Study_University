@@ -1,31 +1,35 @@
-# Master Branch Release Tree
+# Cây nhánh và release
 
-This document records the final-exam release shape after consolidating the project on the single `master` release branch.
+Tài liệu này ghi lại hình dạng release cho bài thi sau khi hợp nhất dự án về nhánh chính `master`.
 
 ```mermaid
 flowchart LR
-    M[master] --> W[Streamlit web]
-    W --> P[Interactive puzzle + challenge]
-    W --> S[Verified solvers + search graph]
-    W --> C[Advanced concept lab]
-    W --> T[Theory, PEAS, tests]
+    M["master"] --> W["Streamlit web"]
+    W --> P["Play + Challenge"]
+    W --> R["Run Algorithm + certified search"]
+    W --> C["Compare + Step Trace"]
+    W --> T["Theory + Hand-Tracing"]
+    W --> A["Advanced concept lab"]
 ```
 
-## Branch Policy
+## Chính sách nhánh
 
-- `master` is the official grading and release branch.
-- Feature branches are temporary implementation lines and should not remain the GitHub default branch.
-- The remote default branch must report `HEAD branch: master` in `git remote show origin`.
-- Desktop/EXE wrappers are not release artifacts; generated folders stay out of Git.
+- `master` là nhánh release và chấm bài chính thức.
+- Feature branch chỉ là nhánh tạm để phát triển, không nên là default branch lâu dài.
+- Remote default branch nên trỏ về `master`.
+- Generated folders, desktop wrappers và artifact đóng gói không thuộc release source.
 
-## Release Shape
+## Hình dạng release
 
-- Academic dashboard: the Streamlit UI is organized around the grading path: Play, Run Algorithm, Compare, Theory/PEAS, and Hand-Tracing.
-- AI framing: algorithms are labeled as real solvers, contrast demos, illustrative extensions, or AI-vs-AI/game-chance demos.
-- Advanced boundary: AI-vs-AI Tournament is a scoring layer over two solver agents with A* reference evidence; CSP/game/chance modes remain educational extensions, not standard solver rankings.
-- Web learning lab: manual play, optimality challenge, legal path playback, and bounded parent-linked search evidence share one browser surface.
-- Verification: Python compile checks, pytest regressions, Streamlit AppTest, web health, and Git branch checks are required before publishing.
+| Thành phần | Nội dung |
+|---|---|
+| Web learning lab | Play, Challenge, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory, Advanced. |
+| Academic framing | Thuật toán được label là solver chuẩn, demo đối chiếu, extension hoặc tournament/game demo. |
+| Evidence | Legal path certificate, goal reached, optimality proven, trace và search tree edge. |
+| Advanced boundary | CSP/game/chance/belief-state là concept lab, không xếp chung solver leaderboard. |
+| Tournament | Hai solver agent được chấm bằng A* reference và replay đồng bộ. |
+| Verification | Compile, pytest, coverage, Streamlit health và kiểm tra tài liệu. |
 
-## Mermaid Source
+## Mermaid source
 
-The inline Mermaid diagram is the authoritative release view.
+Sơ đồ Mermaid ở trên là release view chính thức cho repo hiện tại.

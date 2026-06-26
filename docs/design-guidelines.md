@@ -1,47 +1,56 @@
-# Design Guidelines
+# Design guidelines
 
-## Visual Direction
+## Hướng thị giác
 
-Use a tactile solver-laboratory dashboard style:
+Ứng dụng là dashboard phòng thí nghiệm solver, không phải landing page marketing. Giao diện cần ưu tiên bằng chứng, khả năng đọc và tính nghiêm túc khi bảo vệ.
 
-- Graphite/off-black workbench background with copper/amber measurement accents.
-- One dominant accent color; semantic green/red remain only for validity and failure states.
-- Technical Vietnamese-safe typography with monospace numerals for metrics and trace data.
-- Physical, instrument-like 15-puzzle board with slate tray, beveled tiles, and recessed blank slot.
-- Lab-record cards, dividers, and role tags for algorithm role and environment model.
-- No decorative emoji in primary academic content.
-- Use text-first academic labels; avoid emoji as command/status icons.
-- Provide visible keyboard focus states and reduced-motion support.
-- Render core PEAS/rubric/taxonomy content as responsive cards before detailed tables.
-- Prefer solver-lab hierarchy over generic SaaS cards: the board is evidence, not a hero illustration.
-- Use tinted inner borders and shadows instead of neon glow or generic purple/blue AI gradients.
-- Keep motion GPU-safe: transform and opacity only, with reduced-motion support.
+| Khu vực | Quy chuẩn |
+|---|---|
+| Nền | Graphite/off-black workbench, tránh gradient AI tím/xanh chung chung. |
+| Accent | Copper/amber cho đo lường; green/red chỉ dùng cho valid/failure state. |
+| Typography | Dễ đọc tiếng Việt; số liệu và trace dùng monospace khi cần. |
+| Board | 15-puzzle board dạng vật lý, tile rõ, ô trống dễ nhận biết. |
+| Cards | Dùng cho record/metric/algorithm role; không lồng card trong card. |
+| Motion | Nhẹ, GPU-safe, hỗ trợ reduced-motion. |
+| Emoji | Không dùng emoji trang trí trong nội dung học thuật chính. |
 
-## UI Priorities
+## Ưu tiên UX
 
-- Make the correct academic classification visible before detailed prose.
-- Show the exam path near the top of Play, Run, Compare, Theory/PEAS, and Hand-Tracing.
-- Put PEAS, guarantees, and selection rubric near the top of Theory/Compare pages.
-- Keep Play usable as a puzzle board, but frame it as a solver lab.
-- Keep Advanced modes explicitly labeled as extensions.
-- Preserve mobile usability: no horizontal scroll, readable cards, and sidebar labels that wrap.
-- Keep input/control text at least 16px on mobile to avoid forced zoom.
-- Treat the Streamlit browser app as the single classroom entrypoint; do not reintroduce desktop launchers.
+- Luôn làm rõ start/goal contract trước khi chạy thuật toán.
+- Hiển thị PEAS, role và guarantee gần nơi người dùng đọc kết quả.
+- Tách solver chuẩn khỏi extension trong copy và layout.
+- Trace, frontier, reached và search tree là evidence; không giấu sau prose dài.
+- Compare phải ghi seed, heuristic, action order, timeout và max nodes.
+- Advanced phải label rõ CSP/game/chance/belief-state là concept lab.
+- Tournament phải show A* reference, score reason, legality status, excess cost và replay.
+- Mobile không được vỡ layout bởi bảng trace hoặc sidebar.
 
-## Content Rules
+## Quy tắc nội dung
 
-- Route all user-facing Streamlit labels, captions, warnings, buttons, and table headers through `ui.localization`; keep only algorithm names, formulas, code, and CSS/HTML constants as hardcoded literals.
-- Keep the sidebar grouped by task: language, start setup, goal setup, teaching presets, puzzle image, and active Start/Goal summary.
-- Keep play-board image tiles square, touch-friendly, and stable on 390px mobile viewports; visible controls must remain available instead of gesture-only interaction.
-- Do not imply CSP, Minimax, Alpha-Beta, Expectimax, no-observation, or partial-observation modes are natural 15-puzzle solvers.
-- Present AC-3 as bounded exact-horizon CSP evidence: domain sizes, revisions, removed values, legal replay when found, and domain wipe-out otherwise.
-- Keep group comparison columns stable and scannable: step rule, time, space, steps/output, and guarantee.
-- For game/chance demos, label returned actions as selected variation or sample outcome paths, not full game trees or optimal puzzle certificates.
-- For AI-vs-AI Tournament, show the A* optimal reference, path efficiency, score reason, legality status, excess cost, runtime, nodes, and deterministic tie-break result.
-- Replay both certified AI trajectories on one shared step control; a shorter trajectory stays on its final state while the other continues.
-- Do not use raw runtime or cross-family node counts to manufacture a winner when solution quality is tied.
-- State that tournament scoring compares agents on the same puzzle; it is not a natural adversarial PEAS model for 15-puzzle.
-- When an algorithm is not optimal or not complete, state that directly.
-- Prefer concise tables and cards over long paragraphs for exam-facing material.
-- Preserve existing solver behavior unless a dedicated algorithm fix is planned.
-- Provide an instructor-facing grading report with PEAS, taxonomy, proof cards, benchmark caveats, and verification commands.
+- Text người dùng trong Streamlit nên đi qua `ui.localization`.
+- Giữ tên thuật toán và công thức ở dạng chuẩn: BFS, UCS, IDS, A*, IDA*, `g(n)`, `h(n)`, `f(n)`.
+- Không nói "Greedy tối ưu", "DFS tối ưu" hoặc "Minimax là solver tự nhiên của 15-puzzle".
+- Không dùng runtime hoặc node count để quyết định winner khi chất lượng lời giải hòa.
+- Khi thuật toán không complete hoặc không optimal, nói thẳng.
+- Khi run bị timeout, node cap, depth limit hoặc horizon limit, UI phải thể hiện rõ certificate bị giới hạn.
+- Với game/chance demos, gọi output là selected variation hoặc sample outcome path.
+- Với AC-3, gọi output là exact-horizon path hoặc domain wipe-out cho horizon đã chọn.
+
+## Layout theo tab
+
+| Tab | Điểm cần thấy sớm |
+|---|---|
+| Play | Board, start/goal, solvability, challenge/replay controls. |
+| Run Algorithm | Algorithm group, role, controls, run certificate, trace/search tree. |
+| Compare | Preset, list thuật toán, seed/limits, bảng kết quả, caveat so sánh. |
+| Step Trace | Empty state có hướng dẫn, trace table, detail slider, CSV export. |
+| Hand-Tracing | Frontier order, thao tác mở rộng, graph edge do người học chọn. |
+| Theory | PEAS, taxonomy, group comparison, proof card, exam defense. |
+| Advanced | Mode cards, caveat extension, result evidence và replay nếu có. |
+
+## Kiểm tra chất lượng UI
+
+- `tests/test_streamlit_app.py` là regression chính cho workflow Streamlit.
+- `tests/test_academic.py` kiểm tra CSS/accessibility contract và nội dung học thuật.
+- `tests/test_localization.py` kiểm tra localization key và hardcoded text.
+- `tests/test_text_quality.py` kiểm tra lỗi mã hóa.
