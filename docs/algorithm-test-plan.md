@@ -25,6 +25,7 @@ Tai lieu nay dinh nghia ke hoach kiem thu co he thong cho dashboard 15-Puzzle AI
 | Heuristic | Misplaced, Manhattan, Linear Conflict phai tinh theo goal tuy chinh va khong vuot exact distance trong corpus nho. |
 | Trace evidence | Frontier/Reaching hien thi node dang `(A, R, g, h, f, parent)` va search tree edge phai la legal transition. |
 | Randomness | Run/Advanced phai ghi variation seed moi moi lan bam; Compare/Tournament/Hand-Tracing dung seed/order ro de tai lap. |
+| Goal metadata | Moi `SearchResult`, ke ca fail/concept model, phai ghi `goal_state` da chon de dashboard khong hien "Not reported" sai ngu canh. |
 | Tournament reference | Moi scored round co A* reference optimal cost dung chung cho hai AI. |
 
 ## Ma tran test bat buoc
@@ -50,6 +51,7 @@ Tai lieu nay dinh nghia ke hoach kiem thu co he thong cho dashboard 15-Puzzle AI
 | ALG-17 | AC-3 exact horizon | `ONE_MOVE -> GOAL`, T=1 | Domain arc-consistent, path/action legal, goal certificate dung. |
 | ALG-18 | AC-3 parity wipe-out | `ONE_MOVE -> GOAL`, T=2 | Domain wipe-out, fail voi `depth_limit`, khong claim solution. |
 | ALG-19 | Group comparison | Moi group tren Theory/PEAS | Moi thuat toan co Time, Space, Steps/Output va Guarantee. |
+| ALG-20 | Registry contract sweep | Moi thuat toan trong `ALGORITHM_GROUPS` tru `AI-vs-AI Tournament` | Goi qua dispatch kwargs, dung custom goal, kiem legal path/reached goal/optimality/seed metadata. |
 
 ## Kiem thu UI/UX thuat toan
 
@@ -90,6 +92,7 @@ Mobile: 390x844
 - Khong co exception Streamlit trong cac tab chinh.
 - Full test suite pass.
 - Moi solver success co `path_verified=True` va state cuoi bang goal da chon.
+- Moi result phai giu `goal_state` da chon, ke ca khi fail, timeout, model-success, hoac concept-only khong co path.
 - Khong co claim sai nhu "Greedy toi uu" hoac "Minimax la solver tu nhien cua 15-puzzle".
 - Tournament khong chay neu reference A* khong chung minh duoc optimal path; UI bao `reference failed`.
 - Hai AI cung solver, board va tham so phai draw; runtime noise khong duoc tu tao winner.

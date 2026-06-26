@@ -70,6 +70,7 @@ def csp_definition(
 
     return SearchResult(
         success=True, algorithm="CSP Definition", group="CSP",
+        goal_state=goal,
         message=msg, trace=trace, suitable_for_puzzle=False,
         is_complete=False, is_optimal=False,
     )
@@ -168,6 +169,7 @@ which is why CSP is not the standard approach for 15-puzzle."""
 
     return SearchResult(
         success=True, algorithm="Path Consistency", group="CSP",
+        goal_state=goal,
         message=msg, trace=[], suitable_for_puzzle=False,
         is_complete=False, is_optimal=False,
     )
@@ -208,6 +210,7 @@ Implementation check:"""
 
     return SearchResult(
         success=True, algorithm="Global Constraints", group="CSP",
+        goal_state=goal,
         message=msg, trace=[], suitable_for_puzzle=False,
         is_complete=False, is_optimal=False,
     )
@@ -302,6 +305,7 @@ def backtracking_search(
 
     return SearchResult(
         success=False, algorithm="Backtracking Search", group="CSP",
+        goal_state=goal,
         nodes_expanded=total_steps, nodes_generated=total_steps,
         runtime=time.perf_counter() - t0,
         message=(f"No path found within bounded horizon T={max_t}. This is not a proof of "
@@ -322,8 +326,10 @@ def min_conflicts(
     if start == goal:
         return SearchResult(success=True, algorithm="Min-Conflicts", group="CSP",
                             path=[start], actions=[], goal_state=goal,
+                            random_seed=seed,
                             runtime=time.perf_counter() - t0,
-                            message="Already at goal", suitable_for_puzzle=False)
+                            message="Already at goal", uses_randomness=True,
+                            suitable_for_puzzle=False)
 
     trace: list[TraceStep] = []
 
@@ -344,12 +350,14 @@ def min_conflicts(
         if not conflicts:
             return SearchResult(
                 success=False, algorithm="Min-Conflicts", group="CSP",
-                path=[], actions=[], cost=0, depth=0,
+                path=[], actions=[], goal_state=goal, cost=0, depth=0,
+                random_seed=seed,
                 nodes_expanded=i, nodes_generated=i,
                 runtime=time.perf_counter() - t0,
                 message=(f"Tile-placement assignment reached the goal after {i} iterations, but this is not "
                          "a 15-puzzle solution because arbitrary swaps are not legal blank moves."),
-                trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False)
+                trace=trace, uses_randomness=True, suitable_for_puzzle=False,
+                is_complete=False, is_optimal=False)
 
         # Pick a conflicting position
         pos = rng.choice(conflicts)
@@ -381,12 +389,15 @@ def min_conflicts(
 
     return SearchResult(
         success=False, algorithm="Min-Conflicts", group="CSP",
+        goal_state=goal,
+        random_seed=seed,
         nodes_expanded=max_iterations, nodes_generated=max_iterations,
         runtime=time.perf_counter() - t0,
         message=f"Best: {total_conflicts} conflicts after {max_iterations} iterations. "
                  "Min-conflicts works better for N-Queens than 15-puzzle because "
                  "puzzle constraints are highly interdependent (transition constraints).",
-        trace=trace, suitable_for_puzzle=False, is_complete=False, is_optimal=False)
+        trace=trace, uses_randomness=True, suitable_for_puzzle=False,
+        is_complete=False, is_optimal=False)
 
 
 def solve_csp_constraint_graphs(
@@ -433,6 +444,7 @@ the constraint graph becomes very large for deep solutions."""
 
     return SearchResult(
         success=True, algorithm="Constraint Graphs", group="CSP",
+        goal_state=goal,
         message=msg, trace=[], suitable_for_puzzle=False,
         is_complete=False, is_optimal=False,
     )

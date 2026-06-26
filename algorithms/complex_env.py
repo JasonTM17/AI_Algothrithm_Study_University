@@ -114,7 +114,7 @@ def and_or_search(
         trace.append(TraceStep(step=1, state=start, reason="Conditional plan found"))
         return SearchResult(
             success=True, algorithm="AND-OR Search", group="Complex Environments",
-            path=[start], actions=[], cost=0, depth=0,
+            path=[start], actions=[], goal_state=goal, cost=0, depth=0,
             nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
             runtime=time.perf_counter() - t0,
             message=(f"Conditional plan found (depth limit={max_depth}). AND-OR requires every "
@@ -125,6 +125,7 @@ def and_or_search(
 
     return SearchResult(
         success=False, algorithm="AND-OR Search", group="Complex Environments",
+        goal_state=goal,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0,
         message=f"No conditional plan found within depth {max_depth}",

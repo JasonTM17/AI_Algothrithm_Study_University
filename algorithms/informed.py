@@ -11,6 +11,7 @@ from core.metrics import SearchResult, TraceStep
 
 def _unsolvable_result(
     algorithm: str,
+    goal: tuple[int, ...],
     t0: float,
     is_complete: bool,
     is_optimal: bool,
@@ -20,6 +21,7 @@ def _unsolvable_result(
         success=False,
         algorithm=algorithm,
         group="Informed Search",
+        goal_state=goal,
         nodes_expanded=0,
         nodes_generated=0,
         max_frontier_size=0,
@@ -49,7 +51,7 @@ def greedy_best_first(
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=False, is_optimal=False, uses_heuristic=True)
     if not is_solvable(start, goal):
-        return _unsolvable_result("Greedy Best-First", t0, False, False)
+        return _unsolvable_result("Greedy Best-First", goal, t0, False, False)
 
     h_fn = get_heuristic(heuristic, goal)
 
@@ -75,12 +77,14 @@ def greedy_best_first(
     while frontier:
         if time.perf_counter() - t0 > timeout:
             return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(reached),
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 is_complete=False, is_optimal=False, uses_heuristic=True)
         if len(reached) > max_nodes:
             return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(reached),
                                 runtime=time.perf_counter() - t0,
@@ -105,6 +109,7 @@ def greedy_best_first(
         for ns, action, cost in ps.get_neighbors(action_order):
             if time.perf_counter() - t0 > timeout:
                 return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
+                                    goal_state=goal,
                                     nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                     max_frontier_size=max_frontier, reached_size=len(reached),
                                     runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
@@ -130,6 +135,7 @@ def greedy_best_first(
                     ))
 
     return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
+                        goal_state=goal,
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                         max_frontier_size=max_frontier, reached_size=len(reached),
                         runtime=time.perf_counter() - t0, message="No solution found", trace=trace,
@@ -152,7 +158,7 @@ def a_star(
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
     if not is_solvable(start, goal):
-        return _unsolvable_result("A*", t0, True, True)
+        return _unsolvable_result("A*", goal, t0, True, True)
 
     h_fn = get_heuristic(heuristic, goal)
 
@@ -178,12 +184,14 @@ def a_star(
     while frontier:
         if time.perf_counter() - t0 > timeout:
             return SearchResult(success=False, algorithm="A*", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(best_g),
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 is_complete=True, is_optimal=True, uses_heuristic=True)
         if len(best_g) > max_nodes:
             return SearchResult(success=False, algorithm="A*", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(best_g),
                                 runtime=time.perf_counter() - t0,
@@ -212,6 +220,7 @@ def a_star(
         for ns, action, cost in ps.get_neighbors(action_order):
             if time.perf_counter() - t0 > timeout:
                 return SearchResult(success=False, algorithm="A*", group="Informed Search",
+                                    goal_state=goal,
                                     nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                     max_frontier_size=max_frontier, reached_size=len(best_g),
                                     runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
@@ -237,6 +246,7 @@ def a_star(
                     ))
 
     return SearchResult(success=False, algorithm="A*", group="Informed Search",
+                        goal_state=goal,
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                         max_frontier_size=max_frontier, reached_size=len(best_g),
                         runtime=time.perf_counter() - t0, message="No solution found", trace=trace,
@@ -258,7 +268,7 @@ def ida_star(
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
     if not is_solvable(start, goal):
-        return _unsolvable_result("IDA*", t0, True, True)
+        return _unsolvable_result("IDA*", goal, t0, True, True)
 
     h_fn = get_heuristic(heuristic, goal)
 
@@ -271,12 +281,14 @@ def ida_star(
     while True:
         if time.perf_counter() - t0 > timeout:
             return SearchResult(success=False, algorithm="IDA*", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                                 max_frontier_size=max_frontier,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 is_complete=True, is_optimal=True, uses_heuristic=True)
         if total_expanded > max_nodes:
             return SearchResult(success=False, algorithm="IDA*", group="Informed Search",
+                                goal_state=goal,
                                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                                 max_frontier_size=max_frontier,
                                 runtime=time.perf_counter() - t0,
@@ -311,6 +323,7 @@ def ida_star(
             result.is_complete = True
             result.is_optimal = True
             result.uses_heuristic = True
+            result.goal_state = goal
             result.runtime = time.perf_counter() - t0
             return result
 
@@ -320,6 +333,7 @@ def ida_star(
         threshold = next_threshold
 
     return SearchResult(success=False, algorithm="IDA*", group="Informed Search",
+                        goal_state=goal,
                         nodes_expanded=total_expanded, nodes_generated=total_generated,
                         max_frontier_size=max_frontier,
                         runtime=time.perf_counter() - t0, message="No solution found", trace=trace,

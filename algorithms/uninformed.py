@@ -45,6 +45,7 @@ def _make_result(
             )
     return SearchResult(
         success=False, algorithm=algorithm, group="Uninformed Search",
+        goal_state=goal,
         nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
         max_frontier_size=max_frontier, reached_size=reached_size,
         runtime=elapsed, message=message, trace=trace,
