@@ -45,7 +45,7 @@ ALGORITHM_COMPARISON_ROWS = [
     _row("CSP", "Constraint Propagation", "AC-3 revise adjacent state domains", "O(ED^3)", "O(VD+E)", "Exact-T path or domain wipe-out", "Complete for the bounded chain CSP"),
     _row("CSP", "Path Consistency", "Check variable triples", "O(V^3D^3)", "O(V^2D^2)", "Consistency evidence", "Too expensive for deep planning CSP"),
     _row("CSP", "Global Constraints", "AllDifferent propagation", "Propagator-dependent", "O(VD)", "Domain filtering", "Modeling aid"),
-    _row("CSP", "Backtracking Search", "Depth-first assignment/value ordering", "O(b^T)", "O(T)", "Legal path within horizon", "Incomplete under horizon/resource bounds"),
+    _row("CSP", "Backtracking Search", "Depth-first ordering by Manhattan Distance", "O(b^T)", "O(T)", "Legal path within horizon", "Incomplete under horizon/resource bounds"),
     _row("CSP", "Min-Conflicts", "Repair a conflicting position", "O(I n)", "O(n)", "Assignment repair, not blank-move path", "Not a legal 15-puzzle planner"),
     _row("CSP", "Constraint Graphs", "Build variable/constraint edges", "O(V+E)", "O(V+E)", "Graph artifact", "Analysis only"),
     _row("AI-vs-AI Tournament", "AI-vs-AI Tournament", "A* oracle then two solver runs", "O(R(ref+A+B))", "Sum of three runs", "Shared replay max(|path A|, |path B|)", "Valid only with proven reference"),

@@ -1129,7 +1129,11 @@ def comparison_row_for_algorithm(algo_name: str) -> dict[str, str] | None:
     """Return the exact academic evaluation row for a displayed algorithm name."""
     from ui.styles import COMPARISON_TABLE
 
-    normalized_name = algo_name.lower()
+    display_aliases = {
+        "Searching with no observation": "No Observation Search",
+        "Searching for partially observable problems": "Partially Observable Search",
+    }
+    normalized_name = display_aliases.get(algo_name, algo_name).lower()
     for row in COMPARISON_TABLE:
         if row["Algorithm"].lower() == normalized_name:
             return row

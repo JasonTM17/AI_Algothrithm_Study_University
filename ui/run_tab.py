@@ -20,6 +20,8 @@ from ui.components import (
 )
 from ui.run_and_or_panel import (
     AND_OR_ALGORITHM,
+    NO_OBSERVATION_ALGORITHM,
+    PARTIALLY_OBSERVABLE_ALGORITHM,
     render_and_or_controls,
     render_and_or_result_explanation,
     run_algorithm_groups,
@@ -86,7 +88,15 @@ def render_run_algorithm_tab(t=None) -> None:
 
         # Only show heuristic for algorithms that use it
         heuristic_options = list(HEURISTICS.keys())
-        no_heuristic_select_algos = {"BFS", "DFS", "UCS", "IDS", AND_OR_ALGORITHM}
+        no_heuristic_select_algos = {
+            "BFS",
+            "DFS",
+            "UCS",
+            "IDS",
+            AND_OR_ALGORITHM,
+            NO_OBSERVATION_ALGORITHM,
+            PARTIALLY_OBSERVABLE_ALGORITHM,
+        }
         if algo_name not in no_heuristic_select_algos:
             heuristic = st.selectbox(tx("run_heuristic"), heuristic_options, key="heuristic_select")
         else:

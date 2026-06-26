@@ -29,6 +29,7 @@ from ui.components import (
     render_result_metrics,
     render_path_animation,
     render_run_variation_metadata,
+    render_search_tree,
     render_start_goal_contract,
     render_trace_table,
 )
@@ -39,7 +40,7 @@ ADVANCED_TRACE_ROWS = 80
 ADVANCED_MODES = [
     "AI-vs-AI Tournament",
     "CSP Definition & Propagation",
-    "Backtracking & Min-Conflicts",
+    "Backtracking Search + Manhattan Distance heuristic",
     "Constraint Graphs & Path Consistency",
     "AND-OR Search (Nondeterministic)",
     "No Observation (Belief State)",
@@ -52,7 +53,7 @@ ADVANCED_MODES = [
 ADVANCED_MODE_CARDS = [
     ("AI-vs-AI Tournament", "adv_card_tournament_desc", "A* optimal reference"),
     ("CSP Definition & Propagation", "adv_card_csp_desc", "AC-3 horizon evidence"),
-    ("Backtracking & Min-Conflicts", "adv_card_csp_desc", "Legal path when found"),
+    ("Backtracking Search + Manhattan Distance heuristic", "adv_card_backtracking_desc", "Legal heuristic-ordered path"),
     ("Constraint Graphs & Path Consistency", "adv_card_csp_desc", "CSP consistency evidence"),
     ("AND-OR Search (Nondeterministic)", "adv_card_uncertainty_desc", "Contingency plan sample"),
     ("No Observation (Belief State)", "adv_card_uncertainty_desc", "Belief evidence only"),
@@ -114,6 +115,10 @@ def _result_entry(title: str, result, *, note: str | None = None) -> dict:
     return {"title": title, "result": result, "note": note}
 
 
+def _has_search_tree(result) -> bool:
+    return bool(getattr(result, "search_tree_nodes", None) and getattr(result, "search_tree_edges", None))
+
+
 def _render_advanced_outputs(outputs: list[dict]) -> None:
     if not outputs:
         return
@@ -138,6 +143,9 @@ def _render_advanced_outputs(outputs: list[dict]) -> None:
                     key=f"advanced_path_{_mode_key(entry['title'])}",
                     reaches_goal=result.goal_reached,
                 )
+        if _has_search_tree(result):
+            with st.expander(t("run_search_tree"), expanded=False):
+                render_search_tree(result, max_nodes=40)
         if result.trace:
             with st.expander(t("run_trace_steps"), expanded=False):
                 render_trace_table(result.trace, max_rows=ADVANCED_TRACE_ROWS)
@@ -184,6 +192,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     pending_mode = st.session_state.pop("advanced_pending_mode", None)
     if pending_mode:
         st.session_state["complex_mode_v2"] = pending_mode
+    if st.session_state.get("complex_mode_v2") in {"Backtracking", "Backtracking & Min-Conflicts"}:
+        st.session_state["complex_mode_v2"] = "Backtracking Search + Manhattan Distance heuristic"
     mode = st.selectbox(
         t("adv_model_select"),
         [mode_prompt, *ADVANCED_MODES],
@@ -226,12 +236,11 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                 ),
             ])
 
-    elif mode == "Backtracking & Min-Conflicts":
+    elif mode == "Backtracking Search + Manhattan Distance heuristic":
         st.subheader(t("adv_bounded_transition_planning"))
         st.info(t("adv_bounded_transition_info"))
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             planning_variation = _next_variation("backtracking_search")
-            contrast_variation = _next_variation("min_conflicts")
             _store_advanced_outputs(mode, [
                 _result_entry(
                     t("adv_bounded_transition_planning"),
@@ -241,18 +250,6 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                         **csp_search_kw,
                         max_steps=5000,
                     ),
-                ),
-                _result_entry(
-                    "Min-Conflicts Tile-Placement Contrast",
-                    _with_variation(
-                        min_conflicts(
-                            **csp_search_kw,
-                            max_iterations=10000,
-                            seed=contrast_variation.solver_seed,
-                        ),
-                        contrast_variation,
-                    ),
-                    note=t("adv_min_conflicts_contrast_note"),
                 ),
             ])
 

@@ -7,7 +7,8 @@ import time
 import streamlit as st
 
 from core.ai_vs_ai_tournament import AgentRoundScore, TournamentRoundResult
-from ui.components import render_puzzle_board
+from core.metrics import SearchResult
+from ui.components import render_puzzle_board, render_search_tree
 from ui.localization import translate
 
 
@@ -27,6 +28,21 @@ def _reset_replay(slider_key: str, auto_key: str, auto_step_key: str) -> None:
 
 def _trajectory(score: AgentRoundScore, start: tuple[int, ...]) -> list[tuple[int, ...]]:
     return score.path if score.path else [start]
+
+
+def _score_search_tree_result(score: AgentRoundScore, goal: tuple[int, ...]) -> SearchResult | None:
+    if not score.path_verified or not score.path:
+        return None
+    return SearchResult(
+        success=score.goal_reached,
+        algorithm=score.algorithm,
+        group="AI-vs-AI Tournament",
+        path=list(score.path),
+        actions=list(score.actions),
+        goal_state=goal,
+        cost=len(score.actions),
+        depth=len(score.actions),
+    )
 
 
 def _render_agent_step(
@@ -64,6 +80,10 @@ def _render_agent_step(
             st.warning(_t("tournament_replay_partial"))
         else:
             st.error(_t("tournament_replay_no_path"))
+    tree_result = _score_search_tree_result(score, goal)
+    if tree_result and tree_result.search_tree_edges:
+        with st.expander(_t("run_search_tree"), expanded=False):
+            render_search_tree(tree_result, max_nodes=30)
 
 
 def render_tournament_replay(round_result: TournamentRoundResult) -> None:
