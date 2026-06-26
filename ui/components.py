@@ -686,7 +686,7 @@ def _state_to_grid_str(state: tuple) -> str:
     return "\n".join(lines)
 
 
-def render_search_detail_table(trace: list, max_rows: int = 50):
+def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "detail_step_slider"):
     """Render detailed Node/Frontier/Reached table for each trace step."""
     if not trace:
         st.info(t("tc_no_trace"))
@@ -705,9 +705,43 @@ def render_search_detail_table(trace: list, max_rows: int = 50):
         step_idx = 0
         st.caption(t("det_single_step"))
     else:
+        if key not in st.session_state:
+            st.session_state[key] = 0
+        current_step = int(st.session_state.get(key, 0))
+        current_step = max(0, min(current_step, max_step_index))
+        st.session_state[key] = current_step
+
+        nav_cols = st.columns([1, 1, 1, 4])
+        with nav_cols[0]:
+            st.button(
+                t("anim_prev"),
+                key=f"{key}_prev",
+                disabled=(current_step == 0),
+                on_click=_set_slider_step,
+                args=(key, current_step - 1, max_step_index),
+                width="stretch",
+            )
+        with nav_cols[1]:
+            st.button(
+                t("anim_next"),
+                key=f"{key}_next",
+                disabled=(current_step >= max_step_index),
+                on_click=_set_slider_step,
+                args=(key, current_step + 1, max_step_index),
+                width="stretch",
+            )
+        with nav_cols[2]:
+            st.button(
+                t("anim_reset"),
+                key=f"{key}_reset",
+                disabled=(current_step == 0),
+                on_click=_set_slider_step,
+                args=(key, 0, max_step_index),
+                width="stretch",
+            )
         step_idx = st.slider(
-            t("det_slider"), 0, max_step_index, 0,
-            key="detail_step_slider"
+            t("det_slider"), 0, max_step_index, current_step,
+            key=key
         )
 
     step = trace[step_idx]
@@ -757,13 +791,6 @@ def _set_slider_step(slider_key: str, step: int, max_step: int) -> None:
     st.session_state[slider_key] = max(0, min(step, max_step))
 
 
-def _reset_animation_slider(slider_key: str, auto_key: str, auto_step_key: str) -> None:
-    """Reset animation controls without mutating a slider after instantiation."""
-    st.session_state[slider_key] = 0
-    st.session_state[auto_key] = False
-    st.session_state[auto_step_key] = 0
-
-
 def render_path_animation(
     path: list[tuple], actions: list[str], key: str = "path", *, reaches_goal: bool = True,
 ):
@@ -777,9 +804,6 @@ def render_path_animation(
     st.markdown("---")
     st.subheader(t("anim_title"))
 
-    # Auto-play controls
-    auto_key = f"{key}_autoplay"
-    auto_step_key = f"{key}_auto_step"
     slider_key = f"{key}_slider"
     speed_key = f"{key}_speed"
     max_step = len(path) - 1
@@ -789,18 +813,46 @@ def render_path_animation(
         current_step = max(0, min(current_step, max_step))
         st.session_state[slider_key] = current_step
 
-    col_play, col_speed, col_step = st.columns([1, 2, 3])
+    direction_map = {
+        "L": t("dir_L").split(" ")[0],
+        "R": t("dir_R").split(" ")[0],
+        "U": t("dir_U").split(" ")[0],
+        "D": t("dir_D").split(" ")[0],
+    }
+
+    def render_frame(step: int, board_slot, caption_slot) -> None:
+        with board_slot.container():
+            render_puzzle_board(path[step])
+        if step == 0:
+            action_display = t("dir_start_short")
+        else:
+            action_display = actions[step - 1]
+        display = direction_map.get(action_display, action_display)
+        goal_suffix = (
+            f" · {t('anim_goal')}"
+            if reaches_goal and step == len(path) - 1
+            else ""
+        )
+        caption_slot.caption(
+            t(
+                "anim_step_caption",
+                current=step,
+                total=len(path) - 1,
+                action=display,
+                goal_suffix=goal_suffix,
+            )
+        )
+
+    col_play, col_speed, _ = st.columns([1.2, 2, 2.8])
 
     with col_play:
-        if st.session_state.get(auto_key, False):
-            if st.button(t("play_stop_run"), key=f"{key}_stop_btn", type="secondary"):
-                st.session_state[auto_key] = False
-                st.rerun()
-        else:
-            if st.button(t("play_auto_run"), key=f"{key}_play_btn", type="primary"):
-                st.session_state[auto_key] = True
-                st.session_state[auto_step_key] = st.session_state.get(slider_key, 0)
-                st.rerun()
+        auto_clicked = st.button(
+            t("play_auto_run"),
+            key=f"{key}_play_btn",
+            type="primary",
+            disabled=(current_step >= max_step),
+            width="stretch",
+        )
 
     with col_speed:
         speed_options = {
@@ -812,52 +864,24 @@ def render_path_animation(
         )
         speed = speed_options[speed_label]
 
-    if st.session_state.get(auto_key, False):
-        current_auto = int(st.session_state.get(auto_step_key, current_step))
-        if current_auto < max_step:
-            import time
-            next_step = current_auto + 1
-            st.session_state[slider_key] = next_step
-            st.session_state[auto_step_key] = next_step
+    board_slot = st.empty()
+    caption_slot = st.empty()
+
+    if auto_clicked:
+        import time
+        for frame_step in range(current_step, max_step + 1):
+            render_frame(frame_step, board_slot, caption_slot)
             time.sleep(speed)
-            st.rerun()
-        else:
-            st.session_state[auto_key] = False
-            st.session_state[auto_step_key] = 0
-            st.success(t("anim_complete"))
+        st.session_state[slider_key] = max_step
+        current_step = max_step
+        st.success(t("anim_complete"))
 
     current_step = st.slider(
         t("play_curr_step"), 0, max_step, current_step, key=slider_key
     )
 
-    # Show current state
-    render_puzzle_board(path[current_step])
-
-    direction_map = {
-        "L": t("dir_L").split(" ")[0],
-        "R": t("dir_R").split(" ")[0],
-        "U": t("dir_U").split(" ")[0],
-        "D": t("dir_D").split(" ")[0],
-    }
-    if current_step == 0:
-        action_display = t("dir_start_short")
-    else:
-        action_display = actions[current_step - 1]
-    display = direction_map.get(action_display, action_display)
-    goal_suffix = (
-        f" · {t('anim_goal')}"
-        if reaches_goal and current_step == len(path) - 1
-        else ""
-    )
-    st.caption(
-        t(
-            "anim_step_caption",
-            current=current_step,
-            total=len(path) - 1,
-            action=display,
-            goal_suffix=goal_suffix,
-        )
-    )
+    if not auto_clicked:
+        render_frame(current_step, board_slot, caption_slot)
 
     # Navigation buttons
     col1, col2, col3 = st.columns(3)
@@ -867,6 +891,8 @@ def render_path_animation(
             key=f"{key}_prev",
             on_click=_set_slider_step,
             args=(slider_key, current_step - 1, max_step),
+            disabled=(current_step == 0),
+            width="stretch",
         )
     with col2:
         st.button(
@@ -874,13 +900,17 @@ def render_path_animation(
             key=f"{key}_next",
             on_click=_set_slider_step,
             args=(slider_key, current_step + 1, max_step),
+            disabled=(current_step >= max_step),
+            width="stretch",
         )
     with col3:
         st.button(
             t("anim_reset"),
             key=f"{key}_reset",
-            on_click=_reset_animation_slider,
-            args=(slider_key, auto_key, auto_step_key),
+            on_click=_set_slider_step,
+            args=(slider_key, 0, max_step),
+            disabled=(current_step == 0),
+            width="stretch",
         )
 
 

@@ -51,6 +51,7 @@ def _clear_ai_replay() -> None:
     st.session_state.play_solution_base_history = None
     st.session_state.play_solution_base_moves = 0
     st.session_state.play_auto_run = False
+    st.session_state.pop("play_auto_done_pending", None)
     st.session_state.pop("play_slider_val", None)
 
 
@@ -195,124 +196,120 @@ def _render_ai_solver_panel(t, goal) -> None:
     idx = int(st.session_state.get("play_solution_idx", 0))
     replay_state = path[idx] if path else st.session_state.play_state
 
-    control_col, board_col = st.columns([1.24, 0.76], gap="large")
-    with control_col:
-        solve_col, clear_col = st.columns([1.2, 0.9])
-        with solve_col:
-            if st.button(t("play_ai_solve_btn"), key="btn_ai_solve", width="stretch"):
-                if st.session_state.play_state == goal:
-                    st.info(t("play_ai_already_goal"))
-                elif not is_solvable(st.session_state.play_state, goal):
-                    st.error(t("play_ai_unsolvable"))
-                else:
-                    with st.spinner(t("play_ai_running")):
-                        result = a_star(
-                            start=st.session_state.play_state,
-                            goal=goal,
-                            heuristic="Manhattan Distance",
-                            timeout=30.0,
-                        )
-                        if result.success:
-                            _store_ai_replay_result(result)
-                            st.success(t("play_ai_solved_msg", steps=len(result.actions)))
-                        else:
-                            st.error(t("play_ai_error", error=result.message))
-        with clear_col:
-            if st.session_state.play_solution_path:
-                if st.button(t("play_ai_clear_btn"), key="btn_ai_clear", width="stretch"):
-                    _clear_ai_replay()
-                    st.rerun()
+    if st.session_state.pop("play_auto_done_pending", False):
+        st.success(t("play_auto_done"))
 
-        path = st.session_state.play_solution_path
-        res = st.session_state.play_solution_res
-        idx = int(st.session_state.get("play_solution_idx", 0))
-        replay_state = path[idx] if path else st.session_state.play_state
-
-        if path and res:
-            st.info(
-                t(
-                    "play_ai_solved_info",
-                    steps=len(res.actions),
-                    time=res.runtime,
-                    expanded=res.nodes_expanded,
-                    max_f=res.max_frontier_size,
-                )
-            )
-
-            step_cols = st.columns(3)
-            step_cols[0].metric(t("play_curr_step"), f"{idx}/{len(res.actions)}")
-            step_cols[1].metric(t("play_moves"), len(res.actions))
-            step_cols[2].metric(
-                t("play_manhattan"),
-                HEURISTICS["Manhattan Distance"](replay_state, goal=goal),
-            )
-
-            if idx < len(res.actions):
-                st.markdown(t("play_ai_next_action", act=_direction_label(t, res.actions[idx])))
+    solve_col, clear_col = st.columns([1, 1])
+    with solve_col:
+        if st.button(t("play_ai_solve_btn"), key="btn_ai_solve", width="stretch"):
+            if st.session_state.play_state == goal:
+                st.info(t("play_ai_already_goal"))
+            elif not is_solvable(st.session_state.play_state, goal):
+                st.error(t("play_ai_unsolvable"))
             else:
-                st.success(t("play_ai_reached_goal"))
-
-            ctrl_col1, ctrl_col2, ctrl_col3 = st.columns(3)
-            with ctrl_col1:
-                if st.button(
-                    t("play_prev_step"),
-                    key="btn_play_prev",
-                    disabled=(idx == 0),
-                    width="stretch",
-                ):
-                    _apply_ai_replay_step(idx - 1)
-                    st.rerun()
-            with ctrl_col2:
-                if st.button(
-                    t("play_next_step"),
-                    key="btn_play_next",
-                    disabled=(idx >= len(path) - 1),
-                    width="stretch",
-                ):
-                    _apply_ai_replay_step(idx + 1)
-                    st.rerun()
-            with ctrl_col3:
-                if st.session_state.get("play_auto_run", False):
-                    if st.button(t("play_stop_run"), key="btn_play_stop", width="stretch"):
-                        st.session_state.play_auto_run = False
-                        st.rerun()
-                else:
-                    if st.button(
-                        t("play_auto_run"),
-                        key="btn_play_auto",
-                        disabled=(idx >= len(path) - 1),
-                        width="stretch",
-                    ):
-                        st.session_state.play_auto_run = True
-                        st.rerun()
-
-            slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key="play_slider_val")
-            if slider_val != idx:
-                _apply_ai_replay_step(slider_val)
+                with st.spinner(t("play_ai_running")):
+                    result = a_star(
+                        start=st.session_state.play_state,
+                        goal=goal,
+                        heuristic="Manhattan Distance",
+                        timeout=30.0,
+                    )
+                    if result.success:
+                        _store_ai_replay_result(result)
+                        st.success(t("play_ai_solved_msg", steps=len(result.actions)))
+                    else:
+                        st.error(t("play_ai_error", error=result.message))
+    with clear_col:
+        if st.session_state.play_solution_path:
+            if st.button(t("play_ai_clear_btn"), key="btn_ai_clear", width="stretch"):
+                _clear_ai_replay()
                 st.rerun()
 
-            if 0 < idx <= len(res.actions):
-                act_label = _direction_label(t, res.actions[idx - 1])
-                st.markdown(t("play_action_performed", step=idx, total=len(res.actions), act=act_label))
-        else:
-            st.caption(t("play_ai_replay_hint"))
+    path = st.session_state.play_solution_path
+    res = st.session_state.play_solution_res
+    idx = int(st.session_state.get("play_solution_idx", 0))
+    replay_state = path[idx] if path else st.session_state.play_state
 
-    with board_col:
-        st.subheader(t("play_ai_replay_board"))
-        render_puzzle_board(replay_state, size="small", goal=goal)
+    if path and res:
+        st.info(
+            t(
+                "play_ai_solved_info",
+                steps=len(res.actions),
+                time=res.runtime,
+                expanded=res.nodes_expanded,
+                max_f=res.max_frontier_size,
+            )
+        )
 
-    auto_path = st.session_state.play_solution_path
-    if st.session_state.get("play_auto_run", False) and auto_path:
-        if idx < len(auto_path) - 1:
-            time.sleep(0.4)
-            _apply_ai_replay_step(idx + 1)
-            st.rerun()
+        st.markdown(
+            t(
+                "play_ai_step_summary",
+                step=idx,
+                total=len(res.actions),
+                moves=len(res.actions),
+                manhattan=HEURISTICS["Manhattan Distance"](replay_state, goal=goal),
+            )
+        )
+
+        if idx < len(res.actions):
+            st.markdown(t("play_ai_next_action", act=_direction_label(t, res.actions[idx])))
         else:
-            st.session_state.play_auto_run = False
-            st.success(t("play_auto_done"))
+            st.success(t("play_ai_reached_goal"))
+
+        ctrl_col1, ctrl_col2, ctrl_col3 = st.columns(3)
+        with ctrl_col1:
+            if st.button(
+                t("play_prev_step"),
+                key="btn_play_prev",
+                disabled=(idx == 0),
+                width="stretch",
+            ):
+                _apply_ai_replay_step(idx - 1)
+                st.rerun()
+        with ctrl_col2:
+            if st.button(
+                t("play_next_step"),
+                key="btn_play_next",
+                disabled=(idx >= len(path) - 1),
+                width="stretch",
+            ):
+                _apply_ai_replay_step(idx + 1)
+                st.rerun()
+        with ctrl_col3:
+            auto_clicked = st.button(
+                t("play_auto_run"),
+                key="btn_play_auto",
+                disabled=(idx >= len(path) - 1),
+                width="stretch",
+            )
+    else:
+        auto_clicked = False
+        st.caption(t("play_ai_replay_hint"))
+
+    st.subheader(t("play_ai_replay_board"))
+    board_slot = st.empty()
+    if auto_clicked and path:
+        for frame_idx in range(idx, len(path)):
+            with board_slot.container():
+                render_puzzle_board(path[frame_idx], size="small", goal=goal)
+            time.sleep(0.35)
+        _apply_ai_replay_step(len(path) - 1)
+        st.session_state["play_slider_val"] = len(path) - 1
+        st.session_state["play_auto_done_pending"] = True
+        st.rerun()
+    else:
+        with board_slot.container():
+            render_puzzle_board(replay_state, size="small", goal=goal)
+
+    if path and res:
+        slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key="play_slider_val")
+        if slider_val != idx:
+            _apply_ai_replay_step(slider_val)
             st.rerun()
-    elif st.session_state.get("play_auto_run", False):
-        st.session_state.play_auto_run = False
+
+        if 0 < idx <= len(res.actions):
+            act_label = _direction_label(t, res.actions[idx - 1])
+            st.markdown(t("play_action_performed", step=idx, total=len(res.actions), act=act_label))
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:

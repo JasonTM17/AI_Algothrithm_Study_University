@@ -108,13 +108,26 @@ div[data-testid="stMainBlockContainer"] {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.25 !important;
 }
 .stMetric [data-testid="stMetricValue"] {
     font-family: var(--font-mono) !important;
-    font-size: 26px !important;
+    font-size: clamp(18px, 2.1vw, 26px) !important;
     font-weight: 650;
     color: var(--accent) !important;
     font-variant-numeric: tabular-nums;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+}
+.stMetric [data-testid="stMetricLabel"],
+.stMetric [data-testid="stMetricLabel"] p {
+    max-width: 100%;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
 }
 div[data-testid="stMetric"] {
     border: 1px solid var(--border-subtle);

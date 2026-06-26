@@ -70,7 +70,7 @@ def render_step_trace_tab() -> None:
 
     st.markdown("---")
     st.subheader(t("trace_detail_title"))
-    render_search_detail_table(result.trace, max_rows=50)
+    render_search_detail_table(result.trace, max_rows=50, key="trace_detail_step_slider")
 
     st.markdown("---")
     st.subheader(t("trace_tree_title"))

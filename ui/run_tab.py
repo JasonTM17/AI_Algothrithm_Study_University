@@ -252,10 +252,23 @@ def render_run_algorithm_tab(t=None) -> None:
                     tree=RUN_TREE_NODES,
                 )
             )
-            with st.expander(tx("run_trace_steps"), expanded=False):
+            st.subheader(tx("run_live_evidence_title"))
+            st.caption(tx("run_live_evidence_desc"))
+            render_search_detail_table(
+                result.trace,
+                max_rows=RUN_DETAIL_ROWS,
+                key="run_detail_step_slider",
+            )
+
+            st.markdown("---")
+            render_search_tree(result, max_nodes=RUN_TREE_NODES)
+
+            with st.expander(tx("run_trace_steps"), expanded=True):
                 st.caption(tx("trace_notation_help"))
                 render_trace_table(result.trace, max_rows=RUN_TRACE_ROWS)
             with st.expander(tx("run_detail"), expanded=False):
-                render_search_detail_table(result.trace, max_rows=RUN_DETAIL_ROWS)
-            with st.expander(tx("run_search_tree"), expanded=False):
-                render_search_tree(result, max_nodes=RUN_TREE_NODES)
+                render_search_detail_table(
+                    result.trace,
+                    max_rows=RUN_DETAIL_ROWS,
+                    key="run_expanded_detail_step_slider",
+                )
