@@ -146,7 +146,7 @@ def test_csp_backtracking_label_does_not_claim_mrv_lcv():
     ]
 
     assert backtracking_rows
-    assert backtracking_rows[0]["Heuristic"] == "Heuristic value ordering"
+    assert backtracking_rows[0]["Heuristic"] == "Manhattan Distance"
     assert "MRV+LCV" not in " ".join(str(row) for row in COMPARISON_TABLE)
 
 
@@ -175,7 +175,8 @@ def test_csp_complex_and_game_algorithms_are_not_real_solvers():
         "Backtracking Search",
         "Min-Conflicts",
         "AND-OR Search",
-        "No Observation Search",
+        "Searching with no observation",
+        "Searching for partially observable problems",
         "AI-vs-AI Tournament",
         "Minimax",
         "Alpha-Beta Pruning",

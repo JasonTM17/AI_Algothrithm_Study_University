@@ -302,8 +302,8 @@ def test_run_tab_exposes_group_3_and_or_extension():
 
 def test_run_tab_runs_added_complex_environment_algorithms():
     cases = [
-        ("Searching with no observation", "No Observation Search"),
-        ("Searching for partially observable problems", "Partially Observable Search"),
+        ("Searching with no observation", "Searching with no observation"),
+        ("Searching for partially observable problems", "Searching for partially observable problems"),
     ]
     for label, expected_algorithm in cases:
         app = AppTest.from_file("app.py", default_timeout=15)
@@ -763,7 +763,7 @@ def test_advanced_partial_observation_renders_observation_evidence():
     info_values = "\n".join(getattr(info, "value", "") for info in app.info)
     metric_labels = [metric.label for metric in app.metric]
 
-    assert result.algorithm == "Partially Observable Search"
+    assert result.algorithm == "Searching for partially observable problems"
     assert any(step.observation for step in result.trace)
     assert "Strict criterion" in info_values
     assert "Belief Size" in metric_labels

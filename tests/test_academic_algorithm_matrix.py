@@ -85,14 +85,14 @@ MODEL_CASES = [
         ),
     ),
     (
-        "No Observation Search",
+        "Searching with no observation",
         lambda: no_observation_search(
             ONE_MOVE, num_belief_states=1, max_steps=1,
             action_order="RULD", timeout=5, seed=1,
         ),
     ),
     (
-        "Partially Observable Search",
+        "Searching for partially observable problems",
         lambda: partially_observable_search(
             ONE_MOVE, num_belief_states=1, max_steps=1,
             action_order="RULD", timeout=5, seed=1,

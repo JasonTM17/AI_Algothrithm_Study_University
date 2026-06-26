@@ -219,7 +219,7 @@ def no_observation_search(
         # Check if all belief states are goal
         if all(s == goal for s in belief):
             return SearchResult(
-                success=True, algorithm="No Observation Search", group="Complex Environments",
+                success=True, algorithm="Searching with no observation", group="Complex Environments",
                 path=representative_path if representative_path_valid else [],
                 actions=actions_taken if representative_path_valid else [],
                 goal_state=goal, cost=len(actions_taken), depth=len(actions_taken),
@@ -241,7 +241,7 @@ def no_observation_search(
         )
     )
     return SearchResult(
-        success=False, algorithm="No Observation Search", group="Complex Environments",
+        success=False, algorithm="Searching with no observation", group="Complex Environments",
         path=representative_path if representative_path_valid else [],
         actions=actions_taken if representative_path_valid else [],
         goal_state=goal, depth=len(actions_taken), random_seed=seed,
@@ -299,7 +299,7 @@ def partially_observable_search(
 
     if actual_state == goal:
         return SearchResult(
-            success=True, algorithm="Partially Observable Search", group="Complex Environments",
+            success=True, algorithm="Searching for partially observable problems", group="Complex Environments",
             path=actual_path, actions=actual_actions, goal_state=goal,
             cost=0, depth=0, random_seed=seed,
             nodes_expanded=0, nodes_generated=0,
@@ -360,7 +360,7 @@ def partially_observable_search(
 
         if actual_state == goal:
             return SearchResult(
-                success=True, algorithm="Partially Observable Search", group="Complex Environments",
+                success=True, algorithm="Searching for partially observable problems", group="Complex Environments",
                 path=actual_path, actions=actual_actions, goal_state=goal,
                 cost=len(actual_actions), depth=len(actual_actions), random_seed=seed,
                 nodes_expanded=step + 1, nodes_generated=step + 1,
@@ -379,7 +379,7 @@ def partially_observable_search(
         )
     )
     return SearchResult(
-        success=False, algorithm="Partially Observable Search", group="Complex Environments",
+        success=False, algorithm="Searching for partially observable problems", group="Complex Environments",
         path=actual_path, actions=actual_actions, goal_state=goal,
         depth=len(actual_actions), random_seed=seed,
         nodes_expanded=steps_completed, nodes_generated=steps_completed,
