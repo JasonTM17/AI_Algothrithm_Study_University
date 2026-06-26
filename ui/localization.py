@@ -160,8 +160,13 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
              'slide_down': 'Slide down',
              'slide_up': 'Slide up',
              'play_ai_solver': 'AI Auto-Solver',
-             'play_ai_desc': 'Uses **A* Search** with **Manhattan Distance** heuristic to find the optimal '
-                             'path.',
+             'play_ai_desc': 'Uses A* Search with Manhattan Distance heuristic to find an optimal path from '
+                             'the current board to the selected goal.',
+             'play_ai_replay_board': 'AI replay board',
+             'play_ai_replay_hint': 'Click Find Solution, then use Next Step or Auto Play to watch this board '
+                                    'solve in place.',
+             'play_ai_next_action': 'Next action: **{act}**',
+             'play_ai_reached_goal': 'Replay reached the requested goal.',
              'play_ai_solve_btn': 'Find Solution via AI',
              'play_ai_clear_btn': 'Discard AI Solution',
              'play_ai_running': 'AI is computing...',
@@ -762,8 +767,13 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
                 'slide_down': 'Trượt xuống',
                 'slide_up': 'Trượt lên',
                 'play_ai_solver': 'Giải tự động bằng AI',
-                'play_ai_desc': 'Sử dụng thuật toán **A* Search** với Heuristic **Manhattan Distance** tìm '
-                                'lời giải tối ưu.',
+                'play_ai_desc': 'Dùng A* Search với heuristic Manhattan Distance để tìm đường đi tối ưu từ '
+                                'board hiện tại tới bảng đích đã chọn.',
+                'play_ai_replay_board': 'Bảng AI đang giải',
+                'play_ai_replay_hint': 'Bấm Tìm lời giải, rồi dùng Bước tiếp hoặc Chạy tự động để xem board '
+                                       'này giải ngay tại chỗ.',
+                'play_ai_next_action': 'Hành động kế tiếp: **{act}**',
+                'play_ai_reached_goal': 'Replay đã tới bảng đích đã chọn.',
                 'play_ai_solve_btn': 'Tìm lời giải bằng AI',
                 'play_ai_clear_btn': 'Hủy lời giải AI',
                 'play_ai_running': 'AI đang tính toán...',

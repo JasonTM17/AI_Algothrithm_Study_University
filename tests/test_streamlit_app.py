@@ -105,6 +105,31 @@ def test_ai_solver_replay_keeps_play_history_certifiable():
     assert not app.exception
 
 
+def test_play_ai_solver_panel_exposes_visible_replay_controls():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
+    subheaders = [getattr(subheader, "value", "") for subheader in app.subheader]
+
+    assert "AI replay board" in subheaders
+    assert "Click Find Solution" in caption_text
+    assert "**A* Search**" not in markdown_text
+
+    app.button(key="btn_ai_solve").click().run()
+
+    solved_markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    assert app.session_state.play_solution_path
+    assert "Next action" in solved_markdown_text
+    assert app.button(key="btn_play_next")
+    assert app.button(key="btn_play_auto")
+    assert not app.exception
+
+
 def test_reset_clears_ai_assistance_disclosure():
     app = AppTest.from_file("app.py", default_timeout=15).run()
     app.session_state.start_state = ONE_MOVE
