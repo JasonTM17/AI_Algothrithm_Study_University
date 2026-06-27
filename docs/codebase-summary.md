@@ -6,7 +6,7 @@
 |---|---|
 | `app.py` | Streamlit entrypoint, cấu hình page, sidebar, language selector, start/goal controls và tab router. |
 | `ui/play_tab.py` | Board chơi thủ công, image mode, AI replay và challenge scoring. |
-| `ui/run_tab.py` | Chạy từng thuật toán, hiển thị contract start/goal, metrics, trace và search tree. |
+| `ui/run_tab.py` | Chạy từng thuật toán, hiển thị contract start/goal, metrics, trace, readable search tree và Graphviz evidence. |
 | `ui/compare_tab.py` | Benchmark nhiều thuật toán theo preset, goal tùy chỉnh, seed và giới hạn tài nguyên. |
 | `ui/trace_tab.py` | Đọc trace đã lưu, bảng chi tiết và CSV export. |
 | `ui/hand_tracing.py` | Bài tập mở rộng node thủ công và Graphviz tree từ các edge người học chọn. |
@@ -47,15 +47,18 @@
 
 | File | Vai trò |
 |---|---|
-| `ui/components.py` | Board renderer, metrics, trace table, search tree, algorithm evaluation cards. |
+| `ui/components.py` | Board renderer, metrics, trace table, readable search tree, Graphviz evidence, algorithm evaluation cards. |
 | `ui/styles.py` | CSS cho dashboard Streamlit. |
 | `ui/localization.py` | Từ điển English/Tiếng Việt và hàm translate. |
 | `ui/sample_images.py` | Built-in image tiles cho board. |
 | `ui/start_goal_controls.py` | Editor start/goal trong sidebar và các tab. |
+| `ui/belief_controls.py` | Known-tile matrix 4x4 cho No/Partial Observation; `_` nghĩa là unknown. |
 | `ui/academic_panels.py` | Các panel PEAS, rubric, taxonomy, proof, report. |
 | `ui/syllabus_coverage_panels.py` | Mapping đề cương sang vị trí trong app. |
 | `ui/ai_vs_ai_tournament.py` | UI cấu hình và kết quả Tournament. |
 | `ui/tournament_replay.py` | Replay hai trajectory trên cùng timeline. |
+| `ui/assets/` | Ảnh mẫu cho puzzle ảnh. |
+| `docs/assets/` | GIF/diagram dùng trong README và tài liệu. |
 
 ## Tests
 

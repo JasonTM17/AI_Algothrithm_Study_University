@@ -1,209 +1,300 @@
 # 15-Puzzle AI Algorithm Simulator
 
-Ứng dụng Streamlit phục vụ đồ án hoặc bài thi cuối kỳ môn Trí tuệ nhân tạo. Repo mô phỏng 15-puzzle để trình bày PEAS, không gian trạng thái, heuristic, trace tìm kiếm, bảng so sánh thuật toán, hand-tracing, CSP, môi trường phức tạp, game/chance extension và AI-vs-AI Tournament.
+Một phòng thí nghiệm Streamlit để học và bảo vệ đồ án Trí tuệ nhân tạo qua bài toán 15-puzzle. Dự án không chỉ cho thuật toán “chạy ra đáp án”; nó cố gắng cho người học nhìn thấy state, action, frontier, reached, heuristic, certificate và ranh giới học thuật của từng nhóm thuật toán.
 
-Điểm quan trọng nhất của repo là tính đúng học thuật. 15-puzzle chuẩn là bài toán một tác tử, xác định, quan sát đầy đủ, tĩnh, rời rạc và tuần tự. Vì vậy BFS, UCS, IDS, A*, IDA* là solver chuẩn; DFS, Greedy và local search là demo đối chiếu; CSP, AND-OR, belief-state, LRTA*, Minimax, Alpha-Beta, Expectimax và Tournament là phần mở rộng giáo dục, không phải solver tự nhiên của 15-puzzle chuẩn.
+![A* image puzzle replay](docs/assets/ai-puzzle-demo.gif)
+
+GIF trên được tạo từ solver thật trong repo:
+
+- Start state: `(1, 6, 2, 7, 5, 0, 4, 3, 9, 10, 11, 8, 13, 14, 15, 12)`
+- Solver: `A* Search`
+- Heuristic: `Manhattan Distance`
+- Công thức: `f(n)=g(n)+h(n)`
+- Path tối ưu: `10` bước
+- Evidence: `19` nodes expanded, `37` nodes generated, frontier max `18`
+
+## Mục tiêu
+
+Dự án dùng 15-puzzle để học các ý tưởng AI nền tảng:
+
+| Cần học | Dự án minh họa bằng gì |
+|---|---|
+| Agent và PEAS | Board 4x4, sensors, actuators, performance measure |
+| State-space search | `state`, `action`, `transition`, `path cost`, `goal test` |
+| Uninformed search | BFS, DFS, UCS, IDS |
+| Informed search | Greedy, A*, IDA*, Manhattan, Linear Conflict |
+| Local search | Hill Climbing, Beam, Simulated Annealing, candidate evidence |
+| Môi trường phức tạp | AND-OR, belief state, partial observation, LRTA* |
+| CSP | Variables, domains, constraints, propagation, bounded planning |
+| Game/chance extension | Tournament, Minimax, Alpha-Beta, Expectimax |
+| Kiểm chứng học thuật | Path legality, goal reached, optimality certificate, trace |
+
+Điểm quan trọng: 15-puzzle chuẩn là bài toán một tác tử, xác định, quan sát đầy đủ, tĩnh, rời rạc và tuần tự. Vì vậy BFS, UCS, IDS, A*, IDA* là nhóm solver chuẩn. CSP, AND-OR, belief-state, LRTA*, Minimax, Alpha-Beta, Expectimax là phần mở rộng giáo dục, không nên gọi là solver tự nhiên của 15-puzzle chuẩn.
 
 ## Chạy nhanh
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Kiểm tra nhanh trên Windows PowerShell:
+Mở app tại:
 
-```powershell
-$files = @('app.py') + (Get-ChildItem core,algorithms,ui -Filter *.py | ForEach-Object { $_.FullName })
-python -m py_compile @files
-python -m pytest tests/ -q
+```text
+http://localhost:8501
 ```
 
-Môi trường phát triển đầy đủ:
+Môi trường phát triển:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m compileall -q app.py core algorithms ui
 python -m pytest tests/ -q
 ```
 
-CI trên GitHub dùng Python 3.12, cài `requirements-dev.txt`, chạy compile, pytest với coverage tối thiểu 65%, rồi khởi động Streamlit và kiểm tra `/_stcore/health`.
+Kiểm tra nhanh trên Windows PowerShell:
 
-## Luồng bảo vệ trên dashboard
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m compileall -q app.py core algorithms ui
+python -m pytest tests/ -q
+```
+
+## Cách dùng khi thuyết trình
 
 | Bước | Tab | Nên trình bày |
 |---|---|---|
-| 1 | Play | Start/goal, ô trống `0`, move hợp lệ, solvability theo parity, challenge mode và certificate khi người chơi hoàn thành. |
-| 2 | Run Algorithm | Chọn thuật toán, giải thích frontier, reached/best_g, trace, `g/h/f`, search tree và run certificate. |
-| 3 | Compare | So sánh nhiều solver bằng cùng preset, seed, depth, timeout, max nodes, heuristic và action order. |
-| 4 | Step Trace | Đọc từng dòng trace, frontier/reached, parent/child, export CSV khi cần chứng cứ. |
-| 5 | Hand-Tracing Practice | Tập mở rộng node thủ công, kiểm tra thứ tự frontier và cây Graphviz do người học xây. |
-| 6 | Theory | Bảo vệ PEAS, taxonomy, guarantee, proof card, decision guide và báo cáo chấm điểm. |
-| 7 | Advanced | Chạy CSP, AND-OR, no/partial observation, LRTA*, Minimax, Alpha-Beta, Expectimax và AI-vs-AI Tournament như concept lab. |
+| 1 | Play Puzzle | Start/Goal, ô trống `0`, solvability, board số hoặc puzzle ảnh, A* replay từng bước |
+| 2 | Run Algorithm | Chọn nhóm thuật toán ở đầu trang, chạy một thuật toán, đọc frontier/reached/trace |
+| 3 | Compare | So sánh nhiều solver với cùng seed, depth, timeout, heuristic |
+| 4 | Trace từng bước | Đọc expansion trace, generated node, `g/h/f`, parent/child |
+| 5 | Luyện chạy tay | Tự chọn node tiếp theo như khi làm bài thi |
+| 6 | Lý thuyết PEAS | Bảo vệ mô hình agent, taxonomy, guarantee, caveat |
+| 7 | Nâng cao | CSP, AND-OR, belief-state, LRTA*, tournament, game/chance concept |
+
+Một câu bảo vệ gọn:
+
+> Với 15-puzzle chuẩn, em dùng A* vì bài toán là deterministic, fully observable, unit-cost state-space search. A* dùng `f(n)=g(n)+h(n)`, với Manhattan Distance là heuristic admissible/consistent, nên khi không bị giới hạn tài nguyên và path được verify, kết quả có optimality certificate.
 
 ## Mô hình 15-puzzle chuẩn
 
-| Thành phần | Mô tả |
+| Thành phần | Diễn giải |
 |---|---|
-| State | Tuple 16 phần tử, là hoán vị của `0..15`; `0` là ô trống. |
-| Goal mặc định | Ma trận 4x4, `_` là ô trống:<br>` 1  2  3  4`<br>` 5  6  7  8`<br>` 9 10 11 12`<br>`13 14 15  _` |
-| Action | `L`, `R`, `U`, `D`: trượt ô trống sang trái/phải/lên/xuống nếu hợp lệ. |
-| Transition | Xác định: cùng state và action hợp lệ luôn sinh đúng một next state. |
-| Cost | Mỗi move có cost `1`, nên path cost bằng số action. |
-| Solvability | Hai state đi tới nhau được khi parity class bằng nhau; code dùng inversions và hàng của blank tính từ dưới lên. |
-| Certificate | Path hợp lệ khi từng action áp dụng lên state trước sinh đúng state sau và state cuối bằng goal đã chọn. |
+| State | Tuple 16 số, là hoán vị của `0..15`; `0` là ô trống |
+| Goal mặc định | `(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)` |
+| Action | `L`, `R`, `U`, `D`: trượt ô trống trái/phải/lên/xuống nếu hợp lệ |
+| Transition | Xác định: cùng state và action hợp lệ luôn sinh đúng một next state |
+| Cost | Mỗi bước trượt cost `1` |
+| Goal test | State hiện tại bằng goal đã chọn |
+| Solvability | Dựa trên parity class: inversions và hàng của blank tính từ dưới lên |
+| Certificate | Path hợp lệ khi mọi action đều legal, state sau khớp transition, state cuối bằng goal |
+
+Goal dạng ma trận:
+
+```text
+ 1  2  3  4
+ 5  6  7  8
+ 9 10 11 12
+13 14 15  _
+```
 
 ## PEAS
 
-| PEAS | Diễn giải trong bài 15-puzzle |
+| PEAS | Trong 15-puzzle |
 |---|---|
-| Performance | Tới goal, ít bước, ít node expanded/generated, ít bộ nhớ, runtime thấp. |
-| Environment | Board 4x4, fully observable, deterministic, static, discrete, sequential, single-agent. |
-| Actuators | Trượt ô trống theo `L/R/U/D` khi action hợp lệ. |
-| Sensors | Toàn bộ board, vị trí ô trống, legal moves và heuristic estimate. |
+| Performance | Tới goal, ít bước, ít node expanded/generated, runtime thấp, memory thấp |
+| Environment | Board 4x4, deterministic, fully observable, static, discrete, sequential, single-agent |
+| Actuators | Trượt ô trống bằng `L/R/U/D` |
+| Sensors | Toàn bộ board, vị trí blank, legal moves, heuristic estimate |
 
-## Phân loại thuật toán
+Nếu chuyển sang No Observation hoặc Partial Observation, sensors bị yếu đi. Khi đó agent không còn biết state đầy đủ; nó phải ra quyết định trên belief set. App vẫn có hidden actual state trong trace để debug, nhưng quyết định của agent phải dựa trên belief.
 
-| Vai trò | Thuật toán | Cách nói khi bảo vệ |
+## Sáu nhóm thuật toán
+
+`ALGORITHM_GROUPS` là contract chính của UI: 6 nhóm, 28 thuật toán.
+
+| Nhóm | Thuật toán | Vai trò học thuật |
 |---|---|---|
-| Solver chuẩn | BFS, UCS, IDS, A*, IDA* | Dùng để giải 15-puzzle chuẩn; có guarantee khi không bị timeout/node cap và điều kiện lý thuyết thỏa. |
-| Demo đối chiếu | DFS, Greedy Best-First, local search variants | Dùng để chỉ trade-off, thiếu optimality, local optimum, plateau hoặc phụ thuộc randomness. |
-| Mở rộng minh họa | CSP, AND-OR, No Observation, Partial Observation, LRTA* | Đổi mô hình bài toán hoặc môi trường để học thêm AI; không phải solver tự nhiên nhất của 15-puzzle chuẩn. |
-| Tournament/game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Tournament là lớp chấm điểm; Minimax/Alpha-Beta/Expectimax là extension game/chance. |
+| Uninformed Search | BFS, DFS, UCS, IDS | Tìm kiếm không heuristic |
+| Informed Search | Greedy Best-First, A*, IDA* | Tìm kiếm có heuristic |
+| Local Search | Simple HC, Steepest HC, Stochastic HC, Random-Restart HC, Local Beam, Simulated Annealing | Tối ưu cục bộ, thấy local optimum/plateau/randomness |
+| Complex Environments | AND-OR, No Observation, Partially Observable, LRTA* | Môi trường nondeterministic, belief-state, online learning |
+| CSP | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs | Mô hình hóa ràng buộc và bounded planning |
+| AI-vs-AI Tournament | Tournament, Minimax, Alpha-Beta, Expectimax | Chấm điểm solver, robustness/game/chance extension |
 
-## Thuật toán dùng hợp lý và không hợp lý cho 15-puzzle
+## Solver chuẩn và extension
 
-| Mức sử dụng | Thuật toán | Có hợp lý để giải 15-puzzle chuẩn? | Lý do chuẩn khi bảo vệ |
+| Loại | Thuật toán | Có nên gọi là solver chuẩn? | Lý do |
 |---|---|---:|---|
-| Rất hợp lý làm solver chuẩn | A*, IDA* | Có | Bám đúng mô hình state-space search; dùng `g+h` hoặc threshold `f`; có thể chứng minh tối ưu với heuristic admissible/consistent và đủ tài nguyên. |
-| Hợp lý làm solver chuẩn cho puzzle nông | BFS, UCS, IDS | Có | Không cần heuristic; complete/optimal với unit step cost. Caveat là BFS/UCS tốn bộ nhớ, IDS expand lại node. |
-| Hợp lý để minh họa trade-off, không nên chọn làm solver chính | DFS | Không nên | DFS tiết kiệm bộ nhớ nhưng không optimal và bị giới hạn bởi depth/resource cap. |
-| Hợp lý để minh họa heuristic-only failure | Greedy Best-First | Không nên | Greedy chỉ nhìn `h(n)`, bỏ qua `g(n)`, nên có thể nhanh nhưng không có optimality certificate. |
-| Hợp lý để dạy local optimum/plateau/randomness | Simple/Steepest/Stochastic/Random-Restart Hill Climbing, Local Beam, Simulated Annealing | Không nên | Local search không giữ frontier toàn cục, dễ kẹt hoặc phụ thuộc seed; dùng làm demo đối chiếu thay vì solver đáng tin cậy. |
-| Hợp lý như mô hình hóa hoặc concept lab | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs | Không nên gọi là solver chuẩn | CSP planning cần horizon/time-step; AC-3 chỉ chứng minh exact-horizon, Min-Conflicts dùng swap không phải legal blank move. |
-| Hợp lý khi cố ý đổi environment/sensor | AND-OR, No Observation, Partial Observation, LRTA* | Không phải solver chuẩn | Chúng thay đổi transition, observability hoặc agent model; dùng để giải thích AI nâng cao. |
-| Hợp lý để chấm điểm hoặc dạy game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Không phải solver chuẩn | Tournament là scoring layer; game/chance model thêm đối thủ hoặc xác suất không có trong PEAS chuẩn của 15-puzzle. |
+| Solver chuẩn | BFS, UCS, IDS, A*, IDA* | Có | Đúng mô hình state-space search của 15-puzzle |
+| Demo đối chiếu | DFS, Greedy, Local Search | Không nên | Dùng để thấy trade-off, path xấu, local optimum, không optimal |
+| Extension giáo dục | CSP, AND-OR, No/Partial Observation, LRTA* | Không | Đổi mô hình bài toán, sensor hoặc environment |
+| Game/chance | Minimax, Alpha-Beta, Expectimax | Không | 15-puzzle không có đối thủ tự nhiên; đây là robustness/chance framing |
+| Tournament | AI-vs-AI Tournament | Không | Là lớp chấm điểm hai solver bằng A* reference |
 
-## Heuristic trong repo
+## Heuristic
 
-| Heuristic | Ý tưởng | Ưu điểm | Caveat |
-|---|---|---|---|
-| Misplaced Tiles | Đếm tile sai vị trí, bỏ qua blank. | Đơn giản, admissible, dễ giải thích. | Yếu, không biết tile cách goal bao xa. |
-| Manhattan Distance | Tổng khoảng cách hàng/cột của từng tile tới goal, bỏ qua blank. | Admissible, consistent, rất hợp với 15-puzzle. | Vẫn có thể mở rộng nhiều node với puzzle sâu. |
-| Linear Conflict | Manhattan cộng penalty hợp lệ cho các tile cùng goal-row/goal-column bị ngược thứ tự. | Mạnh hơn Manhattan, vẫn admissible/consistent trong repo. | Tính phức tạp hơn; lợi ích phụ thuộc state. |
-
-A* và IDA* chỉ có optimality certificate khi heuristic admissible, path verified, goal reached, thuật toán kết thúc bằng `goal`, và run không dừng do resource limit.
-
-## Nhóm thuật toán chính
-
-### Uninformed Search
-
-| Thuật toán | Cách chạy | Guarantee trong 15-puzzle |
+| Heuristic | Ý tưởng | Guarantee |
 |---|---|---|
-| BFS | FIFO queue, mở node theo depth. | Complete và optimal với unit cost; tốn bộ nhớ `O(b^d)`. |
-| DFS | Stack/depth-first với `max_depth`; code có reached set. | Không optimal; không complete khi depth limit thấp hoặc bị giới hạn tài nguyên. |
-| UCS | Priority queue theo `g(n)`, có tie-breaker. | Complete, optimal với cost dương; với unit cost gần BFS. |
-| IDS | Lặp depth-limited search từ depth 0 tới `max_depth`. | Complete và optimal với unit cost; ít bộ nhớ hơn BFS nhưng expand lại node. |
+| Misplaced Tiles | Đếm tile sai vị trí, bỏ qua blank | Admissible nhưng yếu |
+| Manhattan Distance | Tổng khoảng cách hàng/cột của từng tile tới goal | Admissible, consistent, phù hợp 15-puzzle |
+| Linear Conflict | Manhattan cộng penalty cho tile cùng row/column bị ngược thứ tự | Mạnh hơn Manhattan, vẫn admissible/consistent trong repo |
 
-### Informed Search
+A* và IDA* chỉ được claim tối ưu khi:
 
-| Thuật toán | Hàm đánh giá | Guarantee trong 15-puzzle |
-|---|---|---|
-| Greedy Best-First | Ưu tiên `h(n)` nhỏ nhất, bỏ qua `g(n)`. | Không optimal; dùng để so với A*. |
-| A* | Ưu tiên `f(n)=g(n)+h(n)`. | Solver tham chiếu chính; complete/optimal với heuristic admissible consistent và đủ tài nguyên. |
-| IDA* | DFS lặp theo threshold `f`. | Optimal với admissible heuristic; bộ nhớ thấp hơn A* nhưng re-expand nhiều. |
+- heuristic admissible/consistent,
+- run kết thúc bằng goal,
+- path legal,
+- state cuối bằng goal,
+- không timeout hoặc vượt node cap.
 
-### Local Search
+## Cách đọc kết quả thuật toán
 
-Local search không giữ frontier đầy đủ. Nhóm này tối ưu heuristic cục bộ của current state hoặc beam, nên phù hợp làm demo failure hơn làm solver chuẩn.
-
-| Thuật toán | Điểm chính | Caveat |
-|---|---|---|
-| Simple Hill Climbing | Chọn neighbor đầu tiên có `h` tốt hơn. | Kẹt local optimum/plateau. |
-| Steepest-Ascent Hill Climbing | Xét tất cả neighbor rồi chọn neighbor tốt nhất. | Vẫn kẹt nếu không có bước cải thiện. |
-| Stochastic Hill Climbing | Random trong các neighbor tốt hơn. | Phụ thuộc seed, vẫn không complete/optimal. |
-| Random-Restart Hill Climbing | Restart bằng random walk rồi leo đồi lại. | Tăng xác suất thành công, không chứng minh tối ưu. |
-| Local Beam Search | Giữ `k` state tốt nhất. | Beam hẹp có thể loại mất nhánh đúng. |
-| Simulated Annealing | Có thể nhận move xấu theo `exp(-delta/T)`. | Schedule/seed ảnh hưởng mạnh, không có finite optimality guarantee. |
-
-### CSP và môi trường phức tạp
-
-| Thành phần | Mô hình | Output |
-|---|---|---|
-| CSP Definition | Biến `X[t][p]`, action `A[t]`, ràng buộc initial/goal/AllDifferent/transition/legal move. | Mô tả `X, D, C`, chưa phải solver. |
-| Constraint Propagation | AC-3 trên state-chain `S[0]..S[T]`. | Exact-horizon path hoặc domain wipe-out cho horizon đã chọn. |
-| Backtracking Search | Bounded transition planning với heuristic value ordering. | Có thể tìm path nhỏ; fail không phải proof unsolvable. |
-| Min-Conflicts | Local repair trên tile-placement conflicts. | Swap tile không phải legal blank move, nên không là solver hợp lệ. |
-| AND-OR Search | Môi trường nondeterministic. | Conditional plan. |
-| No/Partial Observation | Belief-state và observation filtering. | Minh họa sensor yếu; không phải solver chuẩn. |
-| LRTA* | Online learning, cập nhật `H(state)` từng bước. | Có thể đi dài/lặp; không bằng A* offline về optimality. |
-
-### AI-vs-AI, game tree và chance
-
-15-puzzle không có đối thủ tự nhiên. Nhóm này tồn tại để bảo vệ kiến thức game/chance và cách chấm điểm hai solver.
-
-| Thành phần | Ý tưởng | Caveat |
-|---|---|---|
-| AI-vs-AI Tournament | Hai solver chạy cùng start/goal; A* làm reference optimal cost. | Là scoring layer, không biến PEAS chuẩn thành adversarial. |
-| Minimax | MAX muốn giảm heuristic/tới goal, MIN làm xấu utility. | Mô hình nhân tạo, không là optimal certificate cho puzzle chuẩn. |
-| Alpha-Beta Pruning | Minimax có `alpha`, `beta` để cắt nhánh. | Chỉ đúng trong game-tree model. |
-| Expectimax | MAX chọn action, CHANCE lấy expected utility theo probability. | Cần mô hình xác suất; path là sample/variation. |
-
-Tournament scoring:
-
-| Kết quả agent | Điểm |
-|---|---:|
-| Path hợp lệ, tới goal, cost bằng optimal cost | `+100` |
-| Path hợp lệ, tới goal, cost dài hơn optimal | `max(10, round(100 * optimal_cost / actual_cost))` |
-| Path hợp lệ nhưng chưa tới goal | `-10` |
-| Timeout/resource limit/no path | `-20` |
-| Exception/path invalid/action sai/state mismatch | `-50` |
-
-## Cách đọc kết quả một run
-
-| Trường | Ý nghĩa |
+| Trường | Nghĩa |
 |---|---|
-| `success` | Thuật toán báo thành công theo mô hình của nó; với extension, success có thể là model-success. |
-| `path_verified` | Mỗi action trong path là legal blank move. |
-| `goal_reached` | State cuối bằng goal đã chọn. |
-| `optimality_proven` | Chỉ true khi success, path legal, goal reached, algorithm optimal và termination là `goal`. |
-| `nodes_expanded` | Số node/state được mở rộng; không luôn so sánh 1-1 giữa các họ thuật toán. |
-| `nodes_generated` | Số candidate sinh ra. |
-| `max_frontier_size` | Đỉnh bộ nhớ frontier. |
-| `trace` | Evidence gồm action, parent, frontier/reached, `g/h/f`, reason; trace bị giới hạn để UI vẫn nhanh. |
+| `success` | Thuật toán báo thành công theo mô hình của nó |
+| `path_verified` | Chuỗi action là legal blank moves |
+| `goal_reached` | State cuối bằng goal |
+| `optimality_proven` | Có chứng cứ tối ưu theo điều kiện lý thuyết |
+| `nodes_expanded` | Số node được mở rộng |
+| `nodes_generated` | Số candidate sinh ra |
+| `max_frontier_size` | Frontier lớn nhất trong run |
+| `reached_size` | Số state/record đã biết trong cấu trúc reached/best_g/best_depth |
+| `trace` | Bằng chứng từng bước: action, `g/h/f`, frontier, reached, reason |
+| Search Tree | Readable tree để đọc path/current node/frontier/reached; Graphviz evidence để audit parent-child edge |
 
-## Cấu trúc repo
+Ba claim khác nhau cần tách rõ:
+
+```text
+Path legal       !=  Goal reached
+Goal reached     !=  Optimal
+Algorithm success !=  Solver chuẩn của 15-puzzle
+```
+
+## Các tab chính
+
+### Play Puzzle
+
+- Chơi board số hoặc puzzle ảnh.
+- Bấm ô cạnh blank để tự di chuyển.
+- Chạy `A* Search` từng bước ngay trên bàn chơi chính.
+- Image puzzle dùng cùng `play_state`, `play_path`, `play_step_idx`, nên ảnh đi theo từng state của thuật toán.
+- Tile số dùng style ổn định theo tile value, không đổi màu theo hàng hiện tại.
+
+### Run Algorithm
+
+- Chọn nhóm thuật toán ở đầu trang.
+- Chọn algorithm, heuristic, max nodes, depth/time cap.
+- Với AND-OR, UI dùng “deflection outcome support”, không gọi sai là probability weight.
+- Local Search hiển thị candidate được xét, candidate được chọn, lý do accept/reject.
+- Search Tree có readable view mặc định: solution path, expanded neighborhood hoặc first recorded nodes; mở Graphviz evidence khi cần kiểm tra toàn bộ cây.
+
+### Compare
+
+- Chạy nhiều thuật toán trên cùng start/goal.
+- Dùng cùng seed, depth, timeout và max nodes để so sánh công bằng.
+- Không nên so extension với solver chuẩn như cùng một loại guarantee.
+
+### Theory
+
+- Hiển thị PEAS, taxonomy, role, caveat, pseudocode, complexity.
+- Group 6 có bảng so sánh Minimax, Alpha-Beta, Expectimax:
+  - Minimax: worst-case branch.
+  - Alpha-Beta: pruning cùng worst-case tree.
+  - Expectimax: expected value với chance outcome.
+
+### Advanced
+
+- CSP và complex environment lab.
+- Known tiles matrix dùng `_` cho unknown.
+- No/Partial Observation giải thích rõ hidden actual state chỉ để debug; agent quyết định từ belief.
+- LRTA* dùng max nodes như giới hạn số bước online tối đa.
+
+## Kiến trúc repo
 
 ```text
 app.py                         Streamlit entrypoint và tab router
-core/                          puzzle logic, heuristic, metrics, taxonomy, tournament scoring
-algorithms/                    uninformed, informed, local, CSP, complex, adversarial algorithms
-ui/                            Streamlit tabs, components, styles, localization, image tiles
-docs/                          PDR, kiến trúc, chuẩn code, test plan, roadmap, tài liệu học thuật
-tests/                         solver, heuristic, runtime, tournament, UI, academic regression tests
-.github/workflows/quality.yml  compile, pytest coverage, Streamlit health smoke test
+core/                          puzzle logic, metrics, theory, tournament scoring
+algorithms/                    uninformed, informed, local, CSP, complex, adversarial
+ui/                            tabs, components, styles, localization, image tiles
+ui/assets/                     ảnh mẫu cho puzzle ảnh
+docs/                          tài liệu học thuật, kiến trúc, test plan, roadmap
+docs/assets/                   GIF/diagram cho README và docs
+tests/                         unit, solver, academic, AppTest, regression tests
+.github/workflows/quality.yml  compile, pytest coverage, Streamlit health smoke
 ```
 
-## Tài liệu chuyên sâu
+## Test và chất lượng
 
-- [Tổng quan dự án và PDR](docs/project-overview-pdr.md)
-- [Tóm tắt codebase](docs/codebase-summary.md)
-- [Kiến trúc hệ thống](docs/system-architecture.md)
-- [Chuẩn code và quy ước phát triển](docs/code-standards.md)
-- [Hướng dẫn triển khai](docs/deployment-guide.md)
+Chạy toàn bộ:
+
+```bash
+python -m compileall -q app.py core algorithms ui
+python -m pytest tests/ -q
+```
+
+Nên chạy trong venv riêng. Nếu `pip check` trên Python global báo lỗi từ package ngoài repo, hãy ưu tiên kết quả trong venv sạch vì máy cá nhân có thể đang cài package thử nghiệm từ dự án khác.
+
+Nhóm test quan trọng:
+
+| File | Mục đích |
+|---|---|
+| `tests/test_solvers.py` | Solver correctness, trace, certificate |
+| `tests/test_algorithm_contract_sweep.py` | Sweep nhiều solver qua scramble depth 1-5 |
+| `tests/test_academic.py` | Taxonomy, theory, 6 nhóm/28 thuật toán |
+| `tests/test_streamlit_app.py` | Streamlit AppTest cho UI, replay, selectors |
+| `tests/test_complex_models.py` | AND-OR, belief-state, known matrix |
+| `tests/test_localization.py` | Không lộ key thô, song ngữ, duplicate keys |
+
+Lần verify gần nhất trong workspace này:
+
+```text
+python -m pytest tests/ -q
+516 passed
+```
+
+## Cách tạo lại GIF README
+
+GIF hiện tại nằm ở:
+
+```text
+docs/assets/ai-puzzle-demo.gif
+```
+
+Nó được tạo từ:
+
+- `algorithms.informed.a_star`
+- `core.heuristics.manhattan_distance`
+- ảnh mẫu `ui/assets/cyberpunk_city.png`
+- start state 10 bước như phần đầu README
+
+Nếu cần tạo GIF mới, giữ nguyên nguyên tắc: animation phải lấy path từ solver thật, không vẽ state giả.
+
+## Tài liệu liên quan
+
+- [Project overview/PDR](docs/project-overview-pdr.md)
+- [Codebase summary](docs/codebase-summary.md)
+- [System architecture](docs/system-architecture.md)
+- [Code standards](docs/code-standards.md)
+- [Deployment guide](docs/deployment-guide.md)
 - [Design guidelines](docs/design-guidelines.md)
-- [Roadmap dự án](docs/project-roadmap.md)
-- [Kế hoạch kiểm thử thuật toán](docs/algorithm-test-plan.md)
-- [Tham chiếu học thuật về các nhóm thuật toán](docs/algorithm-groups-academic-reference.md)
-- [Cây nhánh và release](docs/branch-and-release-tree.md)
+- [Project roadmap](docs/project-roadmap.md)
+- [Algorithm test plan](docs/algorithm-test-plan.md)
+- [Academic reference for algorithm groups](docs/algorithm-groups-academic-reference.md)
 
-## Ghi chú bảo vệ nhanh
+## Ghi nhớ khi bảo vệ
 
 - Nói PEAS trước khi nói thuật toán.
-- A* là solver tham chiếu tốt nhất khi dùng Manhattan/Linear Conflict và không bị giới hạn tài nguyên.
-- UCS và BFS đều optimal vì mỗi move cost 1; UCS tổng quát hơn khi cost khác nhau.
+- A* là solver tham chiếu tốt nhất cho demo chuẩn.
+- UCS và BFS đều optimal vì mỗi move cost `1`.
 - Greedy có heuristic nhưng không optimal vì bỏ qua `g(n)`.
-- Hill climbing/local search tốt để minh họa local optimum, không nên gọi là solver đáng tin cậy.
-- CSP, game, chance, no-observation và partial-observation là extension học thuật, phải tách khỏi 15-puzzle chuẩn.
-- Mọi benchmark phải ghi seed, depth, heuristic, action order, timeout và max nodes.
-- Path hợp lệ, path tới goal và path tối ưu là ba claim khác nhau; dùng certificate của app để chứng minh.
+- Local Search không phải path search đầy đủ; nó tối ưu cục bộ.
+- AND-OR trả conditional plan, không phải path tuyến tính giả.
+- Minimax trong 15-puzzle là worst-case robustness branch, không phải đối thủ thật.
+- Expectimax cần mô hình xác suất; nếu không có xác suất thì không nên claim là solver chuẩn.
+- Path legal, goal reached và optimality certificate là ba tầng chứng minh khác nhau.

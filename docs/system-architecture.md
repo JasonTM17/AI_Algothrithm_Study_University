@@ -11,7 +11,7 @@ flowchart LR
     R --> M["SearchResult certificate"]
     C --> M
     P --> M
-    M --> G["Trace và search tree evidence"]
+    M --> G["Trace, readable tree và Graphviz evidence"]
     R --> D["core.puzzle + heuristics"]
     C --> D
     A --> X["CSP / complex / game / tournament"]
@@ -43,6 +43,8 @@ flowchart LR
 - `termination_reason`: `goal`, `model_success`, `timeout`, `resource_limit`, `depth_limit`, `exhausted` hoặc `stopped`.
 - `optimality_proven`: chỉ true khi success, algorithm optimal, path verified, goal reached và termination là `goal`.
 
+Search tree có hai lớp hiển thị trong `ui/components.py`: readable tree để người học đọc path, current node, frontier và reached snapshot; Graphviz DOT để audit toàn bộ parent-child edge đã ghi nhận. Cách này tránh ép cây lớn vào một ảnh quá nhỏ nhưng vẫn giữ bằng chứng đầy đủ.
+
 ## Lớp thuật toán
 
 Solver chuẩn nằm trong `algorithms/uninformed.py` và `algorithms/informed.py`. Chúng nhận `start`, `goal`, giới hạn tài nguyên và trả `SearchResult`.
@@ -55,6 +57,8 @@ Demo đối chiếu và extension nằm trong các module riêng:
 - `algorithms/adversarial.py`: Minimax, Alpha-Beta, Expectimax.
 
 `core/solver_dispatch.py` là lớp bảo vệ kwargs từ UI. Module này tránh truyền tham số không thuộc signature của từng solver, nhất là với CSP explanatory functions và các demo có `max_steps`, `max_iterations` hoặc `time_horizon`.
+
+`ui/belief_controls.py` gom editor known-tile matrix 4x4 cho No/Partial Observation. Người học có thể nhập `_` cho ô chưa biết; solver vẫn giữ hidden actual state chỉ để debug, còn quyết định mô hình dựa trên belief set.
 
 ## Ranh giới học thuật
 
@@ -84,7 +88,7 @@ Nếu A* reference không chứng minh được optimal path, round được đ�
 
 ## Dữ liệu và triển khai
 
-Ứng dụng không dùng database, backend service, auth hoặc secrets. Runtime chính là Python + Streamlit + pandas + Pillow. CI chạy compile, pytest coverage và Streamlit health smoke test trên nhánh `master`.
+Ứng dụng không dùng database, backend service, auth hoặc secrets. Runtime chính là Python + Streamlit + pandas + Pillow. Ảnh mẫu nằm trong `ui/assets/`; GIF minh họa README nằm trong `docs/assets/`. CI chạy compile, pytest coverage và Streamlit health smoke test trên nhánh `master`.
 
 ## Tài liệu liên quan
 

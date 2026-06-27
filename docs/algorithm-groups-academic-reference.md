@@ -89,7 +89,7 @@ Các tham số dưới đây là phần dễ bị thiếu khi chỉ đọc lý t
 | Local Beam | `beam_width=3`, `max_iterations=10000`. | Beam hẹp có thể bỏ mất nhánh đúng; đây là demo heuristic/local search. |
 | Random-Restart HC | `max_iterations=5000`, `max_restarts=20`, seed tùy chọn. | Nhiều restart tăng cơ hội nhưng không biến thành complete/optimal solver. |
 | Simulated Annealing | `max_iterations=50000`, `initial_temp=100.0`, `cooling_rate=0.9995`, `min_temp=0.01`, seed tùy chọn. | Probability nhận move xấu phụ thuộc temperature; schedule là caveat quan trọng. |
-| AND-OR | `max_depth=10`, `nondet_prob=0.3`; xác suất chỉ quyết định có deflection outcome hay không, không rank plan. | Output là conditional plan; OR là agent chọn, AND là mọi outcome phải xử lý. |
+| AND-OR | `max_depth=10`; UI dùng mode `Intended outcome only` hoặc `Include all legal deflections`. `nondet_prob` còn trong signature để tương thích và chỉ là binary support switch. | Output là conditional plan; OR là agent chọn, AND là mọi outcome phải xử lý, không rank bằng xác suất. |
 | No/Partial Observation | `num_belief_states=5`, `max_steps=20`, seed tùy chọn; heuristic cố định theo Manhattan trong demo belief. | Đây là belief-state/sensor demo, không so node count trực tiếp với A*. |
 | LRTA* | `max_steps=10000`, heuristic mặc định Manhattan, update bảng `H(state)` online. | Agent học khi đi; có thể lặp hoặc đi dài, không thay thế A* offline. |
 | Minimax/Alpha-Beta | `depth=3`, heuristic mặc định Manhattan, timeout `60s`. | Depth-limited game-tree utility, không phải optimal certificate của puzzle chuẩn. |
@@ -186,7 +186,7 @@ Nếu sensor, transition hoặc observability thay đổi, biểu diễn state v
 | Thành phần | Mô hình | Guarantee | Nên trình bày |
 |---|---|---|---|
 | AI-vs-AI Tournament | Hai solver agent chạy trên cùng start/goal | Điểm dựa trên A* reference optimal certificate | So sánh chất lượng lời giải, failure, runtime, nodes. |
-| Minimax | MAX/MIN game tree extension | Tối ưu theo utility nếu game tree/depth đúng và duyệt đủ | Khái niệm đối thủ tối ưu. |
+| Minimax | MAX chọn move hứa hẹn; MIN là nhánh worst-case robustness trên cùng tập legal blank moves | Tối ưu theo utility nếu game tree/depth đúng và duyệt đủ | MIN không phải đối thủ thật của 15-puzzle; transferable concept là worst-case decision rule. |
 | Alpha-Beta Pruning | Minimax có cắt tỉa | Giữ cùng root value với Minimax nếu điều kiện duyệt đủ | Pruning giảm node mà không đổi quyết định. |
 | Expectimax | MAX/CHANCE tree | Tối ưu kỳ vọng theo xác suất mô hình | Ra quyết định khi có chance outcome. |
 
