@@ -29,7 +29,7 @@ def render_known_positions_editor(
     matrix_text = st.text_area(
         t("run_known_matrix"),
         key=key,
-        height=132,
+        height=168,
         help=t("run_known_matrix_help"),
     )
     try:

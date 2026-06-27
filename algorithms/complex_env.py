@@ -643,7 +643,7 @@ def partially_observable_search(
                 max_nodes=6000, timeout=max(0.25, timeout - (time.perf_counter() - t0)),
                 action_order=action_order,
             )
-            if planned.success and planned.path_verified and planned.actions:
+            if planned.success and planned.actions:
                 actual_path.extend(planned.path[1:])
                 actual_actions.extend(planned.actions)
                 trace.append(TraceStep(
@@ -726,13 +726,14 @@ def online_search_lrta(
     visited_states: set = set()
     trace: list[TraceStep] = []
     nodes_expanded = 0
+    nodes_generated = 1
 
     for step in range(max_steps):
         if time.perf_counter() - t0 > timeout:
             return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken, depth=len(actions_taken),
                                 goal_state=goal,
-                                nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
+                                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
@@ -743,7 +744,7 @@ def online_search_lrta(
             return SearchResult(success=True, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken, cost=len(actions_taken), depth=len(actions_taken),
                                 goal_state=goal,
-                                nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
+                                nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 runtime=time.perf_counter() - t0, message="Goal reached online", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
@@ -751,12 +752,14 @@ def online_search_lrta(
         ps = PuzzleState(current)
         neighbors = ps.get_neighbors(action_order)
         nodes_expanded += 1
+        nodes_generated += len(neighbors)
 
         if not neighbors:
             return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                                 path=path, actions=actions_taken,
                                 goal_state=goal,
                                 nodes_expanded=nodes_expanded,
+                                nodes_generated=nodes_generated,
                                 runtime=time.perf_counter() - t0, message="No valid moves", trace=trace,
                                 uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)
 
@@ -790,6 +793,6 @@ def online_search_lrta(
     return SearchResult(success=False, algorithm="LRTA*", group="Complex Environments",
                         path=path, actions=actions_taken, depth=len(actions_taken),
                         goal_state=goal,
-                        nodes_expanded=nodes_expanded, nodes_generated=nodes_expanded,
+                        nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                         runtime=time.perf_counter() - t0, message=f"Max steps reached, visited {len(visited_states)} states",
                         trace=trace, uses_heuristic=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False)

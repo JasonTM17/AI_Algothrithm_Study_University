@@ -45,7 +45,7 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "",
         "<p align=\"center\"><img src=\"docs/assets/readme/a-star-image-replay.gif\" alt=\"A* image puzzle replay\" width=\"960\"></p>",
         "",
-        "GIF hero ở trên được sinh lại từ solver thật: A* Search, Manhattan Distance, `f(n)=g(n)+h(n)`, legal blank moves và image tiles đi theo cùng trajectory.",
+        "GIF hero ở trên được chụp từ live Streamlit browser capture bằng `agent-browser screenshot`: A* Search, Manhattan Distance, `f(n)=g(n)+h(n)`, legal blank moves và image tiles đi theo cùng trajectory. Không dùng mockup renderer.",
         "",
         "## Mục Lục",
         "",
@@ -87,7 +87,7 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "",
         "## Bản Đồ 6 Nhóm",
         "",
-        "`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là một run thật, không phải mockup.",
+        "`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.",
         "",
     ]
     for group, items in ALGORITHM_GROUPS.items():
@@ -117,7 +117,7 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "",
         "## Atlas 28 Thuật Toán Có GIF Chạy Thật",
         "",
-        "Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic.",
+        "Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Trường `web_run_status` ghi trung thực: solved, partial/model, not solved hoặc tournament.",
         "",
     ]
     counter = 1
@@ -135,6 +135,7 @@ def _algorithm_section(index: int, spec, record: dict) -> list[str]:
     img = f"docs/assets/algorithm-demos/{spec.slug}.gif"
     params = record.get("parameters") or {}
     param_text = ", ".join(f"`{k}={v}`" for k, v in params.items()) or "default demo parameters"
+    result_message = _table_cell(record.get("result_message", ""))
     return [
         f"### {index}. {spec.algorithm}",
         "",
@@ -149,8 +150,11 @@ def _algorithm_section(index: int, spec, record: dict) -> list[str]:
         f"| Evidence trong GIF | {spec.evidence} |",
         f"| Guarantee | {spec.guarantee} |",
         f"| Caveat | {spec.academic_caveat} |",
+        f"| Web capture source | `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}` |",
+        f"| web_run_status | `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))} |",
         f"| Demo input | seed `{record['seed']}`, termination `{record['termination']}`, {param_text} |",
         f"| Certificate flags | `path_verified={record['path_verified']}`, `goal_reached={record['goal_reached']}`, `optimality_proven={record['optimality_proven']}` |",
+        f"| Result message | {result_message} |",
         "",
         "Khi thuyết trình:",
         "",
@@ -159,6 +163,21 @@ def _algorithm_section(index: int, spec, record: dict) -> list[str]:
         "3. Kết thúc bằng guarantee và caveat để không claim quá mức.",
         "",
     ]
+
+
+def _status_label(status: str) -> str:
+    return {
+        "solved_optimal": "reached goal with an optimality certificate",
+        "solved_not_optimal": "reached goal without an optimality certificate",
+        "ran_model_not_goal_path": "ran successfully as model evidence, not a solved path",
+        "not_solved_in_demo": "web demo completed without a solution claim",
+        "ran_tournament_model": "scored tournament model, not one solution path",
+    }.get(status, "unknown run status")
+
+
+def _table_cell(value: object) -> str:
+    text = str(value).replace("\n", " ").replace("|", "/").strip()
+    return text or "-"
 
 
 def _evidence_and_workflow_sections() -> list[str]:
@@ -176,6 +195,8 @@ def _evidence_and_workflow_sections() -> list[str]:
         "| `h(n)` | Heuristic estimate tới goal. |",
         "| `f(n)` | Priority của A*: `g(n)+h(n)`. |",
         "| `trace` | Bằng chứng từng bước: generate, expand, select, prune, accept/reject. |",
+        "| `web_run_status` | Trạng thái thật của browser capture: solved, partial/model, not solved hoặc tournament. |",
+        "| `source` | Phải là `live_streamlit_browser_capture`; nếu khác thì asset không được xem là GIF web thật. |",
         "",
         "Ba tầng chứng minh phải đọc riêng:",
         "",
@@ -227,14 +248,13 @@ def _evidence_and_workflow_sections() -> list[str]:
         "## Tái Tạo GIF Và Kiểm Thử",
         "",
         "```bash",
-        "python scripts/generate-readme-gifs.py --featured --profile all --theme light",
-        "python scripts/generate-readme-gifs.py --all --profile algorithm --theme light",
         "python scripts/generate-readme-gifs.py --featured --profile all --theme dark",
+        "python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark",
         "python scripts/generate-readme-gifs.py --check --check-readability",
         "python scripts/generate-readme-gifs.py --contact-sheet",
         "```",
         "",
-        "`--theme light` tạo bản sáng dễ đọc trên GitHub; `--theme dark` tạo bản tối đồng bộ với app Streamlit. Hai theme dùng cùng solver evidence, chỉ đổi palette hiển thị.",
+        "`--theme` hiện được giữ cho metadata tương thích; hình ảnh lấy từ live Streamlit browser capture. Nếu web route lỗi, GIF sẽ ghi lỗi hoặc generator fail thay vì dựng mockup.",
         "",
         "Quality gates:",
         "",
@@ -264,7 +284,7 @@ def _gallery(specs, records: dict[str, dict]) -> str:
     lines = [
         "# Algorithm Demo Gallery",
         "",
-        "Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ solver/model trong repo và có manifest semantic tại `docs/assets/algorithm-demos/manifest.json`.",
+        "Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live Streamlit browser capture bằng `agent-browser screenshot` và có manifest semantic tại `docs/assets/algorithm-demos/manifest.json`.",
         "",
     ]
     for group, group_specs in _by_group(specs).items():
@@ -282,6 +302,9 @@ def _gallery(specs, records: dict[str, dict]) -> str:
                 f"- **Trace evidence:** {spec.evidence}",
                 f"- **Guarantee:** {spec.guarantee}",
                 f"- **Caveat:** {spec.academic_caveat}",
+                f"- **Source:** `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}`.",
+                f"- **web_run_status:** `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))}.",
+                f"- **Result message:** {_table_cell(record.get('result_message', ''))}",
                 f"- **Manifest:** termination `{record['termination']}`, profile `{record['profile']}`, frames `{record['frame_count']}`, verified `{record['verified_at']}`.",
                 "",
             ]
@@ -289,9 +312,8 @@ def _gallery(specs, records: dict[str, dict]) -> str:
         "## Tái tạo",
         "",
         "```bash",
-        "python scripts/generate-readme-gifs.py --featured --profile all --theme light",
-        "python scripts/generate-readme-gifs.py --all --profile algorithm --theme light",
         "python scripts/generate-readme-gifs.py --featured --profile all --theme dark",
+        "python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark",
         "python scripts/generate-readme-gifs.py --check --check-readability",
         "```",
     ]

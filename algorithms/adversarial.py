@@ -50,6 +50,7 @@ def minimax(
     h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
+    nodes_generated = [1]
     timed_out = [False]
 
     def minimax_search(state: tuple, depth_left: int, is_max: bool, path: list) -> tuple[float, list, list]:
@@ -78,6 +79,7 @@ def minimax(
             best_tree = []
             best_child_actions = []
             for ns, action, cost in neighbors:
+                nodes_generated[0] += 1
                 val, tree, child_actions = minimax_search(ns, depth_left - 1, False, path + [action])
                 if val > best_val:
                     best_val = val
@@ -95,6 +97,7 @@ def minimax(
             best_tree = []
             best_child_actions = []
             for ns, action, cost in neighbors:
+                nodes_generated[0] += 1
                 val, tree, child_actions = minimax_search(ns, depth_left - 1, True, path + [action])
                 if val < best_val:
                     best_val = val
@@ -133,7 +136,7 @@ def minimax(
         success=solved, algorithm="Minimax", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions),
-        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
@@ -164,6 +167,7 @@ def alpha_beta_pruning(
     h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
+    nodes_generated = [1]
     pruned = [0]
     timed_out = [False]
 
@@ -194,6 +198,7 @@ def alpha_beta_pruning(
             best_actions = []
             children = []
             for ns, action, cost in neighbors:
+                nodes_generated[0] += 1
                 val, tree, acts = ab_search(ns, depth_left - 1, alpha, beta, False)
                 children.append(tree)
                 if val > best_val:
@@ -217,6 +222,7 @@ def alpha_beta_pruning(
             best_actions = []
             children = []
             for ns, action, cost in neighbors:
+                nodes_generated[0] += 1
                 val, tree, acts = ab_search(ns, depth_left - 1, alpha, beta, True)
                 children.append(tree)
                 if val < best_val:
@@ -272,7 +278,7 @@ def alpha_beta_pruning(
         success=solved, algorithm="Alpha-Beta Pruning", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions),
-        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
@@ -296,6 +302,7 @@ def expectimax(
     rng = random.Random(seed)
     trace: list[TraceStep] = []
     nodes_expanded = [0]
+    nodes_generated = [1]
     timed_out = [False]
 
     def get_outcomes(state: tuple, action: str) -> list[tuple[tuple, str, float]]:
@@ -336,21 +343,20 @@ def expectimax(
             timed_out[0] = True
             util = -h_fn(state)
             return util, [(node_type, state, util, h_fn(state), 1.0)], []
-        nodes_expanded[0] += 1
-
         if state == goal:
             util = 1000.0
             h = 0
             node = (node_type, state, util, h, 1.0)
             return util, [node], []
 
-        if depth_left <= 0:
+        if depth_left <= 0 and node_type != "CHANCE":
             util = -h_fn(state)
             h = h_fn(state)
             node = (node_type, state, util, h, 1.0)
             return util, [node], []
 
         ps = PuzzleState(state)
+        nodes_expanded[0] += 1
 
         if node_type == "MAX":
             best_val = float("-inf")
@@ -359,8 +365,9 @@ def expectimax(
             neighbors = ps.get_neighbors(action_order)
 
             for ns, action, cost in neighbors:
+                nodes_generated[0] += 1
                 # Call CHANCE node to compute expected utility of this action
-                val, tree, child_actions = expectimax_search(state, depth_left, "CHANCE", action_taken=action)
+                val, tree, child_actions = expectimax_search(state, depth_left - 1, "CHANCE", action_taken=action)
                 if val > best_val:
                     best_val = val
                     best_tree = tree
@@ -389,6 +396,7 @@ def expectimax(
             children_trees = []
             sample_candidates: list[tuple[float, str, list[str]]] = []
             for out_state, out_action, prob in outcomes:
+                nodes_generated[0] += 1
                 # Call MAX recursively on the outcome state
                 val, tree, child_actions = expectimax_search(out_state, depth_left - 1, "MAX")
                 expected_value += prob * val
@@ -407,7 +415,7 @@ def expectimax(
             sample_actions: list[str] = []
             for prob, out_action, child_actions in sample_candidates:
                 cumulative += prob
-                if draw <= cumulative:
+                if draw < cumulative:
                     sample_actions = [out_action] + child_actions
                     break
             if not sample_actions and sample_candidates:
@@ -446,7 +454,7 @@ def expectimax(
         success=solved, algorithm="Expectimax", group="AI-vs-AI Tournament",
         path=selected_path, actions=actions, goal_state=goal,
         cost=len(actions), depth=len(actions), random_seed=seed,
-        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_expanded[0],
+        nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
         uses_adversary=False, uses_probability=True, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,

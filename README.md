@@ -11,7 +11,7 @@
 
 <p align="center"><img src="docs/assets/readme/a-star-image-replay.gif" alt="A* image puzzle replay" width="960"></p>
 
-GIF hero ở trên được sinh lại từ solver thật: A* Search, Manhattan Distance, `f(n)=g(n)+h(n)`, legal blank moves và image tiles đi theo cùng trajectory.
+GIF hero ở trên được chụp từ live Streamlit browser capture bằng `agent-browser screenshot`: A* Search, Manhattan Distance, `f(n)=g(n)+h(n)`, legal blank moves và image tiles đi theo cùng trajectory. Không dùng mockup renderer.
 
 ## Mục Lục
 
@@ -53,7 +53,7 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 
 ## Bản Đồ 6 Nhóm
 
-`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là một run thật, không phải mockup.
+`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.
 
 ### Uninformed Search
 
@@ -116,7 +116,7 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 
 ## Atlas 28 Thuật Toán Có GIF Chạy Thật
 
-Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic.
+Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Trường `web_run_status` ghi trung thực: solved, partial/model, not solved hoặc tournament.
 
 ## Uninformed Search: từng thuật toán
 
@@ -133,8 +133,11 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Evidence trong GIF | frontier size, reached set, legal path and path cost. |
 | Guarantee | Complete and optimal for unit step cost if resources suffice. |
 | Caveat | Memory grows quickly; good for shallow teaching cases, not deep 15-puzzle production search. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=True` |
+| Result message | Solution found |
 
 Khi thuyết trình:
 
@@ -155,8 +158,11 @@ Khi thuyết trình:
 | Evidence trong GIF | expanded nodes, depth limit and legal trajectory when present. |
 | Guarantee | No shortest-path guarantee in this app setting. |
 | Caveat | Can chase a deep branch and miss a shorter path. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_depth=12` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Solution found |
 
 Khi thuyết trình:
 
@@ -177,8 +183,11 @@ Khi thuyết trình:
 | Evidence trong GIF | g(n), frontier, reached and cost certificate. |
 | Guarantee | Complete and optimal for non-negative costs. |
 | Caveat | On unit-cost 15-puzzle it behaves like BFS but keeps the general cost model explicit. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=True` |
+| Result message | Solution found |
 
 Khi thuyết trình:
 
@@ -199,8 +208,11 @@ Khi thuyết trình:
 | Evidence trong GIF | depth limit, cutoff/exhausted reason and legal path. |
 | Guarantee | Complete and optimal for unit step cost if the limit reaches the solution depth. |
 | Caveat | Repeats work across iterations; the trace should be read by limit, not as one queue. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_depth=12` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=True` |
+| Result message | Found at depth 5, limit=5 |
 
 Khi thuyết trình:
 
@@ -223,8 +235,11 @@ Khi thuyết trình:
 | Evidence trong GIF | selected h(n), frontier and whether the final path reaches goal. |
 | Guarantee | No optimality guarantee. |
 | Caveat | May find a longer path or get misled by a locally attractive state. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Solution found |
 
 Khi thuyết trình:
 
@@ -245,8 +260,11 @@ Khi thuyết trình:
 | Evidence trong GIF | g/h/f, expanded/generated/frontier, legal path and optimality flag. |
 | Guarantee | Optimal with admissible and consistent heuristic when resources do not stop the run. |
 | Caveat | The certificate is valid only for the selected goal and heuristic contract. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=True` |
+| Result message | Solution found |
 
 Khi thuyết trình:
 
@@ -267,8 +285,11 @@ Khi thuyết trình:
 | Evidence trong GIF | threshold, reached metric, legal path and optimality flag. |
 | Guarantee | Optimal with admissible heuristic and sufficient threshold iterations. |
 | Caveat | May revisit many states; trace is threshold-based, not a single frontier queue. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=True` |
+| Result message | Found with threshold=4 |
 
 Khi thuyết trình:
 
@@ -291,8 +312,11 @@ Khi thuyết trình:
 | Evidence trong GIF | candidate h, selected action and stop reason. |
 | Guarantee | No completeness or optimality guarantee. |
 | Caveat | Local optimum can stop the run far from the goal. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Stuck at local optimum h=4.0 |
 
 Khi thuyết trình:
 
@@ -313,8 +337,11 @@ Khi thuyết trình:
 | Evidence trong GIF | evaluated candidates, best candidate and reject/accept reason. |
 | Guarantee | No completeness or optimality guarantee. |
 | Caveat | Still local; evaluating every neighbor does not solve plateaus. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Stuck at local optimum h=4.0 |
 
 Khi thuyết trình:
 
@@ -335,8 +362,11 @@ Khi thuyết trình:
 | Evidence trong GIF | candidate pool, chosen action, seed and legal trajectory. |
 | Guarantee | No deterministic optimality guarantee. |
 | Caveat | Different seeds can produce different partial trajectories. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Stuck at local optimum h=4.0 |
 
 Khi thuyết trình:
 
@@ -357,8 +387,11 @@ Khi thuyết trình:
 | Evidence trong GIF | restart index, best h(n) and selected trajectory. |
 | Guarantee | Still not a complete 15-puzzle solver here. |
 | Caveat | More restarts improve chances but do not prove optimality. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7`, `max_restarts=3` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Best h=4.0 after 3 restarts |
 
 Khi thuyết trình:
 
@@ -379,8 +412,11 @@ Khi thuyết trình:
 | Evidence trong GIF | beam width, candidate scores and selected beam states. |
 | Guarantee | No optimality guarantee. |
 | Caveat | The beam can collapse to similar states and miss the global route. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_iterations=40`, `beam_width=3` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Goal reached |
 
 Khi thuyết trình:
 
@@ -401,8 +437,11 @@ Khi thuyết trình:
 | Evidence trong GIF | temperature, probability, accepted flag and legal trajectory. |
 | Guarantee | No certificate of reaching or optimizing the goal. |
 | Caveat | A legal trajectory is not automatically a solution. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Best h=5.0, temp=98.0684 |
 
 Khi thuyết trình:
 
@@ -425,8 +464,11 @@ Khi thuyết trình:
 | Evidence trong GIF | conditional branches, depth limit and deflection support mode. |
 | Guarantee | Returns a policy-like conditional plan, not a linear shortest path. |
 | Caveat | The support switch is not probability weighting. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, `max_depth=2`, `nondet_prob=0.0` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Conditional plan found (depth limit=2). AND-OR requires every supported outcome to succeed. Deflection support=intended outcome only; nondet_prob>0 adds all legal deflections, not probability-weighted branches. OR: choose action R (h=1.0) |
 
 Khi thuyết trình:
 
@@ -447,8 +489,11 @@ Khi thuyết trình:
 | Evidence trong GIF | belief size, planner votes, fallback votes and action trace. |
 | Guarantee | Demonstrates belief reasoning; not a standard full-observation solver. |
 | Caveat | Hidden state is shown only as debug evidence. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_steps=3`, `num_belief_states=4`, `known_positions={'14': 15}`, `seed=42` |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Belief size=4 after 3 steps. No observation keeps a belief set; planner=A* Search cannot safely collapse it. |
 
 Khi thuyết trình:
 
@@ -469,8 +514,11 @@ Khi thuyết trình:
 | Evidence trong GIF | known positions, belief size, planner votes and fallback reason. |
 | Guarantee | Can propose legal actions under partial knowledge. |
 | Caveat | With too few known tiles, the belief set can still be ambiguous. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_steps=3`, `num_belief_states=4`, `known_positions={'14': 15}`, `seed=42` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Actual state reached goal |
 
 Khi thuyết trình:
 
@@ -491,8 +539,11 @@ Khi thuyết trình:
 | Evidence trong GIF | online step, H update, chosen action and cap reason. |
 | Guarantee | Online learning demo, not an offline optimal certificate. |
 | Caveat | The node cap is a max online-step cap in the UI. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_steps=8` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Goal reached online |
 
 Khi thuyết trình:
 
@@ -515,8 +566,11 @@ Khi thuyết trình:
 | Evidence trong GIF | variables/domains/constraints count. |
 | Guarantee | Model definition only. |
 | Caveat | A model is not yet a solved trajectory. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, `time_horizon=2` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | CSP Definition for 15-Puzzle (T=2)  Variables:   X[t][p]: tile at position p at time t, t=0..2, p=0..15   A[t]: action at time t, t=0..1  Total variables: 50  Domains:   X[0][p] = {15} (fixed by initial state)   X[2][p] = {0} (fixed by goal |
 
 Khi thuyết trình:
 
@@ -537,8 +591,11 @@ Khi thuyết trình:
 | Evidence trong GIF | domain reductions and wipe-out status. |
 | Guarantee | Sound pruning for represented constraints. |
 | Caveat | Propagation alone may not decide the puzzle. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `depth_limit`, `time_horizon=2` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | AC-3 State-Chain CSP for 15-Puzzle (T=2)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This |
 
 Khi thuyết trình:
 
@@ -559,8 +616,11 @@ Khi thuyết trình:
 | Evidence trong GIF | consistency events and remaining domains. |
 | Guarantee | Educational consistency evidence. |
 | Caveat | Not a shortest-path solver. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, default demo parameters |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk: for every consistent (Xi, Xj) pair, there must exist a value for Xk consistent with both.  Exampl |
 
 Khi thuyết trình:
 
@@ -581,8 +641,11 @@ Khi thuyết trình:
 | Evidence trong GIF | constraint status and domain evidence. |
 | Guarantee | Rules out impossible assignments. |
 | Caveat | Does not replace graph-search optimality. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, default demo parameters |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once, not j |
 
 Khi thuyết trình:
 
@@ -603,8 +666,11 @@ Khi thuyết trình:
 | Evidence trong GIF | assigned variables, backtrack reason and final path if found. |
 | Guarantee | Can solve small exact-horizon demos. |
 | Caveat | Horizon-bound; not a global shortest-path claim. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_steps=600` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Bounded transition-planning demo found a path with T=1. This run orders child nodes by Manhattan Distance heuristic, not MRV/forward checking. |
 
 Khi thuyết trình:
 
@@ -625,8 +691,11 @@ Khi thuyết trình:
 | Evidence trong GIF | conflict count, selected variable and seed. |
 | Guarantee | Useful concept for CSP repair. |
 | Caveat | Better suited to N-Queens style CSPs than canonical 15-puzzle. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, `max_iterations=80` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Goal reached after 1 iterations via tile swaps. This is a CSP repair trace, NOT a sequence of legal 15-puzzle moves. |
 
 Khi thuyết trình:
 
@@ -647,8 +716,11 @@ Khi thuyết trình:
 | Evidence trong GIF | constraint graph summary and consistency evidence. |
 | Guarantee | Explains structure, not a solver certificate. |
 | Caveat | Graph readability matters more than path optimality here. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, `time_horizon=2` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Constraint Graph for 15-Puzzle CSP (T=2)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=2:   Position variables: X[0][0..15], X[1][0..15], ... X[2][0..15]   Action variables: A[0], A[1], ... A[2-1]  Constra |
 
 Khi thuyết trình:
 
@@ -671,8 +743,11 @@ Khi thuyết trình:
 | Evidence trong GIF | points, optimal cost, excess cost and invalid-path penalties. |
 | Guarantee | Fair benchmark when the reference certificate exists. |
 | Caveat | Tournament is not a natural adversarial PEAS model. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `ran_tournament_model` - scored tournament model, not one solution path |
 | Demo input | seed `42`, termination `tournament_scored`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Tournament scoring run |
 
 Khi thuyết trình:
 
@@ -693,8 +768,11 @@ Khi thuyết trình:
 | Evidence trong GIF | MAX/MIN nodes, utility and selected root action. |
 | Guarantee | Depth-limited worst-case decision rule. |
 | Caveat | Both sides share legal blank moves because 15-puzzle has no natural adversary. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Minimax (depth=2) Completed depth 2 Best utility: 1000.0 MAX selects the most promising legal move. MIN branch models worst-case legal continuations, not a real opponent. Standard 15-puzzle has no natural adversary; this is robustness analy |
 
 Khi thuyết trình:
 
@@ -715,8 +793,11 @@ Khi thuyết trình:
 | Evidence trong GIF | alpha, beta, pruned branches and root utility. |
 | Guarantee | Same root value as full Minimax for the searched tree. |
 | Caveat | Pruning saves nodes; it does not turn the puzzle into a real two-player game. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Alpha-Beta Pruning (depth=2) Completed depth 2 Best utility: 1000.0 Nodes expanded: 8 Cutoff events: 1 MIN branch models worst-case legal continuations, not a real opponent. With identical ordering, no timeout, and a completed depth, Alpha- |
 
 Khi thuyết trình:
 
@@ -737,8 +818,11 @@ Khi thuyết trình:
 | Evidence trong GIF | CHANCE nodes, probabilities and expected utility. |
 | Guarantee | Depth-limited expected-value policy under the chosen probability model. |
 | Caveat | Probability model is educational and must be stated before interpreting the result. |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2`, `success_prob=0.75`, `seed=11` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Expectimax (depth=2, success_prob=0.75) Completed depth 2 Expected utility from start: 749.5 Nodes expanded: 4  Comparison with Minimax:   Minimax: evaluates WORST-CASE legal continuations   Expectimax: computes EXPECTED outcome with CHANCE |
 
 Khi thuyết trình:
 
@@ -759,6 +843,8 @@ Khi thuyết trình:
 | `h(n)` | Heuristic estimate tới goal. |
 | `f(n)` | Priority của A*: `g(n)+h(n)`. |
 | `trace` | Bằng chứng từng bước: generate, expand, select, prune, accept/reject. |
+| `web_run_status` | Trạng thái thật của browser capture: solved, partial/model, not solved hoặc tournament. |
+| `source` | Phải là `live_streamlit_browser_capture`; nếu khác thì asset không được xem là GIF web thật. |
 
 Ba tầng chứng minh phải đọc riêng:
 
@@ -810,14 +896,13 @@ Không. Trong app, `nondet_prob > 0` chỉ bật hỗ trợ outcome lệch hư�
 ## Tái Tạo GIF Và Kiểm Thử
 
 ```bash
-python scripts/generate-readme-gifs.py --featured --profile all --theme light
-python scripts/generate-readme-gifs.py --all --profile algorithm --theme light
 python scripts/generate-readme-gifs.py --featured --profile all --theme dark
+python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
 python scripts/generate-readme-gifs.py --check --check-readability
 python scripts/generate-readme-gifs.py --contact-sheet
 ```
 
-`--theme light` tạo bản sáng dễ đọc trên GitHub; `--theme dark` tạo bản tối đồng bộ với app Streamlit. Hai theme dùng cùng solver evidence, chỉ đổi palette hiển thị.
+`--theme` hiện được giữ cho metadata tương thích; hình ảnh lấy từ live Streamlit browser capture. Nếu web route lỗi, GIF sẽ ghi lỗi hoặc generator fail thay vì dựng mockup.
 
 Quality gates:
 

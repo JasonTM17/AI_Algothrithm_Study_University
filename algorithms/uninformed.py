@@ -321,8 +321,8 @@ def ids(
         result.algorithm = "IDS"
         result.group = "Uninformed Search"
         result.goal_state = goal
-        result.is_complete = True
-        result.is_optimal = True
+        result.is_complete = bool(result.success)
+        result.is_optimal = bool(result.success)
         result.runtime = time.perf_counter() - t0
         result.refresh_certificate()
         return result
@@ -343,14 +343,14 @@ def ids(
                 success=False, algorithm="IDS", group="Uninformed Search",
                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                 max_frontier_size=total_max_frontier, runtime=time.perf_counter() - t0,
-                message="Timeout", trace=trace, is_complete=True, is_optimal=True,
+                message="Timeout", trace=trace, is_complete=False, is_optimal=False,
             ))
         if total_expanded > max_nodes:
             return finalize(SearchResult(
                 success=False, algorithm="IDS", group="Uninformed Search",
                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                 max_frontier_size=total_max_frontier, runtime=time.perf_counter() - t0,
-                message=f"Node limit exceeded ({max_nodes})", trace=trace, is_complete=True, is_optimal=True,
+                message=f"Node limit exceeded ({max_nodes})", trace=trace, is_complete=False, is_optimal=False,
             ))
 
         result = _dls(
@@ -386,7 +386,7 @@ def ids(
         nodes_expanded=total_expanded, nodes_generated=total_generated,
         max_frontier_size=total_max_frontier, runtime=time.perf_counter() - t0,
         message=f"No solution found within depth {max_depth}", trace=trace,
-        is_complete=True, is_optimal=True,
+        is_complete=False, is_optimal=False,
     ))
 
 

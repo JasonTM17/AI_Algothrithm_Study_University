@@ -34,5 +34,5 @@ def render_action_state(
     )
     if action_label and action_key and target_tab_label:
         if st.button(action_label, key=action_key, width="stretch"):
-            st.session_state["main_tab_label"] = target_tab_label
+            st.session_state["main_tab_request"] = target_tab_label
             st.rerun()

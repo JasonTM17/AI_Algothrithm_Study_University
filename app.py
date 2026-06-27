@@ -14,6 +14,17 @@ from ui.compare_tab import render_compare_tab
 from ui.theory_tab import render_theory_tab
 from ui.hand_tracing import render_hand_tracing_page
 from ui.start_goal_controls import render_sidebar_start_goal_controls
+from ui.web_gif_capture import render_web_gif_capture
+
+TAB_ROUTES = (
+    ("Play", "nav_play"),
+    ("Run Algorithm", "nav_run"),
+    ("Compare", "nav_compare"),
+    ("Step Trace", "nav_trace"),
+    ("Hand-Tracing Practice", "nav_hand_trace"),
+    ("Theory", "nav_theory"),
+    ("Advanced", "nav_advanced"),
+)
 
 st.set_page_config(
     page_title="15-Puzzle AI",
@@ -23,6 +34,16 @@ st.set_page_config(
 )
 
 render_styles()
+
+capture_demo = st.query_params.get("capture_demo")
+if capture_demo:
+    try:
+        capture_frame = int(st.query_params.get("capture_frame", 0))
+    except (TypeError, ValueError):
+        capture_frame = 0
+    capture_image = str(st.query_params.get("capture_image", "0")) == "1"
+    render_web_gif_capture(str(capture_demo), capture_frame, image_mode=capture_image)
+    st.stop()
 
 
 # Initialize session state.
@@ -55,22 +76,48 @@ def t(key, **kwargs):
 
 st.sidebar.markdown("---")
 
-tab_options = {
-    t("nav_play"): "Play",
-    t("nav_run"): "Run Algorithm",
-    t("nav_compare"): "Compare",
-    t("nav_trace"): "Step Trace",
-    t("nav_hand_trace"): "Hand-Tracing Practice",
-    t("nav_theory"): "Theory",
-    t("nav_advanced"): "Advanced"
-}
+def _coerce_tab_value(value: object) -> str:
+    """Map old labels, translated labels, or canonical routes to a stable tab route."""
+    routes = {route for route, _ in TAB_ROUTES}
+    if value in routes:
+        return str(value)
+    labels_to_routes = {}
+    for route, label_key in TAB_ROUTES:
+        labels_to_routes[translate(VIETNAMESE, label_key)] = route
+        labels_to_routes[translate(ENGLISH, label_key)] = route
+    return labels_to_routes.get(str(value), "Play")
+
+
+def _sync_main_tab_from_label(labels: list[str], values: list[str]) -> None:
+    selected = st.session_state.get("main_tab_label")
+    st.session_state.main_tab_value = values[labels.index(selected)] if selected in labels else "Play"
+
+
+pending_tab = st.session_state.pop("main_tab_request", None)
+legacy_tab = st.session_state.get("main_tab_label")
+if pending_tab is not None:
+    st.session_state.main_tab_value = _coerce_tab_value(pending_tab)
+    st.session_state.pop("main_tab_label", None)
+elif isinstance(legacy_tab, str):
+    st.session_state.main_tab_value = _coerce_tab_value(legacy_tab)
+    st.session_state.pop("main_tab_label", None)
+
+tab_values = [route for route, _ in TAB_ROUTES]
+tab_labels = [t(label_key) for _, label_key in TAB_ROUTES]
+active_tab_value = _coerce_tab_value(st.session_state.get("main_tab_value", "Play"))
+st.session_state.main_tab_value = active_tab_value
+active_tab_index = tab_values.index(active_tab_value)
 
 selected_tab_label = st.sidebar.radio(
     t("demo_workflow"),
-    list(tab_options.keys()),
-    key="main_tab_label"
+    tab_labels,
+    index=active_tab_index,
+    key="main_tab_label",
+    on_change=_sync_main_tab_from_label,
+    args=(tab_labels, tab_values),
 )
-tab = tab_options[selected_tab_label]
+tab = tab_values[tab_labels.index(selected_tab_label)]
+st.session_state.main_tab_value = tab
 
 st.sidebar.markdown("---")
 render_sidebar_start_goal_controls(t)
@@ -107,13 +154,15 @@ with st.sidebar.expander(t("sidebar_image_setup"), expanded=False):
 
 with st.sidebar.expander(t("sidebar_active_contract"), expanded=False):
     st.caption(t("sidebar_active_contract_caption"))
-    start_preview, goal_preview = st.columns(2)
-    with start_preview:
-        st.caption(t("active_start"))
-        render_puzzle_board(st.session_state.start_state, highlight_correct=True, size="mini", goal=st.session_state.goal_state)
-    with goal_preview:
-        st.caption(t("active_goal"))
-        render_puzzle_board(st.session_state.goal_state, highlight_correct=False, size="mini", goal=st.session_state.goal_state)
+    st.markdown(
+        '<div class="sidebar-active-contract-grid">'
+        f'<div><div class="sidebar-active-contract-label">{t("active_start")}</div>'
+        f'{render_puzzle_board(st.session_state.start_state, highlight_correct=True, size="mini", goal=st.session_state.goal_state, as_html=True)}</div>'
+        f'<div><div class="sidebar-active-contract-label">{t("active_goal")}</div>'
+        f'{render_puzzle_board(st.session_state.goal_state, highlight_correct=False, size="mini", goal=st.session_state.goal_state, as_html=True)}</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     if solvable:
         st.success(t("sb_solvable"))
     else:

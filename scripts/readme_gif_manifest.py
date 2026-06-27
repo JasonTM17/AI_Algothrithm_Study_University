@@ -110,7 +110,15 @@ def _check_docs_references(root: Path) -> None:
 def _check_manifest_metadata(records: list[dict]) -> None:
     required = {
         "profile", "theme", "caption", "learning_goal", "mechanism", "evidence",
-        "guarantee", "academic_caveat", "verified_at",
+        "guarantee", "academic_caveat", "verified_at", "source", "capture_tool",
+        "web_run_status", "result_message",
+    }
+    allowed_statuses = {
+        "solved_optimal",
+        "solved_not_optimal",
+        "ran_model_not_goal_path",
+        "not_solved_in_demo",
+        "ran_tournament_model",
     }
     for record in records:
         missing = [key for key in required if not record.get(key)]
@@ -118,3 +126,9 @@ def _check_manifest_metadata(records: list[dict]) -> None:
             raise AssertionError(f"{record.get('algorithm')} missing manifest fields: {missing}")
         if record["profile"] not in PROFILES:
             raise AssertionError(f"Unknown render profile: {record['profile']}")
+        if record["source"] != "live_streamlit_browser_capture":
+            raise AssertionError(f"{record['algorithm']} was not captured from the live web app")
+        if record["capture_tool"] != "agent-browser screenshot":
+            raise AssertionError(f"{record['algorithm']} has an unsupported capture tool")
+        if record["web_run_status"] not in allowed_statuses:
+            raise AssertionError(f"{record['algorithm']} has unknown web run status: {record['web_run_status']}")

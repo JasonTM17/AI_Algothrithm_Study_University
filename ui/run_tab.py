@@ -39,6 +39,22 @@ RUN_TIMEOUT_CAP = 120
 RUN_TRACE_ROWS = 60
 RUN_DETAIL_ROWS = 30
 RUN_TREE_NODES = 24
+EXTENSION_MODEL_FUNCTIONS = {
+    "and_or_search",
+    "no_observation_search",
+    "partially_observable_search",
+    "online_search_lrta",
+    "csp_definition",
+    "constraint_propagation",
+    "path_consistency",
+    "global_constraints",
+    "backtracking_search",
+    "min_conflicts",
+    "constraint_graphs",
+    "minimax",
+    "alpha_beta_pruning",
+    "expectimax",
+}
 
 
 def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple[str, str]:
@@ -209,7 +225,7 @@ def render_run_algorithm_tab(t=None) -> None:
         disabled=belief_input_error is not None,
     ):
         start = st.session_state.start_state
-        if not is_solvable(start, goal):
+        if selected_fn_name not in EXTENSION_MODEL_FUNCTIONS and not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
         else:
             fn_name = selected_fn_name

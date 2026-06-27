@@ -936,6 +936,27 @@ section[data-testid="stSidebar"] [role="radiogroup"] label:hover {
 section[data-testid="stSidebar"] hr {
     border-color: rgba(214,196,166,0.12) !important;
 }
+.sidebar-active-contract-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(124px, 1fr));
+    gap: 12px;
+    align-items: start;
+    margin-top: 10px;
+}
+.sidebar-active-contract-label {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+section[data-testid="stSidebar"] .sidebar-active-contract-grid .puzzle-grid {
+    width: min(100%, 136px);
+    max-width: 136px;
+    gap: 4px;
+    padding: 7px;
+    border-radius: 12px;
+    margin: 0 0 12px;
+}
 section[data-testid="stSidebar"] .puzzle-grid {
     width: 100%;
     max-width: 172px;
@@ -954,6 +975,10 @@ section[data-testid="stSidebar"] .puzzle-cell {
     aspect-ratio: 1 / 1;
     min-width: 0;
     font-size: 13px !important;
+}
+section[data-testid="stSidebar"] .sidebar-active-contract-grid .puzzle-cell {
+    font-size: 12px !important;
+    border-radius: 7px;
 }
 
 /* Section dividers */
@@ -1471,6 +1496,42 @@ div[class*="number_board"] .puzzle-tile {
     font-size: 13.5px;
     font-weight: 800;
     line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.play-ai-evidence-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 10px;
+    margin: 10px 0 14px;
+}
+.play-ai-evidence-card {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(214,196,166,0.18);
+    border-radius: var(--radius-md);
+    background:
+        linear-gradient(180deg, rgba(244,239,229,0.045), transparent),
+        rgba(21,24,23,0.78);
+    box-shadow: var(--shadow-sm);
+}
+.play-ai-evidence-card span {
+    display: block;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+.play-ai-evidence-card strong {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 750;
+    line-height: 1.08;
     overflow-wrap: anywhere;
 }
 .solution-step-table-wrap {

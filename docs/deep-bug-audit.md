@@ -15,7 +15,7 @@ Chưa phát hiện bug core nghiêm trọng kiểu solver trả path sai, succes
 | `path_verified` vs `goal_reached` | Đã tách trong `SearchResult`. | Test contract khóa legal path không đồng nghĩa solution. |
 | Belief fallback | Trace có `planner_votes`, `fallback_votes`, `fallback_reason`. | Giữ, vì người học cần biết planner thật hay heuristic fallback. |
 | Tournament scoring | Chỉ chấm meaningful khi path legal và goal reached; reference A* dùng làm optimal cost. | Giữ regression tests. |
-| GIF docs | Manifest có profile, theme, learning goal, guarantee, caveat. | README/gallery render từ catalog để giảm lệch docs. |
+| GIF docs | Manifest có profile, source, capture tool, `web_run_status`, learning goal, guarantee, caveat. | README/gallery render từ catalog để giảm lệch docs and false claims. |
 
 ## Verification Commands
 
@@ -29,5 +29,5 @@ git diff --check
 ## Follow-up Không Chặn Release
 
 - Tách `ui/styles.py` theo component khi có vòng UI refactor.
-- Tách `scripts/readme_gif_renderer.py` nếu thêm renderer thứ ba ngoài board/panel hiện tại.
+- Tách `ui/web_gif_capture.py` nếu thêm nhiều browser-capture layouts hoặc theme thật.
 - Thêm visual regression tự động so ảnh nếu repo chuyển sang CI có browser snapshot artifact.

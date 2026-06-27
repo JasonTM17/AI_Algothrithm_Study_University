@@ -11,7 +11,7 @@ App ưu tiên giao diện học thuật: người học phải thấy thuật to
 | Compare | `ui/compare_tab.py` | Legal path, reached goal, optimality, runtime, nodes, seed/action order |
 | Theory | `ui/theory_tab.py` | Taxonomy, PEAS, pseudocode, transferable concept, caveat |
 | Advanced | `ui/advanced_tab.py`, `ui/belief_controls.py` | known-tile matrix, AND-OR support mode, LRTA* online step, Group 6 robustness |
-| GIF README | `scripts/readme_gif_renderer.py` | board, action, metrics, reason/caveat; profiles `hero/group/algorithm` |
+| GIF README | `ui/web_gif_capture.py`, `scripts/generate-readme-gifs.py` | live browser board, action, metrics, truth status, reason/caveat; profiles `hero/group/algorithm` |
 
 ## Search Tree Readability
 
@@ -21,18 +21,18 @@ App ưu tiên giao diện học thuật: người học phải thấy thuật to
 - Graphviz vẫn có để audit edge parent-child.
 - Với cây lớn, UI lọc solution path, expanded neighborhood hoặc first N nodes thay vì ép toàn bộ vào một hình nhỏ.
 
-## GIF Theme Setting
+## GIF Capture Contract
 
-Generator hỗ trợ hai palette:
+Generator chụp web thật, không dựng mockup:
 
 ```bash
-python scripts/generate-readme-gifs.py --featured --profile all --theme light
 python scripts/generate-readme-gifs.py --featured --profile all --theme dark
+python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
 ```
 
-- `light`: ưu tiên đọc rõ trong GitHub README.
-- `dark`: đồng bộ cảm giác app Streamlit.
-- Hai theme dùng cùng solver/model evidence; chỉ đổi màu render.
+- Frame source là Streamlit route `?capture_demo=...`.
+- Capture tool là `agent-browser screenshot`.
+- Manifest phải có `source=live_streamlit_browser_capture` và `web_run_status`.
 
 ## Tile Palette
 

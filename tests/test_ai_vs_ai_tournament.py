@@ -11,7 +11,7 @@ from core.ai_vs_ai_tournament import (
     score_search_result,
 )
 from core.metrics import SearchResult
-from core.puzzle import GOAL_STATE
+from core.puzzle import GOAL_STATE, scramble
 from ui.ai_vs_ai_tournament import _score_row
 
 
@@ -136,6 +136,23 @@ def test_tournament_runs_two_agents_on_same_round_with_reference_cost():
     assert result.rounds[0].agent_a.path == [ONE_MOVE, GOAL_STATE]
     assert result.rounds[0].agent_a.actions == ["R"]
     assert result.winner in {"AI A", "AI B", "Draw"}
+
+
+def test_extra_tournament_rounds_scramble_from_requested_start_state():
+    result = run_ai_vs_ai_tournament(
+        TournamentAgentConfig("AI A", "a_star"),
+        TournamentAgentConfig("AI B", "a_star"),
+        start=ONE_MOVE,
+        goal=GOAL_STATE,
+        rounds=2,
+        round_depth=1,
+        base_seed=44,
+        timeout=5,
+        max_nodes=1000,
+    )
+
+    assert result.rounds[0].start_state == ONE_MOVE
+    assert result.rounds[1].start_state == scramble(goal=ONE_MOVE, depth=1, seed=45)
 
 
 def test_tournament_tie_break_is_deterministic():

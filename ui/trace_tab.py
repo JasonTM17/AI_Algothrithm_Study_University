@@ -42,11 +42,11 @@ def trace_rows(trace) -> list[dict[str, object]]:
             row["f(n)"] = f"{step.f:.1f}"
         if step.frontier_states:
             row["Frontier"] = _format_trace_state_list(step.frontier_states, labels, details)
-        elif step.frontier_size > 0:
+        elif step.frontier_size is not None and step.frontier_size > 0:
             row["Frontier"] = step.frontier_size
         if step.reached_states:
             row["Reached"] = _format_trace_state_list(step.reached_states, labels, details)
-        elif step.reached_size > 0:
+        elif step.reached_size is not None and step.reached_size > 0:
             row["Reached"] = step.reached_size
         if step.reason:
             row["Reason"] = step.reason

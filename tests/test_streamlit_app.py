@@ -5,6 +5,7 @@ from streamlit.testing.v1 import AppTest
 from core.academic_proofs import BENCHMARK_PRESETS
 from algorithms.uninformed import bfs
 from core.gameplay import validate_player_run
+from core.metrics import TraceStep
 from core.puzzle import GOAL_STATE
 from ui.trace_tab import trace_rows
 from ui.play_tab import VICTORY_MESSAGE_KEYS
@@ -51,6 +52,38 @@ def test_vietnamese_navigation_and_advanced_labels_render():
 
     assert app.selectbox(key="complex_mode_v2").label == "Thuật toán / Mô hình"
     assert not app.exception
+
+
+def test_navigation_recovers_from_legacy_string_widget_state():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    assert app.session_state["main_tab_value"] == "Run Algorithm"
+    assert app.radio(key="main_tab_label").value == "Run Algorithm"
+    assert "sidebar-active-contract-grid" in markdown_text
+    assert "puzzle-grid-mini" in markdown_text
+    assert not app.exception
+
+
+def test_trace_rows_accept_missing_frontier_and_reached_sizes():
+    rows = trace_rows([
+        TraceStep(
+            step=0,
+            state=GOAL_STATE,
+            frontier_size=None,
+            reached_size=None,
+            h=0,
+            f=0,
+            reason="missing optional metrics",
+        )
+    ])
+
+    assert rows[0]["Step"] == 0
+    assert "Frontier" not in rows[0]
+    assert "Reached" not in rows[0]
 
 
 def test_play_image_mode_uses_image_tiles_for_manual_board():
@@ -148,13 +181,13 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
 
     solved_markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     expander_labels = [expander.label for expander in app.expander]
-    metric_labels = [metric.label for metric in app.metric]
     assert app.session_state.play_solution_path
     assert "A* Node / Frontier / Reached Evidence" in expander_labels
     assert "Search Tree Visualization" in solved_markdown_text
     assert "search-tree-readable" in solved_markdown_text
     assert "Current A* replay step" in solved_markdown_text
-    assert "Frontier / Reached" in metric_labels
+    assert "play-ai-evidence-grid" in solved_markdown_text
+    assert "Frontier / Reached" in solved_markdown_text
     assert app.button(key="btn_play_next")
     assert app.button(key="btn_play_auto")
 

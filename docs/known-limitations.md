@@ -17,10 +17,10 @@ Các giới hạn dưới đây là chủ ý học thuật hoặc nợ kỹ thu�
 - GIF README là evidence snapshot cố định theo seed/limit, không thay thế full UI trace.
 - Graphviz tree có thể nhỏ nếu xem toàn bộ cây; Readable Tree là view ưu tiên.
 - README nhúng 28 GIF nên tải nặng hơn bản ngắn. Gallery vẫn tồn tại để người đọc mở từng thuật toán riêng.
-- Dark/Light GIF themes không đổi dữ liệu thuật toán, chỉ đổi palette render.
+- `--theme` trong GIF generator hiện là metadata tương thích; hình ảnh phải đến từ live Streamlit browser capture.
 
 ## Maintainability Debt
 
 - `ui/styles.py`, `ui/components.py`, `ui/play_tab.py` và `algorithms/complex_env.py` còn lớn. Chỉ tách tiếp khi có refactor UI/algorithm riêng và tests khóa đủ behavior.
-- `scripts/readme_gif_renderer.py` gom nhiều drawing helper để giữ pipeline đơn giản; nếu thêm renderer mới, nên tách thành `draw_board`, `draw_panel`, `draw_theme`.
+- GIF pipeline phụ thuộc browser capture; nếu capture route đổi UI lớn, cần regenerate assets và kiểm manifest/readability.
 - Không thêm heuristic lớn như pattern database nếu chưa có optimality corpus và docs caveat tương ứng.

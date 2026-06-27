@@ -24,6 +24,10 @@ def t(key, **kwargs):
     return translate(global_lang, key, **kwargs)
 
 
+def _default_index(options: list[str], preferred: str, fallback: int = 0) -> int:
+    return options.index(preferred) if preferred in options else min(fallback, max(0, len(options) - 1))
+
+
 def render_ai_vs_ai_tournament(
     start: tuple[int, ...],
     goal: tuple[int, ...] = GOAL_STATE,
@@ -39,7 +43,7 @@ def render_ai_vs_ai_tournament(
         agent_a_algo = st.selectbox(
             t("tournament_agent_a_algorithm"),
             solver_labels,
-            index=solver_labels.index("A*"),
+            index=_default_index(solver_labels, "A*"),
             key="tournament_agent_a",
         )
         agent_a_fn = ELIGIBLE_TOURNAMENT_SOLVERS[agent_a_algo]
@@ -56,7 +60,7 @@ def render_ai_vs_ai_tournament(
         agent_b_algo = st.selectbox(
             t("tournament_agent_b_algorithm"),
             solver_labels,
-            index=solver_labels.index("Greedy Best-First"),
+            index=_default_index(solver_labels, "Greedy Best-First", fallback=1),
             key="tournament_agent_b",
         )
         agent_b_fn = ELIGIBLE_TOURNAMENT_SOLVERS[agent_b_algo]
@@ -84,7 +88,7 @@ def render_ai_vs_ai_tournament(
     heuristic = st.selectbox(
         t("tournament_reference_heuristic"),
         list(HEURISTICS),
-        index=list(HEURISTICS).index("Manhattan Distance"),
+        index=_default_index(list(HEURISTICS), "Manhattan Distance"),
         key="tournament_heuristic",
     )
     action_order = st.selectbox(t("run_action_order"), ["LRUD", "UDLR", "RLDU", "DURL"], key="tournament_action_order")

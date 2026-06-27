@@ -377,77 +377,93 @@ def _render_play_board_panel(t, goal, solvable: bool) -> None:
 
 def _render_image_mode_board(t, goal) -> None:
     """Keep uploaded imagery in the primary play surface instead of a hidden panel."""
+    board_slot = st.empty()
+    status_messages: list[tuple[str, str]] = []
+
     if not st.session_state.get("image_tiles"):
         if _load_default_image_tiles():
-            st.caption(t("play_default_image_loaded", name=st.session_state.play_image_sample_name))
-
-    uploaded_img = st.file_uploader(
-        t("play_upload_label"),
-        type=["png", "jpg", "jpeg", "webp"],
-        key="puzzle_img",
-    )
-    if uploaded_img:
-        image_signature = (uploaded_img.name, uploaded_img.size)
-        if st.session_state.get("play_uploaded_image_signature") != image_signature:
-            tiles = process_uploaded_image(uploaded_img)
-            if tiles:
-                st.session_state.image_tiles = tiles
-                st.session_state.image_active = True
-                st.session_state.play_uploaded_image_signature = image_signature
-                st.success(t("play_img_loaded", count=len(tiles)))
-            else:
-                st.error(t("play_img_failed"))
-
-    if not st.session_state.get("image_tiles"):
-        st.info(t("play_image_missing"))
-        return
-
-    image_action_col, image_status_col, image_target_col = st.columns([1, 1, 1])
-    with image_action_col:
-        if st.button(t("play_remove_img"), key="remove_img", width="stretch"):
-            st.session_state.image_tiles = {}
-            st.session_state.image_active = False
-            st.session_state.play_board_mode = "number"
-            st.session_state.play_board_mode_choice_synced_to = "number"
-            st.session_state.pop("play_uploaded_image_signature", None)
-            st.rerun()
-    with image_status_col:
-        st.session_state.show_numbers = st.checkbox(
-            t("play_show_numbers"),
-            value=st.session_state.get("show_numbers", False),
-            key="chk_show_numbers"
-        )
-    with image_target_col:
-        with st.popover(t("play_view_goal_image")):
-            st.caption(t("play_complete_image_to_arrange"))
-            st.markdown('<div style="pointer-events: none; width: 300px;">', unsafe_allow_html=True)
-            render_image_board(
-                goal,
-                st.session_state.image_tiles,
-                key_prefix="play_target_image_preview",
-                highlight_correct=False,
-                on_click_fn=None,
-                show_numbers=False,
+            status_messages.append(
+                ("caption", t("play_default_image_loaded", name=st.session_state.play_image_sample_name))
             )
-            st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="play-image-game-frame">', unsafe_allow_html=True)
-    render_image_board(
-        st.session_state.play_state,
-        st.session_state.image_tiles,
-        key_prefix="play_main_image",
-        highlight_correct=True,
-        on_click_fn=_handle_play_slide,
-        show_numbers=st.session_state.get("show_numbers", False),
-        action_labels={
-            "L": t("slide_right"),
-            "R": t("slide_left"),
-            "U": t("slide_down"),
-            "D": t("slide_up"),
-        },
-        goal=goal,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.expander(t("play_upload_label"), expanded=not bool(st.session_state.get("image_tiles"))):
+        uploaded_img = st.file_uploader(
+            t("play_upload_label"),
+            type=["png", "jpg", "jpeg", "webp"],
+            key="puzzle_img",
+            label_visibility="collapsed",
+        )
+        if uploaded_img:
+            image_signature = (uploaded_img.name, uploaded_img.size)
+            if st.session_state.get("play_uploaded_image_signature") != image_signature:
+                tiles = process_uploaded_image(uploaded_img)
+                if tiles:
+                    st.session_state.image_tiles = tiles
+                    st.session_state.image_active = True
+                    st.session_state.play_uploaded_image_signature = image_signature
+                    status_messages.append(("success", t("play_img_loaded", count=len(tiles))))
+                else:
+                    status_messages.append(("error", t("play_img_failed")))
+
+    image_available = bool(st.session_state.get("image_tiles"))
+    if image_available:
+        image_action_col, image_status_col, image_target_col = st.columns([1, 1, 1])
+        with image_action_col:
+            if st.button(t("play_remove_img"), key="remove_img", width="stretch"):
+                st.session_state.image_tiles = {}
+                st.session_state.image_active = False
+                st.session_state.play_board_mode = "number"
+                st.session_state.play_board_mode_choice_synced_to = "number"
+                st.session_state.pop("play_uploaded_image_signature", None)
+                st.rerun()
+        with image_status_col:
+            st.session_state.show_numbers = st.checkbox(
+                t("play_show_numbers"),
+                value=st.session_state.get("show_numbers", False),
+                key="chk_show_numbers",
+            )
+        with image_target_col:
+            with st.popover(t("play_view_goal_image")):
+                st.caption(t("play_complete_image_to_arrange"))
+                st.markdown('<div style="pointer-events: none; width: 300px;">', unsafe_allow_html=True)
+                render_image_board(
+                    goal,
+                    st.session_state.image_tiles,
+                    key_prefix="play_target_image_preview",
+                    highlight_correct=False,
+                    on_click_fn=None,
+                    show_numbers=False,
+                )
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    with board_slot.container():
+        for message_type, message in status_messages:
+            if message_type == "success":
+                st.success(message)
+            elif message_type == "error":
+                st.error(message)
+            else:
+                st.caption(message)
+
+        if not image_available:
+            st.info(t("play_image_missing"))
+            return
+
+        render_image_board(
+            st.session_state.play_state,
+            st.session_state.image_tiles,
+            key_prefix="play_main_image",
+            highlight_correct=True,
+            on_click_fn=_handle_play_slide,
+            show_numbers=st.session_state.get("show_numbers", False),
+            action_labels={
+                "L": t("slide_right"),
+                "R": t("slide_left"),
+                "U": t("slide_down"),
+                "D": t("slide_up"),
+            },
+            goal=goal,
+        )
 
 
 def _render_play_status_controls(t, goal, solvable: bool) -> None:
@@ -554,11 +570,23 @@ def _render_ai_step_evidence(t, res, idx: int, replay_state: tuple[int, ...], go
     trace_reason = trace_step.reason if trace_step else _play_text(t, "play_ai_trace_not_captured")
 
     st.markdown(f"#### {_play_text(t, 'play_ai_current_step_title')}")
-    evidence_cols = st.columns(4)
-    evidence_cols[0].metric(_play_text(t, "play_ai_g_metric"), current_g)
-    evidence_cols[1].metric(_play_text(t, "play_ai_h_metric"), f"{current_h:.1f}")
-    evidence_cols[2].metric(_play_text(t, "play_ai_f_metric"), f"{current_f:.1f}")
-    evidence_cols[3].metric(_play_text(t, "play_ai_frontier_reached_metric"), f"{frontier_size} / {reached_size}")
+    evidence_items = [
+        (_play_text(t, "play_ai_g_metric"), str(current_g)),
+        (_play_text(t, "play_ai_h_metric"), f"{current_h:.1f}"),
+        (_play_text(t, "play_ai_f_metric"), f"{current_f:.1f}"),
+        (_play_text(t, "play_ai_frontier_reached_metric"), f"{frontier_size} / {reached_size}"),
+    ]
+    evidence_markup = "".join(
+        '<div class="play-ai-evidence-card">'
+        f'<span>{escape(label)}</span>'
+        f'<strong>{escape(value)}</strong>'
+        "</div>"
+        for label, value in evidence_items
+    )
+    st.markdown(
+        f'<div class="play-ai-evidence-grid">{evidence_markup}</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         _play_text(
             t,
@@ -803,16 +831,13 @@ def _render_challenge_panel(t, goal) -> None:
                     t("play_cert_assistance"),
                     t("play_cert_ai_assisted") if assisted else t("play_cert_unassisted"),
                 )
-                st.success(
-                    t("play_cert_verified", cost=proof_result.cost)
-                )
                 if not player_cert.is_legal:
                     st.error(t("play_cert_failed", message=player_cert.message))
-                elif not player_cert.reaches_goal:
-                    st.info(
-                        t("play_cert_in_progress")
-                    )
                 else:
+                    st.success(t("play_cert_verified", cost=proof_result.cost))
+                    if not player_cert.reaches_goal:
+                        st.info(t("play_cert_in_progress"))
+                        return
                     try:
                         score = score_challenge(player_cert.move_count, len(proof_result.actions))
                     except Exception as e:

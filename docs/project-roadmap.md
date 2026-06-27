@@ -10,7 +10,7 @@ App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, 
 - Belief-state UI có known-tile matrix.
 - Group 6 dùng framing worst-case robustness/chance.
 - README là atlas học thuật, nhúng 28 GIF chạy thật.
-- GIF pipeline có profile `hero/group/algorithm`, theme `light/dark`, manifest semantic và contact sheet.
+- GIF pipeline có profile `hero/group/algorithm`, live browser capture, manifest semantic và contact sheet.
 
 ## Ưu Tiên Ngắn Hạn
 
@@ -20,7 +20,7 @@ App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, 
 | P0 | Không để wording cũ quay lại: probability/adversary/solver chuẩn sai ngữ cảnh. | Người học dễ hiểu sai PEAS. |
 | P1 | Tiếp tục kiểm visual Play/Run trên mobile. | Board, trace và tree là phần người dùng nhìn nhiều nhất. |
 | P1 | Giữ tile number palette trung tính, stable by value. | Tránh cảm giác rối màu, thiếu chuyên nghiệp. |
-| P1 | Dùng `--theme light` cho README GitHub, `--theme dark` khi cần demo đồng bộ app. | Hai môi trường xem có nền khác nhau. |
+| P1 | Nếu cần GIF sáng/tối thật, thêm theme selector vào chính capture route trước khi regenerate. | Không ghi theme nếu browser frame không đổi theme thật. |
 
 ## Nợ Kỹ Thuật Được Ghi Nhận
 
@@ -31,7 +31,7 @@ App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, 
 | `ui/play_tab.py` | Replay, scoring, image setup cùng module. | Tách state/replay helpers khi thêm mode mới. |
 | `ui/localization.py` | Dictionary lớn. | Có thể tách namespace hoặc JSON khi copy tăng thêm. |
 | `algorithms/complex_env.py` | Nhiều model giáo dục trong cùng file. | Chỉ tách khi signature và tests đủ ổn. |
-| `scripts/readme_gif_renderer.py` | Drawing board/layout còn tập trung; panel semantics và theme đã tách riêng. | Chỉ tách `draw_board` khi thêm renderer thứ ba, tránh abstraction sớm. |
+| `ui/web_gif_capture.py` | Capture layout tập trung để browser screenshot ổn định. | Chỉ tách khi thêm nhiều capture layouts hoặc theme thật. |
 
 ## Cải Tiến Trung Hạn
 

@@ -25,7 +25,7 @@ flowchart LR
 | Domain | `core/puzzle.py`, `core/heuristics.py`, `core/metrics.py` | State validity, movement, heuristic, `SearchResult` certificate. |
 | Solver | `algorithms/*.py` | Public solver signatures stay stable and return `SearchResult`. |
 | Dispatch | `core/solver_dispatch.py` | UI params are translated to solver-specific kwargs. |
-| Media | `scripts/readme_gif_*.py`, `scripts/render_readme_docs.py` | GIFs, README atlas, gallery and manifest are generated from real solver/model evidence; `readme_gif_panel.py` maps each group to its correct evidence vocabulary. |
+| Media | `scripts/readme_gif_*.py`, `ui/web_gif_capture.py`, `scripts/render_readme_docs.py` | GIFs, README atlas, gallery and manifest are generated from real solver/model evidence captured through the live Streamlit browser route. |
 
 ## SearchResult Evidence
 
@@ -59,9 +59,9 @@ Large search trees are filtered by solution path, expanded neighborhood or first
 `scripts/generate-readme-gifs.py` supports:
 
 ```bash
-python scripts/generate-readme-gifs.py --featured --profile all --theme light
-python scripts/generate-readme-gifs.py --all --profile algorithm --theme light
 python scripts/generate-readme-gifs.py --algorithm "A*" --profile hero --theme dark
+python scripts/generate-readme-gifs.py --featured --profile all --theme dark
+python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
 python scripts/generate-readme-gifs.py --check --check-readability
 python scripts/generate-readme-gifs.py --contact-sheet
 ```
@@ -72,12 +72,13 @@ Profiles:
 - `group`: 960x540, used for six group demos.
 - `algorithm`: 960x540, used for all 28 algorithm demos.
 
-Themes:
+Capture source:
 
-- `light`: README default, optimized for GitHub readability.
-- `dark`: optional app-like theme, same semantic evidence.
+- Frame source: live Streamlit route `?capture_demo=<slug>&capture_frame=<n>`.
+- Capture tool: `agent-browser screenshot`.
+- `--theme` is retained as manifest metadata only; visual style comes from the web route.
 
-`docs/assets/algorithm-demos/manifest.json` is the audit trail: algorithm, group, function, params, termination, path/certificate flags, profile, theme, learning goal, guarantee, caveat, frame count and file size.
+`docs/assets/algorithm-demos/manifest.json` is the audit trail: algorithm, group, function, params, termination, path/certificate flags, profile, theme, source, capture tool, `web_run_status`, learning goal, guarantee, caveat, frame count and file size.
 
 `scripts/render_readme_docs.py` renders `README.md` and `docs/algorithm-demo-gallery.md` from the same catalog and manifest, so docs stay aligned with generated GIFs.
 

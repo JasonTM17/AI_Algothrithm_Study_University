@@ -57,13 +57,18 @@
       "academic_caveat": "The certificate is valid only for the selected goal and heuristic contract.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 11,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 153240
+      "file_bytes": 499940,
+      "web_run_status": "solved_optimal",
+      "result_success": true,
+      "result_message": "Solution found"
     },
     {
       "algorithm": "AI-vs-AI Tournament",
@@ -122,13 +127,18 @@
       "academic_caveat": "Tournament is not a natural adversarial PEAS model.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 105178
+      "file_bytes": 293762,
+      "web_run_status": "ran_tournament_model",
+      "result_success": true,
+      "result_message": "Tournament scoring run"
     },
     {
       "algorithm": "AND-OR Search",
@@ -190,13 +200,18 @@
       "academic_caveat": "The support switch is not probability weighting.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 94421
+      "file_bytes": 289540,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "Conditional plan found (depth limit=2). AND-OR requires every supported outcome to succeed. Deflection support=intended outcome only; nondet_prob>0 adds all legal deflections, not probability-weighted branches.\nOR: choose action R (h=1.0)\n "
     },
     {
       "algorithm": "Alpha-Beta Pruning",
@@ -257,13 +272,18 @@
       "academic_caveat": "Pruning saves nodes; it does not turn the puzzle into a real two-player game.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 93388
+      "file_bytes": 311234,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Alpha-Beta Pruning (depth=2)\nCompleted depth 2\nBest utility: 1000.0\nNodes expanded: 8\nCutoff events: 1\nMIN branch models worst-case legal continuations, not a real opponent.\nWith identical ordering, no timeout, and a completed depth, Alpha-"
     },
     {
       "algorithm": "BFS",
@@ -322,13 +342,18 @@
       "academic_caveat": "Memory grows quickly; good for shallow teaching cases, not deep 15-puzzle production search.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 84577
+      "file_bytes": 265384,
+      "web_run_status": "solved_optimal",
+      "result_success": true,
+      "result_message": "Solution found"
     },
     {
       "algorithm": "Backtracking Search",
@@ -389,13 +414,18 @@
       "academic_caveat": "Horizon-bound; not a global shortest-path claim.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 92511
+      "file_bytes": 260013,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Bounded transition-planning demo found a path with T=1. This run orders child nodes by Manhattan Distance heuristic, not MRV/forward checking."
     },
     {
       "algorithm": "CSP Definition",
@@ -456,13 +486,18 @@
       "academic_caveat": "A model is not yet a solved trajectory.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 85817
+      "file_bytes": 250278,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "CSP Definition for 15-Puzzle (T=2)\n\nVariables:\n  X[t][p]: tile at position p at time t, t=0..2, p=0..15\n  A[t]: action at time t, t=0..1\n\nTotal variables: 50\n\nDomains:\n  X[0][p] = {15} (fixed by initial state)\n  X[2][p] = {0} (fixed by goal"
     },
     {
       "algorithm": "Constraint Graphs",
@@ -523,13 +558,18 @@
       "academic_caveat": "Graph readability matters more than path optimality here.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 103201
+      "file_bytes": 289477,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "Constraint Graph for 15-Puzzle CSP (T=2)\n\nNodes: Variables (X[t][p] and A[t])\nEdges: Constraints between variables\n\nFor T=2:\n  Position variables: X[0][0..15], X[1][0..15], ... X[2][0..15]\n  Action variables: A[0], A[1], ... A[2-1]\n\nConstra"
     },
     {
       "algorithm": "Constraint Propagation",
@@ -590,13 +630,18 @@
       "academic_caveat": "Propagation alone may not decide the puzzle.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 86102
+      "file_bytes": 307520,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "AC-3 State-Chain CSP for 15-Puzzle (T=2)\n\nVariables: S[0]..S[T], where each value is a complete legal puzzle state.\nBinary constraint: consecutive values must differ by exactly one legal blank move.\nEndpoints: S[0]=start and S[T]=goal.\nThis"
     },
     {
       "algorithm": "DFS",
@@ -657,13 +702,18 @@
       "academic_caveat": "Can chase a deep branch and miss a shorter path.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 8,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 115629
+      "file_bytes": 355721,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Solution found"
     },
     {
       "algorithm": "Expectimax",
@@ -726,13 +776,18 @@
       "academic_caveat": "Probability model is educational and must be stated before interpreting the result.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 87439
+      "file_bytes": 235237,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Expectimax (depth=2, success_prob=0.75)\nCompleted depth 2\nExpected utility from start: 749.5\nNodes expanded: 4\n\nComparison with Minimax:\n  Minimax: evaluates WORST-CASE legal continuations\n  Expectimax: computes EXPECTED outcome with CHANCE"
     },
     {
       "algorithm": "Global Constraints",
@@ -791,13 +846,18 @@
       "academic_caveat": "Does not replace graph-search optimality.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 106031
+      "file_bytes": 274311,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "Global Constraints in 15-Puzzle CSP\n\nAllDifferent(X[t][0], X[t][1], ..., X[t][15]):\n  At each time step t, all 16 positions must contain distinct tiles (0-15).\n\nThis is a GLOBAL constraint because it involves all 16 variables at once,\nnot j"
     },
     {
       "algorithm": "Greedy Best-First",
@@ -856,13 +916,18 @@
       "academic_caveat": "May find a longer path or get misled by a locally attractive state.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 98886
+      "file_bytes": 281492,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Solution found"
     },
     {
       "algorithm": "IDA*",
@@ -921,13 +986,18 @@
       "academic_caveat": "May revisit many states; trace is threshold-based, not a single frontier queue.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 86254
+      "file_bytes": 271036,
+      "web_run_status": "solved_optimal",
+      "result_success": true,
+      "result_message": "Found with threshold=4"
     },
     {
       "algorithm": "IDS",
@@ -988,13 +1058,18 @@
       "academic_caveat": "Repeats work across iterations; the trace should be read by limit, not as one queue.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 82181
+      "file_bytes": 261011,
+      "web_run_status": "solved_optimal",
+      "result_success": true,
+      "result_message": "Found at depth 5, limit=5"
     },
     {
       "algorithm": "LRTA*",
@@ -1055,13 +1130,18 @@
       "academic_caveat": "The node cap is a max online-step cap in the UI.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 99335
+      "file_bytes": 290782,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Goal reached online"
     },
     {
       "algorithm": "Local Beam Search",
@@ -1123,13 +1203,18 @@
       "academic_caveat": "The beam can collapse to similar states and miss the global route.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 8,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 141573
+      "file_bytes": 314473,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Goal reached"
     },
     {
       "algorithm": "Min-Conflicts",
@@ -1190,13 +1275,18 @@
       "academic_caveat": "Better suited to N-Queens style CSPs than canonical 15-puzzle.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 93245
+      "file_bytes": 236515,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "Goal reached after 1 iterations via tile swaps. This is a CSP repair trace, NOT a sequence of legal 15-puzzle moves."
     },
     {
       "algorithm": "Minimax",
@@ -1257,13 +1347,18 @@
       "academic_caveat": "Both sides share legal blank moves because 15-puzzle has no natural adversary.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 86244
+      "file_bytes": 284313,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Minimax (depth=2)\nCompleted depth 2\nBest utility: 1000.0\nMAX selects the most promising legal move.\nMIN branch models worst-case legal continuations, not a real opponent.\nStandard 15-puzzle has no natural adversary; this is robustness analy"
     },
     {
       "algorithm": "Path Consistency",
@@ -1322,13 +1417,18 @@
       "academic_caveat": "Not a shortest-path solver.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 107579
+      "file_bytes": 276353,
+      "web_run_status": "ran_model_not_goal_path",
+      "result_success": true,
+      "result_message": "Path Consistency (Illustration for 15-Puzzle CSP)\n\nPath consistency extends arc consistency to triples of variables.\nFor variables Xi, Xj, Xk: for every consistent (Xi, Xj) pair,\nthere must exist a value for Xk consistent with both.\n\nExampl"
     },
     {
       "algorithm": "Random-Restart Hill Climbing",
@@ -1391,13 +1491,18 @@
       "academic_caveat": "More restarts improve chances but do not prove optimality.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 122153
+      "file_bytes": 271475,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Best h=4.0 after 3 restarts"
     },
     {
       "algorithm": "Searching for partially observable problems",
@@ -1463,13 +1568,18 @@
       "academic_caveat": "With too few known tiles, the belief set can still be ambiguous.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 116249
+      "file_bytes": 282359,
+      "web_run_status": "solved_not_optimal",
+      "result_success": true,
+      "result_message": "Actual state reached goal"
     },
     {
       "algorithm": "Searching with no observation",
@@ -1535,13 +1645,18 @@
       "academic_caveat": "Hidden state is shown only as debug evidence.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 124784
+      "file_bytes": 255896,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Belief size=4 after 3 steps. No observation keeps a belief set; planner=A* Search cannot safely collapse it."
     },
     {
       "algorithm": "Simple Hill Climbing",
@@ -1602,13 +1717,18 @@
       "academic_caveat": "Local optimum can stop the run far from the goal.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 111474
+      "file_bytes": 299075,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Stuck at local optimum h=4.0"
     },
     {
       "algorithm": "Simulated Annealing",
@@ -1670,13 +1790,18 @@
       "academic_caveat": "A legal trajectory is not automatically a solution.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 8,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 160454
+      "file_bytes": 464919,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Best h=5.0, temp=98.0684"
     },
     {
       "algorithm": "Steepest-Ascent Hill Climbing",
@@ -1737,13 +1862,18 @@
       "academic_caveat": "Still local; evaluating every neighbor does not solve plateaus.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 124000
+      "file_bytes": 302607,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Stuck at local optimum h=4.0"
     },
     {
       "algorithm": "Stochastic Hill Climbing",
@@ -1805,13 +1935,18 @@
       "academic_caveat": "Different seeds can produce different partial trajectories.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 126205
+      "file_bytes": 331836,
+      "web_run_status": "not_solved_in_demo",
+      "result_success": false,
+      "result_message": "Stuck at local optimum h=4.0"
     },
     {
       "algorithm": "UCS",
@@ -1870,13 +2005,18 @@
       "academic_caveat": "On unit-cost 15-puzzle it behaves like BFS but keeps the general cost model explicit.",
       "verified_at": "2026-06-27",
       "profile": "algorithm",
-      "theme": "light",
+      "theme": "dark",
+      "source": "live_streamlit_browser_capture",
+      "capture_tool": "agent-browser screenshot",
       "frame_count": 6,
       "dimensions": [
         960,
         540
       ],
-      "file_bytes": 85593
+      "file_bytes": 276242,
+      "web_run_status": "solved_optimal",
+      "result_success": true,
+      "result_message": "Solution found"
     }
   ]
 }

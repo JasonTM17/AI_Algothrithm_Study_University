@@ -115,6 +115,9 @@ class TestIDS:
         assert result.group == "Uninformed Search"
         assert result.goal_state == ONE_MOVE_CUSTOM_GOAL
         assert result.termination_reason == termination_reason
+        assert result.is_complete is False
+        assert result.is_optimal is False
+        assert result.optimality_proven is False
 
 
 class TestPathValidation:
@@ -167,6 +170,14 @@ class TestAStar:
         assert result.success is True
         assert_valid_solution(MEDIUM_STATE, result)
 
+    def test_resource_limit_does_not_claim_completeness_or_optimality(self):
+        result = a_star(EASY_STATE, max_nodes=0, timeout=10)
+        assert not result.success
+        assert result.termination_reason == "resource_limit"
+        assert result.is_complete is False
+        assert result.is_optimal is False
+        assert result.optimality_proven is False
+
 
 class TestIDAStar:
     def test_solves_easy(self):
@@ -186,6 +197,14 @@ class TestIDAStar:
         assert reached_sizes
         assert max(reached_sizes) >= 2
         assert result.reached_size >= max(reached_sizes)
+
+    def test_resource_limit_does_not_claim_completeness_or_optimality(self):
+        result = ida_star(EASY_STATE, max_nodes=0, timeout=10)
+        assert not result.success
+        assert result.termination_reason == "resource_limit"
+        assert result.is_complete is False
+        assert result.is_optimal is False
+        assert result.optimality_proven is False
 
 
 class TestHillClimbing:
@@ -339,6 +358,11 @@ class TestExpectimax:
     def test_rejects_invalid_probability(self):
         with pytest.raises(ValueError):
             expectimax(EASY_STATE, success_prob=1.1)
+
+    def test_depth_one_evaluates_chance_outcomes_and_counts_generated_nodes(self):
+        result = expectimax(EASY_STATE, depth=1, success_prob=0.75, timeout=10, seed=42)
+        assert any(step.node_type == "CHANCE" for step in result.trace)
+        assert result.nodes_generated > result.nodes_expanded
 
 
 @pytest.mark.parametrize("solver", [minimax, alpha_beta_pruning, expectimax])

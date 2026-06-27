@@ -271,7 +271,7 @@ def run_ai_vs_ai_tournament(
         round_start = (
             start
             if round_index == 0
-            else scramble(goal=goal, depth=round_depth, seed=base_seed + round_index)
+            else scramble(goal=start, depth=round_depth, seed=base_seed + round_index)
         )
         reference = _run_reference_solver(
             round_start,

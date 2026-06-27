@@ -76,13 +76,15 @@ def test_docs_track_current_ui_evidence_surfaces():
     architecture = Path("docs/system-architecture.md").read_text(encoding="utf-8")
 
     assert "Atlas 28 Thuật Toán Có GIF Chạy Thật" in readme
-    assert "--theme light" in readme
+    assert "live Streamlit browser capture" in readme
+    assert "web_run_status" in readme
     assert "--theme dark" in readme
     assert "ui/belief_controls.py" in codebase_summary
     assert "docs/assets/" in codebase_summary
     assert "readable tree" in architecture
     assert "Graphviz evidence" in architecture
     assert "profile" in architecture
+    assert "web_run_status" in architecture
 
 
 def test_readme_relative_markdown_links_exist():

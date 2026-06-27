@@ -50,11 +50,11 @@
 
 | Path | Vai trò |
 |---|---|
-| `scripts/generate-readme-gifs.py` | CLI tạo GIF README/gallery từ solver/model thật. Supports `--profile hero|group|algorithm|all`, `--theme light|dark`, `--contact-sheet`, `--check-readability`. |
+| `scripts/generate-readme-gifs.py` | CLI tạo GIF README/gallery từ live Streamlit browser capture. Supports `--profile hero|group|algorithm|all`, `--contact-sheet`, `--check-readability`; `--theme` chỉ là metadata tương thích. |
 | `scripts/readme_gif_catalog.py` | Academic metadata: role, learning goal, mechanism, evidence, guarantee, caveat. |
 | `scripts/readme_gif_specs.py` | Registry 6 nhóm/28 thuật toán, start/goal/seed/params cố định. |
-| `scripts/readme_gif_runner.py` | Chạy solver và gom `SearchResult` evidence. |
-| `scripts/readme_gif_renderer.py`, `scripts/readme_gif_panel.py`, `scripts/readme_gif_styles.py` | Render GIF lớn bằng Pillow và chọn evidence panel theo nhóm: frontier/reached, candidate, belief, CSP, robustness/chance. Hero 1280x720; group/algorithm 960x540. |
+| `scripts/readme_gif_runner.py` | Chạy solver và gom `SearchResult` evidence trước khi capture. |
+| `ui/web_gif_capture.py`, `scripts/readme_gif_styles.py` | Hidden Streamlit route `?capture_demo=...` render frame thật trong browser; profiles 1280x720 hero và 960x540 group/algorithm. |
 | `scripts/readme_gif_manifest.py` | Manifest semantic và asset checker. |
 | `scripts/render_readme_docs.py` | Render README atlas và gallery từ catalog + manifest để tránh docs lệch. |
 | `docs/assets/readme/` | 7 GIF nổi bật trong README. |
@@ -67,7 +67,7 @@
 |---|---|
 | `tests/test_solvers.py`, `tests/test_algorithm_contract_sweep.py` | Solver correctness, dispatch, legal path, custom goal, shallow/random sweep. |
 | `tests/test_complex_models.py` | AND-OR, belief state, known matrix, planner fallback evidence. |
-| `tests/test_readme_gifs.py` | Registry 28 thuật toán, real demo evidence, GIF nonblank/profile/theme, README atlas references. |
+| `tests/test_readme_gifs.py` | Registry 28 thuật toán, real demo evidence, live-web capture source, GIF nonblank/profile, README atlas references. |
 | `tests/test_streamlit_app.py` | Streamlit AppTest cho UI chính, selectors, replay. |
 | `tests/test_academic.py`, `tests/test_text_quality.py`, `tests/test_localization.py` | Theory, wording, bilingual/localization and text quality. |
 

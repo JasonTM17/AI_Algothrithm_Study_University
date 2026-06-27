@@ -136,6 +136,14 @@ def test_no_observation_trace_tracks_hidden_state_after_a_legal_blind_action():
     assert "decision itself uses belief" in result.trace[-1].reason
 
 
+def test_lrta_counts_observed_successors_as_generated_nodes():
+    result = online_search_lrta(ONE_MOVE, max_steps=1, timeout=5)
+
+    assert result.nodes_expanded == 1
+    assert result.nodes_generated > result.nodes_expanded
+    assert "h_old=" in result.trace[0].reason
+
+
 def test_no_observation_reconstructs_belief_from_known_tiles_and_group_planner():
     known = default_known_positions(ONE_MOVE, 2)
     result = no_observation_search(

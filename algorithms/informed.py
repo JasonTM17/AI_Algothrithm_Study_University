@@ -210,7 +210,7 @@ def a_star(
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                                 max_frontier_size=max_frontier, reached_size=len(best_g),
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
-                                is_complete=True, is_optimal=True, uses_heuristic=True)
+                                is_complete=False, is_optimal=False, uses_heuristic=True)
         if len(best_g) > max_nodes:
             return SearchResult(success=False, algorithm="A*", group="Informed Search",
                                 goal_state=goal,
@@ -218,7 +218,7 @@ def a_star(
                                 max_frontier_size=max_frontier, reached_size=len(best_g),
                                 runtime=time.perf_counter() - t0,
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
-                                is_complete=True, is_optimal=True, uses_heuristic=True)
+                                is_complete=False, is_optimal=False, uses_heuristic=True)
 
         item = heapq.heappop(frontier)
         node = item[-1]
@@ -300,7 +300,7 @@ def ida_star(
 
     threshold = h_fn(start)
     total_expanded = 0
-    total_generated = 0
+    total_generated = 1
     max_frontier = 0
     max_reached_size = 1
     trace: list[TraceStep] = []
@@ -313,7 +313,7 @@ def ida_star(
                                 max_frontier_size=max_frontier,
                                 reached_size=max_reached_size,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
-                                is_complete=True, is_optimal=True, uses_heuristic=True)
+                                is_complete=False, is_optimal=False, uses_heuristic=True)
         if total_expanded > max_nodes:
             return SearchResult(success=False, algorithm="IDA*", group="Informed Search",
                                 goal_state=goal,
@@ -322,7 +322,7 @@ def ida_star(
                                 reached_size=max_reached_size,
                                 runtime=time.perf_counter() - t0,
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
-                                is_complete=True, is_optimal=True, uses_heuristic=True)
+                                is_complete=False, is_optimal=False, uses_heuristic=True)
 
         result, next_threshold = _ida_dfs(
             start, goal, threshold, h_fn, action_order,
@@ -351,8 +351,8 @@ def ida_star(
         if result.termination_reason in {"timeout", "resource_limit"}:
             result.algorithm = "IDA*"
             result.group = "Informed Search"
-            result.is_complete = True
-            result.is_optimal = True
+            result.is_complete = False
+            result.is_optimal = False
             result.uses_heuristic = True
             result.goal_state = goal
             result.reached_size = max(max_reached_size, result.reached_size)
@@ -421,7 +421,7 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
                 continue
             child_g = node.g + cost
             prev_g = best_g.get(ns)
-            if prev_g is not None and child_g >= prev_g:
+            if prev_g is not None and child_g > prev_g:
                 continue
             best_g[ns] = child_g
             h = h_fn(ns)

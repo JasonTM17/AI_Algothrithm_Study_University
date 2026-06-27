@@ -301,6 +301,7 @@ def render_puzzle_board(
     size: str = "normal",
     goal: tuple | None = None,
     previous_state: tuple | None = None,
+    as_html: bool = False,
 ):
     """Render 4x4 puzzle board as HTML with game-like styling.
 
@@ -309,9 +310,10 @@ def render_puzzle_board(
         highlight_correct: Whether to highlight tiles in goal position (green)
         size: 'normal' (70px cells) or 'small' (50px cells) or 'mini' (28px cells)
         previous_state: optional previous board used to animate the moved tile
+        as_html: return the HTML string instead of rendering it through Streamlit
     """
-    cell_size = {"normal": 70, "small": 50, "mini": 28}[size]
-    font_size = {"normal": 22, "small": 16, "mini": 10}[size]
+    cell_size = {"normal": 70, "small": 50, "mini": 28}.get(size, 70)
+    font_size = {"normal": 22, "small": 16, "mini": 10}.get(size, 22)
 
     goal_state = _active_goal_state(goal)
     moved_tile = None
@@ -348,7 +350,9 @@ def render_puzzle_board(
                 f'font-size:{font_size}px;{slide_style}"><span class="tile-number">{val}</span></div>'
             )
 
-    html = f'<div class="puzzle-grid">{"".join(cells)}</div>'
+    html = f'<div class="puzzle-grid puzzle-grid-{size}">{"".join(cells)}</div>'
+    if as_html:
+        return html
     st.markdown(html, unsafe_allow_html=True)
 
 
@@ -551,7 +555,7 @@ def render_trace_table(trace: list, max_rows: int = 100):
         if step.temperature is not None:
             row[t("tc_temp")] = f"{step.temperature:.4f}"
         if step.candidate_h is not None:
-            row["h(current)"] = f"{step.current_h:.1f}"
+            row["h(current)"] = f"{step.current_h:.1f}" if step.current_h is not None else "-"
             row["h(candidate)"] = f"{step.candidate_h:.1f}"
         if step.probability is not None:
             row[t("tc_prob")] = f"{step.probability:.4f}"
@@ -754,9 +758,11 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
     else:
         if key not in st.session_state:
             st.session_state[key] = 0
+        key_exists = key in st.session_state
         current_step = int(st.session_state.get(key, 0))
         current_step = max(0, min(current_step, max_step_index))
-        st.session_state[key] = current_step
+        if key_exists:
+            st.session_state[key] = current_step
 
         # Navigation buttons in their own row to prevent truncation in narrow containers
         btn_cols = st.columns(3)
@@ -789,16 +795,21 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
             )
 
         # Step slider in its own row
-        step_idx = st.slider(
-            t("det_slider"), 0, max_step_index, current_step,
-            key=key
-        )
+        if key_exists:
+            step_idx = st.slider(t("det_slider"), 0, max_step_index, key=key)
+        else:
+            step_idx = st.slider(t("det_slider"), 0, max_step_index, current_step, key=key)
 
     step = trace[step_idx]
     labels, details = _trace_state_catalog(trace[:max_rows])
 
-    st.markdown(f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
-                f"g={step.g} h={step.h:.1f} f={step.f:.1f}")
+    g_text = step.g if step.g is not None else "-"
+    h_text = f"{step.h:.1f}" if step.h is not None else "-"
+    f_text = f"{step.f:.1f}" if step.f is not None else "-"
+    st.markdown(
+        f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
+        f"g={g_text} h={h_text} f={f_text}"
+    )
 
     st.markdown(f"**{t('det_curr_node')}**")
     current_state = step.node_state or step.state
@@ -807,8 +818,9 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
     else:
         st.caption(t("no_state"))
 
-    def render_state_collection(title: str, total: int, states: list, empty_text: str) -> None:
-        st.markdown(f"**{title}** ({total} states)")
+    def render_state_collection(title: str, total: int | None, states: list, empty_text: str) -> None:
+        total_text = str(total) if total is not None else "-"
+        st.markdown(f"**{title}** ({total_text} states)")
         if states:
             visible_states = states[:6]
             for state in visible_states:

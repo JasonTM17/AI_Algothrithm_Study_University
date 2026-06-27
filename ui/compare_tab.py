@@ -218,7 +218,9 @@ def render_compare_tab(t=None) -> None:
 
     if st.button(tx("compare_run_btn"), key="btn_benchmark", type="primary"):
         start = st.session_state.start_state
-        if not is_solvable(start, goal):
+        if not selected_algos:
+            st.warning(tx("compare_no_algorithms_selected"))
+        elif not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
         else:
             import algorithms.uninformed as u
