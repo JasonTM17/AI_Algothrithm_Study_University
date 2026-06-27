@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.ai_vs_ai_tournament import TournamentAgentConfig, run_ai_vs_ai_tournament
 from core.heuristics import manhattan_distance
@@ -24,6 +24,7 @@ class DemoEvidence:
     path_verified: bool
     goal_reached: bool
     optimality_proven: bool
+    display_metrics: dict[str, str] = field(default_factory=dict)
 
 
 MODULES = (
@@ -88,14 +89,15 @@ def _assert_real_evidence(spec: DemoSpec, result: SearchResult) -> None:
 
 
 def _select_states(spec: DemoSpec, result: SearchResult) -> tuple[list[tuple[int, ...]], list[int]]:
-    if result.path:
+    if result.path and (result.actions or result.goal_reached):
         max_count = 11 if spec.algorithm == "A*" and len(result.path) <= 11 else 8
         return _sample_sequence(result.path, max_count)
     trace_states = [step.state for step in result.trace if _is_state(step.state)]
     if trace_states:
         return _sample_sequence([spec.start, *trace_states], 8)
-    states = [spec.start, spec.goal, spec.start, spec.goal, spec.start, spec.goal]
-    return states, list(range(len(states)))
+    # Explanatory models have no state trajectory. Keep the actual input board
+    # stable instead of fabricating movement between start and goal.
+    return [spec.start] * 6, [0] * 6
 
 
 def _sample_sequence(states: list[tuple[int, ...]], max_count: int) -> tuple[list[tuple[int, ...]], list[int]]:
@@ -152,16 +154,41 @@ def _run_tournament(spec: DemoSpec) -> DemoEvidence:
         f"winner={tournament.winner}",
         round_result.reference_status,
     ]
-    states = [round_result.start_state, spec.goal] * 3
+    replay = next(
+        (
+            score
+            for score in (round_result.agent_a, round_result.agent_b)
+            if score is not None and score.path_verified and score.path
+        ),
+        None,
+    )
+    if replay is not None:
+        states, state_indices = _sample_sequence(replay.path, 8)
+        actions = list(replay.actions)
+        facts.insert(0, f"replay={replay.agent_label} verified trajectory")
+        path_verified = replay.path_verified
+        goal_reached = replay.goal_reached
+    else:
+        states = [round_result.start_state] * 6
+        state_indices = [0] * 6
+        actions = []
+        facts.insert(0, "replay=unavailable; board remains at the real round start")
+        path_verified = False
+        goal_reached = False
     return DemoEvidence(
         spec=spec,
         result=None,
         states=states,
-        state_indices=list(range(len(states))),
-        actions=[],
+        state_indices=state_indices,
+        actions=actions,
         facts=facts,
         termination="tournament_scored",
-        path_verified=True,
-        goal_reached=False,
+        path_verified=path_verified,
+        goal_reached=goal_reached,
         optimality_proven=False,
+        display_metrics={
+            tournament.agent_a_label: f"{tournament.agent_a_total} pts",
+            tournament.agent_b_label: f"{tournament.agent_b_total} pts",
+            "Optimal cost": str(round_result.optimal_cost or "-"),
+        },
     )

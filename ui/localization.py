@@ -695,23 +695,28 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
              'alg_comparison': 'Comparison',
              'alg_exam_tips': 'Exam Tips',
              'pseudocode_label': 'Pseudocode',
-             'search_tree_caption': 'Every edge is backed by a legal puzzle action. Green nodes and edges '
-                                    'show the verified legal result path; the remaining nodes are explored '
-                                    'evidence. Use the readable view to inspect node, frontier, and reached '
-                                    'snapshots before opening the full Graphviz evidence.',
+             'search_tree_caption': 'Every edge is backed by a legal puzzle action. Green marks a verified '
+                                    'solution path; amber marks a verified legal trajectory that has not '
+                                    'reached the goal; the remaining nodes are explored evidence. Use the '
+                                    'readable view to inspect node, frontier, and reached snapshots before '
+                                    'opening the full Graphviz evidence.',
              'search_tree_view_label': 'Tree View',
              'search_tree_view_solution': 'Solution Path',
+             'search_tree_view_trajectory': 'Verified Trajectory',
              'search_tree_view_neighborhood': 'Expanded Neighborhood',
              'search_tree_view_first': 'First Recorded Nodes',
              'search_tree_graphviz_evidence': 'Full Graphviz Evidence',
              'search_tree_solution_legend': 'Verified solution path',
+             'search_tree_trajectory_legend': 'Verified legal trajectory, not goal',
              'search_tree_explored_legend': 'Explored evidence node',
              'search_tree_frontier_legend': 'Frontier/reached snapshot',
              'search_tree_solution_node': 'solution',
+             'search_tree_trajectory_node': 'trajectory',
              'search_tree_explored_node': 'explored',
              'search_tree_current_node': 'Current node',
              'search_tree_snapshot_count': '{count} recorded',
              'search_tree_path_metric': 'Path',
+             'search_tree_trajectory_metric': 'Trajectory',
              'search_tree_showing': 'Showing {shown}/{total} recorded nodes. The visualization is bounded to '
                                     'keep the web page responsive.',
              'trace_capture_limit_warning': 'Trace display reached its capture limit; run metrics still '
@@ -1402,22 +1407,27 @@ LOC: dict[str, dict[str, str]] = {'English': {'nav_play': 'Play Puzzle',
                 'alg_exam_tips': 'Điểm cần nhớ khi thi',
                 'pseudocode_label': 'Pseudocode',
                 'search_tree_caption': 'Mỗi cạnh đều được kiểm chứng bằng một hành động puzzle hợp lệ. '
-                                       'Node/cạnh màu xanh là path kết quả hợp lệ; phần còn lại là bằng '
-                                       'chứng đã khám phá. Dùng readable view để đọc node, frontier và '
-                                       'reached snapshot trước khi mở Graphviz đầy đủ.',
+                                       'Màu xanh là path lời giải đã tới goal; màu hổ phách là trajectory '
+                                       'hợp lệ nhưng chưa tới goal; phần còn lại là bằng chứng đã khám phá. '
+                                       'Dùng readable view để đọc node, frontier và reached snapshot trước '
+                                       'khi mở Graphviz đầy đủ.',
                 'search_tree_view_label': 'Kiểu xem cây',
                 'search_tree_view_solution': 'Path lời giải',
+                'search_tree_view_trajectory': 'Trajectory hợp lệ',
                 'search_tree_view_neighborhood': 'Vùng mở rộng quanh path',
                 'search_tree_view_first': 'Các node ghi nhận đầu tiên',
                 'search_tree_graphviz_evidence': 'Graphviz evidence đầy đủ',
                 'search_tree_solution_legend': 'Path lời giải đã verify',
+                'search_tree_trajectory_legend': 'Trajectory hợp lệ, chưa phải goal',
                 'search_tree_explored_legend': 'Node evidence đã khám phá',
                 'search_tree_frontier_legend': 'Snapshot frontier/reached',
                 'search_tree_solution_node': 'lời giải',
+                'search_tree_trajectory_node': 'trajectory',
                 'search_tree_explored_node': 'đã khám phá',
                 'search_tree_current_node': 'Node hiện tại',
                 'search_tree_snapshot_count': '{count} đã ghi nhận',
                 'search_tree_path_metric': 'Path',
+                'search_tree_trajectory_metric': 'Trajectory',
                 'search_tree_showing': 'Đang hiển thị {shown}/{total} node đã ghi nhận. Visualization được '
                                        'giới hạn để trang web vẫn phản hồi tốt.',
                 'trace_capture_limit_warning': 'Trace đã đạt giới hạn capture; metric lần chạy vẫn bao phủ '

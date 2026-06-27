@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html import escape
 
 import streamlit as st
@@ -29,7 +30,7 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
 .capture-page {
     width: 100vw;
     min-height: 100vh;
-    padding: 16px 42px;
+    padding: 14px 38px;
     background:
         radial-gradient(circle at 88% 0%, rgba(127,175,111,0.16), transparent 260px),
         linear-gradient(135deg, rgba(214,161,95,0.08), transparent 40%),
@@ -41,13 +42,13 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
 .capture-hero { padding: 34px 52px; }
 .capture-title {
     margin: 0;
-    font-size: clamp(24px, 3.2vw, 34px);
-    line-height: 1.0;
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.05;
     letter-spacing: 0;
 }
 .capture-hero .capture-title { font-size: clamp(34px, 4.2vw, 52px); }
 .capture-subtitle {
-    margin: 7px 0 12px;
+    margin: 5px 0 9px;
     color: #d2c7b8;
     font-size: clamp(14px, 1.7vw, 18px);
 }
@@ -55,7 +56,7 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
 .capture-layout {
     display: grid;
     grid-template-columns: minmax(330px, 0.9fr) minmax(430px, 1.15fr);
-    gap: 28px;
+    gap: 24px;
     align-items: start;
 }
 .capture-hero .capture-layout { gap: 34px; }
@@ -65,11 +66,11 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
     background: rgba(18,21,20,0.86);
     box-shadow: 0 20px 48px rgba(0,0,0,0.32);
 }
-.capture-board-card { padding: 16px; }
-.capture-evidence-card { padding: 18px; }
+.capture-board-card { padding: 14px; }
+.capture-evidence-card { padding: 14px; }
 .capture-hero .capture-board-card { padding: 20px; }
 .capture-hero .capture-evidence-card { padding: 22px; }
-.capture-chip-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.capture-chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .capture-chip {
     display: inline-flex;
     align-items: center;
@@ -91,11 +92,11 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    margin: 14px 0;
+    margin: 10px 0;
 }
 .capture-metric {
     min-width: 0;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid rgba(214,196,166,0.16);
     border-radius: 10px;
     background: rgba(11,14,13,0.72);
@@ -118,11 +119,12 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
     overflow-wrap: anywhere;
 }
 .capture-note {
-    margin: 10px 0 0;
+    margin: 6px 0 0;
     color: #d2c7b8;
-    font-size: clamp(13px, 1.5vw, 16px);
-    line-height: 1.42;
+    font-size: 13px;
+    line-height: 1.28;
 }
+.capture-hero .capture-note { font-size: 16px; line-height: 1.42; margin-top: 10px; }
 .capture-board-card .puzzle-grid {
     width: fit-content !important;
     max-width: none !important;
@@ -207,6 +209,16 @@ div[data-testid="stMain"], div[data-testid="stMainBlockContainer"] {
 """
 
 
+@dataclass(frozen=True)
+class _ProgressEvidence:
+    """Semantic progress for one captured frame."""
+
+    label: str
+    current: int
+    total: int
+    linear_step: int | None = None
+
+
 def render_web_gif_capture(slug: str, frame: int, *, image_mode: bool = False) -> None:
     """Render one browser-capturable frame from a real algorithm run."""
     st.markdown(CAPTURE_CSS, unsafe_allow_html=True)
@@ -219,19 +231,10 @@ def render_web_gif_capture(slug: str, frame: int, *, image_mode: bool = False) -
 
     frame_index = max(0, min(int(frame), len(evidence.states) - 1))
     state = evidence.states[frame_index]
-    step_number = evidence.state_indices[frame_index] if frame_index < len(evidence.state_indices) else frame_index
-    total_steps = max(1, len(evidence.actions))
-    h_value = HEURISTICS["Manhattan Distance"](state, goal=spec.goal)
-    g_value = min(step_number, total_steps)
+    progress_evidence = _progress_evidence(evidence, frame_index)
     status_label, status_class, status_note = _status(evidence)
-    previous_action, next_action = _actions(evidence, step_number)
-    result = evidence.result
-    metrics = [
-        ("Step", f"{step_number}/{total_steps}"),
-        ("g / h / f", f"{g_value} / {h_value} / {g_value + h_value}"),
-        ("Expanded", str(getattr(result, "nodes_expanded", "-") if result else "-")),
-        ("Frontier", str(getattr(result, "max_frontier_size", "-") if result else "-")),
-    ]
+    previous_action, next_action = _actions(evidence, progress_evidence)
+    metrics = _capture_metrics(evidence, state, progress_evidence)
     metric_markup = "".join(
         f'<div class="capture-metric"><span>{escape(label)}</span><strong>{escape(value)}</strong></div>'
         for label, value in metrics
@@ -273,7 +276,11 @@ def render_web_gif_capture(slug: str, frame: int, *, image_mode: bool = False) -
 def _status(evidence: DemoEvidence) -> tuple[str, str, str]:
     result = evidence.result
     if result is None:
-        return "WEB RUN: TOURNAMENT", "warn", "Tournament scoring is real, but it is not a single solution path."
+        return (
+            "WEB RUN: TOURNAMENT",
+            "warn",
+            "The board replays one scored agent trajectory; the tournament aggregate is not a single path.",
+        )
     if result.success and result.goal_reached:
         if result.optimality_proven:
             return "WEB RUN: SOLVED + OPTIMAL", "ok", "This run reached the selected goal and has an optimality certificate."
@@ -283,9 +290,118 @@ def _status(evidence: DemoEvidence) -> tuple[str, str, str]:
     return "WEB RUN: NOT SOLVED", "fail", "The web run completed without a solution claim; the GIF shows that failure honestly."
 
 
-def _actions(evidence: DemoEvidence, step: int) -> tuple[str, str]:
-    if not evidence.actions:
-        return "Initialize", "No linear action"
+def _progress_evidence(evidence: DemoEvidence, frame_index: int) -> _ProgressEvidence:
+    state_index = (
+        evidence.state_indices[frame_index]
+        if frame_index < len(evidence.state_indices)
+        else frame_index
+    )
+    if evidence.path_verified and evidence.actions:
+        total = len(evidence.actions)
+        current = max(0, min(state_index, total))
+        labels = {
+            "local": "Local move",
+            "adversarial": "Principal-variation ply",
+            "tournament": "Scored-agent move",
+        }
+        return _ProgressEvidence(
+            labels.get(evidence.spec.mode, "Move"),
+            current,
+            total,
+            linear_step=current,
+        )
+
+    if evidence.result is not None and evidence.result.trace:
+        total = max(1, max(evidence.state_indices, default=0))
+        current = max(0, min(state_index, total))
+        return _ProgressEvidence("Trace event", current, total)
+
+    total = max(1, len(evidence.states))
+    return _ProgressEvidence("Evidence frame", frame_index + 1, total)
+
+
+def _capture_metrics(
+    evidence: DemoEvidence,
+    state: tuple[int, ...],
+    progress: _ProgressEvidence,
+) -> list[tuple[str, str]]:
+    progress_metric = (progress.label, f"{progress.current}/{progress.total}")
+    result = evidence.result
+    if evidence.spec.mode == "tournament":
+        return [progress_metric, *list(evidence.display_metrics.items())[:3]]
+
+    expanded = str(result.nodes_expanded) if result is not None else "-"
+    generated = str(result.nodes_generated) if result is not None else "-"
+    reached = str(result.reached_size) if result is not None else "-"
+    frontier = str(result.max_frontier_size) if result is not None else "-"
+    termination = result.termination_reason if result is not None else evidence.termination
+
+    if evidence.spec.mode == "csp":
+        algorithm = evidence.spec.algorithm
+        if algorithm == "Constraint Propagation":
+            activity_metrics = [("Arc checks", expanded), ("Candidate states", generated)]
+        elif algorithm == "Backtracking Search":
+            activity_metrics = [("Expanded", expanded), ("Generated", generated)]
+        elif algorithm == "Min-Conflicts":
+            repairs = max(0, len(result.trace) - 1) if result else 0
+            activity_metrics = [("Iterations", expanded), ("Recorded repairs", str(repairs))]
+        else:
+            trace_events = str(len(result.trace)) if result else "0"
+            activity_metrics = [("Trace events", trace_events), ("Path claim", "none")]
+        return [
+            progress_metric,
+            ("Model status", termination.replace("_", " ")),
+            *activity_metrics,
+        ]
+
+    h_value = HEURISTICS["Manhattan Distance"](state, goal=evidence.spec.goal)
+    if evidence.spec.mode == "local":
+        return [
+            progress_metric,
+            ("h(n)", str(h_value)),
+            ("Evaluated", expanded),
+            ("Reached states", reached),
+        ]
+    if evidence.spec.mode == "adversarial":
+        utilities = [step.utility for step in result.trace if step.utility is not None] if result else []
+        utility = f"{utilities[-1]:.1f}" if utilities else "-"
+        return [
+            progress_metric,
+            ("Backed-up utility", utility),
+            ("Expanded", expanded),
+            ("Generated", generated),
+        ]
+    if evidence.spec.mode == "complex":
+        trace = result.trace if result else []
+        belief_sizes = [step.belief_size for step in trace if step.belief_size is not None]
+        belief = str(belief_sizes[-1]) if belief_sizes else "-"
+        if evidence.spec.algorithm == "AND-OR Search":
+            model_metric = ("Depth limit", str(evidence.spec.params.get("max_depth", "-")))
+        elif evidence.spec.algorithm == "LRTA*":
+            estimates = [step.h for step in trace]
+            model_metric = ("Online H estimate", f"{estimates[-1]:.1f}" if estimates else "-")
+        else:
+            model_metric = ("Belief size / h(n)", f"{belief} / {h_value}")
+        return [
+            progress_metric,
+            model_metric,
+            ("Expanded", expanded),
+            ("Frontier / reached", f"{frontier} / {reached}"),
+        ]
+
+    g_value = progress.linear_step or 0
+    return [
+        progress_metric,
+        ("g / h / f", f"{g_value} / {h_value} / {g_value + h_value}"),
+        ("Expanded", expanded),
+        ("Frontier / reached", f"{frontier} / {reached}"),
+    ]
+
+
+def _actions(evidence: DemoEvidence, progress: _ProgressEvidence) -> tuple[str, str]:
+    if progress.linear_step is None:
+        return "Not applicable", "No linear action"
+    step = progress.linear_step
     previous = "Initialize" if step == 0 else evidence.actions[min(step - 1, len(evidence.actions) - 1)]
     next_action = "Goal" if step >= len(evidence.actions) else evidence.actions[step]
     return previous, next_action

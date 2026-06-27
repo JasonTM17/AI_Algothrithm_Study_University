@@ -32,3 +32,5 @@ Tài liệu này tách rõ solver chuẩn, demo đối chiếu và extension. M�
 - Extension algorithms phải có caveat trong UI/docs/GIF manifest.
 - AND-OR là conditional plan, không phải linear path giả.
 - Minimax dùng MIN như worst-case robustness branch, không phải đối thủ thật của 15-puzzle.
+- AC-3 state-chain là exact-horizon: `T=1` có thể solve board một bước, còn `T=2` có thể domain wipe-out do parity mà không chứng minh puzzle vô nghiệm.
+- GIF Tournament chỉ replay trajectory thật của một scored agent; score aggregate không phải một path chung.

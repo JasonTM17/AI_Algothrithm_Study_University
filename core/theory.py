@@ -742,6 +742,72 @@ for _algorithm in [
     ):
         _entry[f"{_field}_en"] = _entry[_field]
 
+THEORY["Constraint Propagation"].update({
+    "idea": "Chạy AC-3 trên chuỗi trạng thái hữu hạn S[0]..S[T]; mỗi cặp liên tiếp phải là đúng một legal blank move.",
+    "idea_en": "Run AC-3 on a bounded state chain S[0]..S[T]; each adjacent pair must be exactly one legal blank move apart.",
+    "application": "Giảm miền trạng thái cho một horizon chính xác; miền rỗng chỉ chứng minh không có plan ở đúng horizon đó.",
+    "application_en": "Reduce state domains for one exact horizon; domain wipe-out proves only that this exact horizon has no plan.",
+    "suitable": "Minh họa propagation đúng học thuật trên CSP dạng chuỗi; không phải shortest-path solver tổng quát.",
+    "suitable_en": "A sound propagation illustration on a chain CSP, not a general shortest-path solver.",
+    "exam_tips": "AC-3 duy trì arc consistency. Với chain CSP, domain không rỗng có thể dựng plan; phải nói rõ exact horizon T.",
+    "exam_tips_en": "AC-3 enforces arc consistency. On this chain CSP, nonempty domains support a plan; always state the exact horizon T.",
+})
+
+THEORY["Path Consistency"].update({
+    "idea": "Mỗi cặp giá trị được phép của hai biến phải có giá trị hỗ trợ ở biến thứ ba.",
+    "idea_en": "Every allowed value pair for two variables must have supporting value in a third variable.",
+    "application": "Giải thích support qua bộ ba state-chain; hàm hiện tại không chạy path-consistency solver.",
+    "application_en": "Explain support across state-chain triples; the current function does not execute a path-consistency solver.",
+    "suitable": "Concept model, không trả trajectory và không claim solution.",
+    "suitable_en": "Concept model only; it returns no trajectory and makes no solution claim.",
+    "exam_tips": "3-consistency còn gọi là path consistency; phân biệt khái niệm với AC-3 (arc consistency).",
+    "exam_tips_en": "3-consistency is path consistency; distinguish it from AC-3 arc consistency.",
+})
+
+THEORY["Global Constraints"].update({
+    "idea": "AllDifferent ràng buộc 16 biến tile-position tại cùng thời điểm phải nhận 16 giá trị khác nhau.",
+    "idea_en": "AllDifferent requires the 16 tile-position variables at one time step to take distinct values.",
+    "application": "Một global propagator có thể suy diễn mạnh hơn 120 bất đẳng thức đôi được xử lý độc lập.",
+    "application_en": "A global propagator can infer more than 120 pairwise inequalities handled independently.",
+    "suitable": "Modeling/propagation concept, không tự tìm chuỗi legal moves.",
+    "suitable_en": "A modeling and propagation concept; it does not find a legal-move sequence by itself.",
+    "exam_tips": "Phân biệt global constraint với binary decomposition và 240 directed arcs trong hàng đợi AC-3.",
+    "exam_tips_en": "Distinguish the global constraint from its binary decomposition and 240 directed AC-3 arcs.",
+})
+
+THEORY["Backtracking Search"].update({
+    "idea": "Tăng bounded horizon và DFS trên legal successor states, sắp thứ tự giá trị bằng Manhattan Distance.",
+    "idea_en": "Increase a bounded horizon and depth-first search legal successor states ordered by Manhattan Distance.",
+    "application": "Trả legal path nếu tìm thấy trong giới hạn; fail không chứng minh unsolvable.",
+    "application_en": "Return a legal path when found within the bounds; failure does not prove unsolvability.",
+    "suitable": "Demo transition planning; implementation không có MRV, LCV hay forward checking đầy đủ.",
+    "suitable_en": "A transition-planning demo; this implementation does not provide full MRV, LCV, or forward checking.",
+    "exam_tips": "Gọi đúng là bounded DFS với heuristic value ordering, không gọi là CSP backtracking chuẩn có MRV/forward checking.",
+    "exam_tips_en": "Call it bounded DFS with heuristic value ordering, not full CSP backtracking with MRV or forward checking.",
+})
+
+THEORY["Min-Conflicts"].update({
+    "idea": "Chọn vị trí đang xung đột và đổi tile để giảm số vị trí sai trong assignment.",
+    "idea_en": "Choose a conflicted position and swap tiles to reduce misplaced values in the assignment.",
+    "application": "Minh họa local repair của CSP; swap có thể không phải legal blank move.",
+    "application_en": "Illustrate CSP local repair; a swap need not be a legal blank move.",
+    "suitable": "Có thể đạt goal assignment nhưng không tạo 15-puzzle solution path hợp lệ.",
+    "suitable_en": "It may reach the goal assignment without producing a legal 15-puzzle solution path.",
+    "exam_tips": "Success của model khác goal-path certificate; kiểm tra path_verified và goal_reached riêng.",
+    "exam_tips_en": "Model success differs from a goal-path certificate; inspect path_verified and goal_reached separately.",
+})
+
+THEORY["Constraint Graphs"].update({
+    "idea": "Biểu diễn biến và ràng buộc; transition là high-arity factor qua hai board liên tiếp và action.",
+    "idea_en": "Represent variables and constraints; transition is a high-arity factor across two adjacent boards and an action.",
+    "application": "Cho thấy graph tăng theo horizon và vì sao planning CSP trở nên lớn.",
+    "application_en": "Show graph growth with the horizon and why the planning CSP becomes large.",
+    "suitable": "Analysis artifact, không phải search trajectory.",
+    "suitable_en": "An analysis artifact, not a search trajectory.",
+    "exam_tips": "Không vẽ A[t] như 16 cạnh same-position độc lập nếu chưa thêm auxiliary variables.",
+    "exam_tips_en": "Do not draw A[t] as 16 independent same-position edges unless auxiliary variables are introduced.",
+})
+
 # ============================================================
 # GROUP 6: AI-VS-AI TOURNAMENT / GAME-CHANCE EXTENSIONS
 # ============================================================

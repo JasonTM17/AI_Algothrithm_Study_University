@@ -271,7 +271,7 @@ Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Caveat:** A model is not yet a solved trajectory.
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
 - **web_run_status:** `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path.
-- **Result message:** CSP Definition for 15-Puzzle (T=2)  Variables:   X[t][p]: tile at position p at time t, t=0..2, p=0..15   A[t]: action at time t, t=0..1  Total variables: 50  Domains:   X[0][p] = {15} (fixed by initial state)   X[2][p] = {0} (fixed by goal
+- **Result message:** CSP Definition for 15-Puzzle (T=1)  Variables:   X[t][p]: tile at position p at time t, t=0..1, p=0..15   A[t]: action at time t, t=0..0  Total variables: 33  Domains:   X[0][p] = {15} (fixed by initial state)   X[1][p] = {0} (fixed by goal
 - **Manifest:** termination `model_success`, profile `algorithm`, frames `6`, verified `2026-06-27`.
 
 ### Constraint Propagation
@@ -284,9 +284,9 @@ Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Guarantee:** Sound pruning for represented constraints.
 - **Caveat:** Propagation alone may not decide the puzzle.
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
-- **web_run_status:** `not_solved_in_demo` - web demo completed without a solution claim.
-- **Result message:** AC-3 State-Chain CSP for 15-Puzzle (T=2)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This
-- **Manifest:** termination `depth_limit`, profile `algorithm`, frames `6`, verified `2026-06-27`.
+- **web_run_status:** `solved_not_optimal` - reached goal without an optimality certificate.
+- **Result message:** AC-3 State-Chain CSP for 15-Puzzle (T=1)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This
+- **Manifest:** termination `goal`, profile `algorithm`, frames `6`, verified `2026-06-27`.
 
 ### Path Consistency
 
@@ -299,7 +299,7 @@ Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Caveat:** Not a shortest-path solver.
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
 - **web_run_status:** `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path.
-- **Result message:** Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk: for every consistent (Xi, Xj) pair, there must exist a value for Xk consistent with both.  Exampl
+- **Result message:** Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk, every allowed (Xi, Xj) pair must have a supporting value of Xk that satisfies both connecting con
 - **Manifest:** termination `model_success`, profile `algorithm`, frames `6`, verified `2026-06-27`.
 
 ### Global Constraints
@@ -313,7 +313,7 @@ Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Caveat:** Does not replace graph-search optimality.
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
 - **web_run_status:** `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path.
-- **Result message:** Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once, not j
+- **Result message:** Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once. A bin
 - **Manifest:** termination `model_success`, profile `algorithm`, frames `6`, verified `2026-06-27`.
 
 ### Backtracking Search
@@ -355,7 +355,7 @@ Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Caveat:** Graph readability matters more than path optimality here.
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
 - **web_run_status:** `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path.
-- **Result message:** Constraint Graph for 15-Puzzle CSP (T=2)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=2:   Position variables: X[0][0..15], X[1][0..15], ... X[2][0..15]   Action variables: A[0], A[1], ... A[2-1]  Constra
+- **Result message:** Constraint Graph for 15-Puzzle CSP (T=1)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=1:   Position variables: X[0][0..15], X[1][0..15], ... X[1][0..15]   Action variables: A[0], A[1], ... A[1-1]  Constra
 - **Manifest:** termination `model_success`, profile `algorithm`, frames `6`, verified `2026-06-27`.
 
 ## AI-vs-AI Tournament

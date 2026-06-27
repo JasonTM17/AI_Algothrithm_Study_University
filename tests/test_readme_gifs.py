@@ -15,6 +15,7 @@ from scripts.readme_gif_runner import run_demo
 from scripts.readme_gif_specs import build_specs, registry_summary
 from scripts.readme_gif_styles import PROFILES
 from ui.styles import ALGORITHM_GROUPS
+import ui.web_gif_capture as web_gif_capture
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +111,10 @@ def test_readme_is_academic_atlas_with_all_algorithm_gifs():
     assert "docs/algorithm-demo-gallery.md" in readme
     assert "live Streamlit browser capture" in readme
     assert "web_run_status" in readme
+    assert "So Sánh Thuật Toán Trong Nhóm" in readme
+    assert "Frontier/decision rule" in readme
+    assert "Same root value as full Minimax" in readme
+    assert "support switch không phải probability weight" in readme
     for group in ALGORITHM_GROUPS:
         assert group in readme
     for spec in build_specs():
@@ -176,3 +181,97 @@ def test_number_tile_palette_stays_restrained():
         "#9b8466",
     }
     assert noisy_tile_colors.isdisjoint(text)
+
+
+def test_capture_progress_never_exceeds_its_semantic_total():
+    assert hasattr(web_gif_capture, "_progress_evidence")
+    for spec in build_specs():
+        evidence = run_demo(spec)
+        for frame_index in range(len(evidence.states)):
+            progress = web_gif_capture._progress_evidence(evidence, frame_index)
+            assert 0 <= progress.current <= progress.total, (
+                spec.algorithm,
+                progress,
+            )
+        assert web_gif_capture._progress_evidence(
+            evidence,
+            len(evidence.states) - 1,
+        ).current == web_gif_capture._progress_evidence(
+            evidence,
+            len(evidence.states) - 1,
+        ).total
+
+
+def test_model_only_demos_do_not_invent_start_goal_trajectories():
+    for spec in build_specs():
+        evidence = run_demo(spec)
+        if evidence.result is not None and not evidence.result.path and not evidence.result.trace:
+            assert set(evidence.states) == {spec.start}, spec.algorithm
+
+
+def test_tournament_capture_replays_a_real_scored_agent_path():
+    spec = next(spec for spec in build_specs() if spec.algorithm == "AI-vs-AI Tournament")
+    evidence = run_demo(spec)
+
+    assert evidence.path_verified
+    assert evidence.goal_reached
+    assert evidence.actions
+    assert evidence.states[0] == spec.start
+    assert evidence.states[-1] == spec.goal
+    assert any("replay=" in fact for fact in evidence.facts)
+
+
+def test_featured_constraint_propagation_uses_a_satisfiable_exact_horizon():
+    spec = next(spec for spec in build_specs() if spec.algorithm == "Constraint Propagation")
+    evidence = run_demo(spec)
+
+    assert spec.params["time_horizon"] == 1
+    assert evidence.result is not None
+    assert evidence.result.success
+    assert evidence.result.path_verified
+    assert evidence.result.goal_reached
+
+
+def test_capture_metrics_do_not_invent_path_cost_for_model_extensions():
+    for spec in build_specs():
+        evidence = run_demo(spec)
+        progress = web_gif_capture._progress_evidence(evidence, 0)
+        labels = {
+            label
+            for label, _ in web_gif_capture._capture_metrics(
+                evidence,
+                evidence.states[0],
+                progress,
+            )
+        }
+        if spec.mode in {"csp", "complex", "adversarial", "tournament"}:
+            assert "g / h / f" not in labels, spec.algorithm
+
+
+def test_and_or_and_csp_metrics_name_their_real_evidence():
+    by_name = {spec.algorithm: spec for spec in build_specs()}
+
+    and_or = run_demo(by_name["AND-OR Search"])
+    and_or_metrics = dict(
+        web_gif_capture._capture_metrics(
+            and_or,
+            and_or.states[-1],
+            web_gif_capture._progress_evidence(and_or, len(and_or.states) - 1),
+        )
+    )
+    assert and_or_metrics["Depth limit"] == "2"
+
+    propagation = run_demo(by_name["Constraint Propagation"])
+    propagation_metrics = dict(
+        web_gif_capture._capture_metrics(
+            propagation,
+            propagation.states[-1],
+            web_gif_capture._progress_evidence(
+                propagation,
+                len(propagation.states) - 1,
+            ),
+        )
+    )
+    assert "Arc checks" in propagation_metrics
+    assert "Candidate states" in propagation_metrics
+    assert "g / h / f" not in propagation_metrics

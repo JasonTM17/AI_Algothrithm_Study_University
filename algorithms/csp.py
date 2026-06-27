@@ -153,22 +153,21 @@ def path_consistency(
     msg = """Path Consistency (Illustration for 15-Puzzle CSP)
 
 Path consistency extends arc consistency to triples of variables.
-For variables Xi, Xj, Xk: for every consistent (Xi, Xj) pair,
-there must exist a value for Xk consistent with both.
+For variables Xi, Xj, Xk, every allowed (Xi, Xj) pair must have a
+supporting value of Xk that satisfies both connecting constraints.
 
-Example in 15-Puzzle CSP:
-- X[0][15] = {0} (blank at position 15 at time 0)
-- X[1][15] in {0, 11, 14} (blank could be at 15, or moved from 11 or 14)
-- X[1][11] in {0, 10, 12, 15} (position 11 could receive blank or other tiles)
+For state-chain variables S[t], consider S[0]=start and S[2]=goal.
+An allowed endpoint pair needs an intermediate state S[1] that is one
+legal blank move from S[0] and one legal blank move from S[2]. If no
+such support exists, the pair is path-inconsistent for that horizon.
 
-Path consistency: X[1][15] and X[1][11] must be consistent,
-meaning they can't both be 0 (only one blank position per time step).
+This function explains the consistency concept; it does not execute a
+path-consistency solver or claim a shortest 15-puzzle path.
 
-This is automatically enforced by AllDifferent constraint per time step.
-
-Key insight: Path consistency is O(n^3 * d^3) for n variables with domain size d.
-For 15-puzzle CSP with many variables, this is computationally expensive,
-which is why CSP is not the standard approach for 15-puzzle."""
+Key insight: a direct path-consistency procedure can require
+O(n^3 * d^3) work for n variables with domain size d. For a planning
+CSP whose domain values are complete puzzle states, that cost is large,
+which is why graph search is the standard 15-puzzle formulation."""
 
     return SearchResult(
         success=True, algorithm="Path Consistency", group="CSP",
@@ -187,8 +186,10 @@ def global_constraints(
 AllDifferent(X[t][0], X[t][1], ..., X[t][15]):
   At each time step t, all 16 positions must contain distinct tiles (0-15).
 
-This is a GLOBAL constraint because it involves all 16 variables at once,
-not just pairs. It's stronger than 16*15=240 binary ≠ constraints.
+This is a GLOBAL constraint because it involves all 16 variables at once.
+A binary decomposition has 120 undirected pairwise inequalities, or
+240 directed arcs when represented for an AC-3 queue. A dedicated
+AllDifferent propagator can infer more than treating those arcs independently.
 
 Example: If X[0][0] = 1, then:
   X[0][1] ≠ 1, X[0][2] ≠ 1, ..., X[0][15] ≠ 1
@@ -441,8 +442,10 @@ Constraint graph structure:
   1. AllDifferent hyperedge at each time t:
      connects all 16 X[t][p] variables
 
-  2. Transition edges: X[t][p] -- A[t] --> X[t+1][p]
-     Each action variable connects to 2 position tiles (blank swap)
+  2. Transition factor:
+     A high-arity transition constraint connects A[t], X[t][0..15], and X[t+1][0..15].
+     A decomposed encoding may add auxiliary blank-position or swap variables;
+     it is not sixteen independent same-position edges.
 
   3. Initial constraint: X[0][p] = start[p]
      {dict(enumerate(start))}
@@ -453,9 +456,8 @@ Constraint graph structure:
 Text representation for T=1:
 
   X[0][0]---X[0][1]---...---X[0][15]    (AllDifferent)
-      |        |              |
-     A[0]     A[0]           A[0]          (Transition)
-      |        |              |
+       \\__________ A[0] __________/
+                    |
   X[1][0]---X[1][1]---...---X[1][15]    (AllDifferent)
 
 Key insight: Constraint graphs for planning CSPs grow linearly

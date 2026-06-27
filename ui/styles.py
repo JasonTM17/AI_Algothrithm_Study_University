@@ -1631,6 +1631,9 @@ div[class*="number_board"] .puzzle-tile {
 .legend-solution {
     background: #7aa66a;
 }
+.legend-trajectory {
+    background: #d6a15f;
+}
 .legend-explored {
     background: #8ea0ff;
 }
@@ -1711,6 +1714,11 @@ div[class*="number_board"] .puzzle-tile {
     border-color: rgba(122,166,106,0.55);
     background: linear-gradient(180deg, rgba(122,166,106,0.16), rgba(18,21,20,0.88));
     box-shadow: inset 0 0 0 1px rgba(122,166,106,0.18);
+}
+.search-tree-readable-card.is-trajectory {
+    border-color: rgba(214,161,95,0.55);
+    background: linear-gradient(180deg, rgba(214,161,95,0.14), rgba(18,21,20,0.88));
+    box-shadow: inset 0 0 0 1px rgba(214,161,95,0.16);
 }
 .search-tree-readable-meta {
     display: grid;

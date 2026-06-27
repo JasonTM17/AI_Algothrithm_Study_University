@@ -1,6 +1,11 @@
 """Academic correctness tests for bounded 15-puzzle AC-3 propagation."""
 
-from algorithms.csp import constraint_propagation
+from algorithms.csp import (
+    constraint_propagation,
+    global_constraints,
+    path_consistency,
+    solve_csp_constraint_graphs,
+)
 from algorithms.csp_ac3 import run_state_chain_ac3
 from core.puzzle import GOAL_STATE
 
@@ -68,3 +73,16 @@ def test_ac3_supports_custom_goal_and_longer_exact_chain():
     assert result.goal_state == ONE_MOVE
     assert result.path_verified
     assert result.goal_reached
+
+
+def test_csp_explanations_use_precise_variable_and_constraint_semantics():
+    path_text = path_consistency(ONE_MOVE).message
+    global_text = global_constraints(ONE_MOVE).message
+    graph_text = solve_csp_constraint_graphs(ONE_MOVE, time_horizon=1).message
+
+    assert "state-chain variables S[t]" in path_text
+    assert "intermediate state S[1]" in path_text
+    assert "120 undirected pairwise inequalities" in global_text
+    assert "240 directed arcs" in global_text
+    assert "high-arity transition constraint" in graph_text
+    assert "connects A[t], X[t][0..15], and X[t+1][0..15]" in graph_text

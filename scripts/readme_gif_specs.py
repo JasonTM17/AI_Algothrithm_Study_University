@@ -146,7 +146,10 @@ def _build_spec(algorithm: str, group: str) -> DemoSpec:
     elif mode == "csp":
         start = ONE_MOVE_START
         if algorithm in {"CSP Definition", "Constraint Propagation", "Constraint Graphs"}:
-            params["time_horizon"] = 2
+            # The teaching board is one move from the goal. Horizon one shows
+            # satisfiable propagation; horizon two is a valid parity wipe-out
+            # but obscures the intended lesson in a short GIF.
+            params["time_horizon"] = 1
         elif algorithm == "Backtracking Search":
             params["max_steps"] = 600
         elif algorithm == "Min-Conflicts":

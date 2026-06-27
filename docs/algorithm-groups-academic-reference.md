@@ -234,4 +234,13 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 | Vì sao Greedy không đủ? | Greedy chỉ tối thiểu hóa `h(n)`, bỏ qua cost đã đi `g(n)`, nên có thể chọn đường nhìn gần goal nhưng dài hơn. |
 | Vì sao local search kẹt? | Nó tối ưu cục bộ, không giữ frontier toàn cục, nên local optimum/plateau có thể chặn đường tới goal. |
 | Vì sao CSP không phải solver chính? | CSP planning cần biến theo time step và horizon; với 15-puzzle chuẩn, state-space search tự nhiên và trực tiếp hơn. |
+
+## 15. Nguồn Học Thuật Đối Chiếu
+
+- [AIMA, Constraint Satisfaction Problems](https://aima.cs.berkeley.edu/4th-ed/pdfs/newchap05.pdf): CSP `(X, D, C)`, backtracking, arc/path consistency và global constraints.
+- [AIMA, AC-3 slides](https://aima.cs.berkeley.edu/slides-pdf/chapter05.pdf): queue of arcs, revise và domain reduction.
+- [AIMA Search subsystem](https://aima.cs.berkeley.edu/lisp/doc/overview-SEARCH.html): Minimax và Alpha-Beta; Alpha-Beta giữ quyết định Minimax trên cùng cây/cutoff nhưng xét ít node hơn.
+- [AIMA contents](https://aima.cs.berkeley.edu/contents.htm): no observation, partial observation, online search, adversarial search và games.
+
+Các nguồn trên là chuẩn đối chiếu khái niệm. Contract executable của repo vẫn phải được xác minh bằng `SearchResult`, trace, path replay và test corpus; tài liệu không thay thế bằng chứng runtime.
 | Vì sao có AI-vs-AI Tournament? | Để chấm điểm hai solver agent trên cùng puzzle bằng A* reference: đúng/tối ưu được điểm cao, đường dài hơn bị giảm, sai hoặc thất bại bị trừ điểm. |

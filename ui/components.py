@@ -1161,6 +1161,15 @@ def render_algorithm_info(algo_name: str, theory: dict):
         st.code(pseudocode, language="python")
 
 
+def _search_tree_path_kind(result) -> str:
+    """Classify the recorded result path without conflating legal and solved."""
+    if result.path_verified and result.goal_reached:
+        return "solution"
+    if result.path_verified and result.path:
+        return "trajectory"
+    return "none"
+
+
 def _render_readable_search_tree(
     result,
     max_nodes: int,
@@ -1178,7 +1187,9 @@ def _render_readable_search_tree(
     use_image_board = board_mode == "image" and bool(image_tiles)
     node_by_state = {node.state: node for node in result.search_tree_nodes}
     node_by_id = {node.node_id: node for node in result.search_tree_nodes}
-    solution_states = list(result.path) if result.path_verified else []
+    path_kind = _search_tree_path_kind(result)
+    result_path_states = list(result.path) if path_kind in {"solution", "trajectory"} else []
+    result_path_state_set = set(result_path_states)
 
     def board_for(state: tuple) -> str:
         if use_image_board:
@@ -1190,8 +1201,8 @@ def _render_readable_search_tree(
         f_text = "-" if node.f is None else f"{node.f:g}"
         return f"d={node.depth} g={node.g:g} h={h_text} f={f_text}"
 
-    def solution_view() -> list:
-        return [node_by_state[state] for state in solution_states if state in node_by_state]
+    def result_path_view() -> list:
+        return [node_by_state[state] for state in result_path_states if state in node_by_state]
 
     def neighborhood_view() -> list:
         selected: list = []
@@ -1202,7 +1213,7 @@ def _render_readable_search_tree(
                 selected.append(node)
                 selected_ids.add(node.node_id)
 
-        for node in solution_view():
+        for node in result_path_view():
             add(node)
             for edge in result.search_tree_edges:
                 if edge.parent_id == node.node_id and edge.child_id in node_by_id:
@@ -1216,15 +1227,24 @@ def _render_readable_search_tree(
     elif view_mode == "neighborhood":
         visible_nodes = neighborhood_view()
     else:
-        visible_nodes = solution_view()[:max_nodes]
+        visible_nodes = result_path_view()[:max_nodes]
 
     if not visible_nodes:
         visible_nodes = result.search_tree_nodes[:max_nodes]
 
     cards = []
     for index, node in enumerate(visible_nodes):
-        role_cls = "is-solution" if node.on_solution_path else "is-explored"
-        role = t("search_tree_solution_node") if node.on_solution_path else t("search_tree_explored_node")
+        is_solution_node = path_kind == "solution" and node.on_solution_path
+        is_trajectory_node = path_kind == "trajectory" and node.state in result_path_state_set
+        if is_solution_node:
+            role_cls = "is-solution"
+            role = t("search_tree_solution_node")
+        elif is_trajectory_node:
+            role_cls = "is-trajectory"
+            role = t("search_tree_trajectory_node")
+        else:
+            role_cls = "is-explored"
+            role = t("search_tree_explored_node")
         cards.append(
             f'<div class="search-tree-readable-card {role_cls}">'
             '<div class="search-tree-readable-meta">'
@@ -1275,15 +1295,29 @@ def _render_readable_search_tree(
         )
 
     mode_class = "is-image" if use_image_board else "is-number"
+    path_legend = ""
+    if path_kind != "none":
+        legend_class = "legend-solution" if path_kind == "solution" else "legend-trajectory"
+        legend_label = (
+            t("search_tree_solution_legend")
+            if path_kind == "solution"
+            else t("search_tree_trajectory_legend")
+        )
+        path_legend = f'<span><i class="{legend_class}"></i>{escape(legend_label)}</span>'
+    path_metric = (
+        t("search_tree_path_metric")
+        if path_kind == "solution"
+        else t("search_tree_trajectory_metric")
+    )
     markup = (
         f'<div class="search-tree-readable {mode_class}">'
         '<div class="search-tree-legend">'
-        f'<span><i class="legend-solution"></i>{escape(t("search_tree_solution_legend"))}</span>'
+        f"{path_legend}"
         f'<span><i class="legend-explored"></i>{escape(t("search_tree_explored_legend"))}</span>'
         f'<span><i class="legend-frontier"></i>{escape(t("search_tree_frontier_legend"))}</span>'
         "</div>"
         '<div class="search-tree-readable-summary">'
-        f'<span>{escape(t("search_tree_path_metric"))}: <strong>{len(result.actions)}</strong></span>'
+        f'<span>{escape(path_metric)}: <strong>{len(result.actions)}</strong></span>'
         f'<span>{escape(t("mc_expanded"))}: <strong>{result.nodes_expanded}</strong></span>'
         f'<span>{escape(t("mc_max_f"))}: <strong>{result.max_frontier_size}</strong></span>'
         f'<span>{escape(t("mc_reached_size"))}: <strong>{result.reached_size}</strong></span>'
@@ -1328,8 +1362,14 @@ def render_search_tree(
         )
         return
 
+    path_kind = _search_tree_path_kind(result)
+    path_view_label = (
+        t("search_tree_view_solution")
+        if path_kind == "solution"
+        else t("search_tree_view_trajectory")
+    )
     view_options = {
-        t("search_tree_view_solution"): "solution",
+        path_view_label: "solution",
         t("search_tree_view_neighborhood"): "neighborhood",
         t("search_tree_view_first"): "first",
     }

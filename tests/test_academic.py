@@ -526,6 +526,20 @@ def test_game_tree_theory_states_resource_bound_caveats():
     assert "Complete with evaluation function" not in combined_minimax_text
 
 
+def test_csp_theory_matches_the_executable_model_boundaries():
+    propagation = THEORY["Constraint Propagation"]
+    path_consistency_entry = THEORY["Path Consistency"]
+    backtracking = THEORY["Backtracking Search"]
+    min_conflicts_entry = THEORY["Min-Conflicts"]
+    graph = THEORY["Constraint Graphs"]
+
+    assert "exact horizon" in propagation["application_en"]
+    assert "does not execute" in path_consistency_entry["application_en"]
+    assert "does not provide full MRV" in backtracking["suitable_en"]
+    assert "need not be a legal blank move" in min_conflicts_entry["application_en"]
+    assert "high-arity factor" in graph["idea_en"]
+
+
 def test_primary_labels_do_not_use_decorative_emoji():
     forbidden_ranges = [
         range(0x1F000, 0x1FAFF + 1),

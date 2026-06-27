@@ -20,6 +20,7 @@ App ưu tiên giao diện học thuật: người học phải thấy thuật to
 - Frontier/reached snapshot đặt cạnh tree để không phải suy luận từ DOT nhỏ.
 - Graphviz vẫn có để audit edge parent-child.
 - Với cây lớn, UI lọc solution path, expanded neighborhood hoặc first N nodes thay vì ép toàn bộ vào một hình nhỏ.
+- Tree không gọi mọi legal path là lời giải: nếu `path_verified=True` nhưng `goal_reached=False`, readable view dùng nhãn `Verified Trajectory` và màu hổ phách thay vì `Solution Path`.
 
 ## GIF Capture Contract
 
@@ -33,6 +34,10 @@ python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
 - Frame source là Streamlit route `?capture_demo=...`.
 - Capture tool là `agent-browser screenshot`.
 - Manifest phải có `source=live_streamlit_browser_capture` và `web_run_status`.
+- Chỉ legal trajectory mới dùng `Move x/y` và `g/h/f`.
+- Conditional plan/model dùng `Trace event` hoặc `Evidence frame`; không dựng path giả.
+- Local Search dùng local move và `h(n)`; Group 6 dùng ply/utility; Tournament dùng scored-agent move và điểm thật.
+- CSP dùng arc checks, candidate states, trace/model status; `frontier/reached` chỉ hiện khi thuật toán thật sự có semantics đó.
 
 ## Tile Palette
 

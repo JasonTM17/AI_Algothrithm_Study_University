@@ -520,6 +520,23 @@ def _render_solver_evidence(t, res) -> None:
         )
 
 
+def _render_full_width_solver_evidence(t) -> None:
+    """Keep trajectory and search evidence out of the narrow solver column."""
+    path = st.session_state.get("play_solution_path")
+    res = st.session_state.get("play_solution_res")
+    if not path or not res:
+        return
+
+    render_solution_steps(
+        path,
+        res.actions,
+        board_mode=st.session_state.get("play_board_mode", "number"),
+        image_tiles=st.session_state.get("image_tiles"),
+        current_step=int(st.session_state.get("play_solution_idx", 0)),
+    )
+    _render_solver_evidence(t, res)
+
+
 def _trace_step_for_state(trace: list, state: tuple[int, ...]):
     """Find the captured A* trace row that generated the displayed replay state."""
     for step in trace:
@@ -748,16 +765,6 @@ def _render_ai_solver_panel(t, goal) -> None:
         act_label = _direction_label(t, res.actions[idx - 1])
         st.markdown(t("play_action_performed", step=idx, total=len(res.actions), act=act_label))
 
-    render_solution_steps(
-        path,
-        res.actions,
-        board_mode=st.session_state.get("play_board_mode", "number"),
-        image_tiles=st.session_state.get("image_tiles"),
-        current_step=idx,
-    )
-    _render_solver_evidence(t, res)
-
-
 def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     _advance_auto_replay_one_step()
     board_col, solver_col = st.columns([1.08, 0.92], gap="large")
@@ -765,6 +772,7 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
         _render_play_board_panel(t, goal, solvable)
     with solver_col:
         _render_ai_solver_panel(t, goal)
+    _render_full_width_solver_evidence(t)
     _render_play_status_controls(t, goal, solvable)
     _render_start_goal_reference(t, goal, solvable)
     _render_challenge_panel(t, goal)

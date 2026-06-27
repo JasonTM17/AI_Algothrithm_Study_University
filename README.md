@@ -18,6 +18,7 @@ GIF hero ở trên được chụp từ live Streamlit browser capture bằng `a
 - [Chạy Nhanh](#chạy-nhanh)
 - [Bản Đồ 6 Nhóm](#bản-đồ-6-nhóm)
 - [Cách Đọc Từng Nhóm](#cách-đọc-từng-nhóm)
+- [So Sánh Thuật Toán Trong Nhóm](#so-sánh-thuật-toán-trong-nhóm)
 - [Atlas 28 Thuật Toán Có GIF Chạy Thật](#atlas-28-thuật-toán-có-gif-chạy-thật)
 - [Cách Đọc Evidence](#cách-đọc-evidence)
 - [Tài Liệu](#tài-liệu)
@@ -111,6 +112,66 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 | Complex Environments | Đọc belief, conditional plan, online update theo đúng mô hình mở rộng. | Ép AND-OR/belief thành đường đi tuyến tính giả. |
 | CSP | Đọc variables, domains, constraints, propagation và horizon. | Gọi CSP model definition là shortest-path solver. |
 | AI-vs-AI Tournament | Đọc scoring, robustness, pruning và expected value. | Gọi MIN là đối thủ thật của 15-puzzle. |
+
+## So Sánh Thuật Toán Trong Nhóm
+
+### Uninformed Search
+
+| Thuật toán | Frontier/decision rule | Evidence cần nhìn | Guarantee đúng | Caveat |
+|---|---|---|---|---|
+| BFS | FIFO queue, mở theo tầng. | frontier/reached, path cost, depth. | Complete, optimal với unit step cost. | Memory tăng rất nhanh. |
+| DFS | LIFO stack, đi sâu trước. | depth, expanded, legal trajectory. | Không có shortest-path guarantee. | Có thể đi nhánh sâu và bỏ lỡ đường ngắn. |
+| UCS | Priority queue theo `g(n)`. | cumulative cost, frontier/reached. | Complete, optimal với non-negative cost. | Với 15-puzzle unit cost gần giống BFS nhưng nêu rõ cost model. |
+| IDS | DFS giới hạn độ sâu, tăng limit. | cutoff/exhausted theo từng limit. | Complete, optimal với unit step cost khi limit đủ. | Lặp lại work qua nhiều iteration. |
+
+### Informed Search
+
+| Thuật toán | Evaluation rule | Evidence cần nhìn | Guarantee đúng | Caveat |
+|---|---|---|---|---|
+| Greedy Best-First | Ưu tiên `h(n)` nhỏ nhất. | selected h, frontier, goal flag. | Không optimality certificate. | Nhanh nhưng có thể bị heuristic đánh lừa. |
+| A* | Ưu tiên `f(n)=g(n)+h(n)`. | g/h/f, expanded/generated/frontier. | Optimal nếu h admissible/consistent và không bị limit. | Certificate chỉ đúng cho goal/heuristic đã chọn. |
+| IDA* | DFS bounded bởi threshold `f`. | threshold, best_g/reached, path. | Optimal với admissible heuristic và threshold đủ. | Tiết kiệm memory nhưng revisit nhiều state. |
+
+### Local Search
+
+| Thuật toán | Candidate rule | Evidence cần nhìn | Output đúng | Caveat |
+|---|---|---|---|---|
+| Simple Hill Climbing | Chọn candidate cải thiện đầu tiên. | candidate được xét, selected action. | Legal local trajectory nếu có action. | Dễ kẹt local optimum. |
+| Steepest-Ascent HC | Xét toàn bộ neighbor rồi chọn tốt nhất. | evaluated candidates, best candidate. | Local improvement trace. | Tốn xét neighbor nhưng vẫn local. |
+| Stochastic HC | Random trong nhóm candidate cải thiện. | seed, candidate pool, chosen action. | Reproducible khi seed cố định. | Kết quả phụ thuộc seed. |
+| Random-Restart HC | Nhiều lần start lại rồi hill climb. | restart index, best h. | So sánh nhiều basin cục bộ. | Không biến thành shortest-path solver. |
+| Local Beam Search | Giữ `k` state tốt nhất mỗi vòng. | beam states, selected successors. | Population-based local evidence. | Beam nhỏ có thể mất nhánh tốt. |
+| Simulated Annealing | Có thể accept bước xấu theo temperature. | temperature, delta h, accept/reject. | Legal trajectory, đôi khi thoát local optimum. | Không claim solved nếu chưa tới goal. |
+
+### Complex Environments
+
+| Thuật toán | Mô hình output | Evidence cần nhìn | Guarantee đúng | Caveat |
+|---|---|---|---|---|
+| AND-OR Search | Conditional plan/policy. | AND node, OR action, deflection support. | Plan hợp lệ trong depth/support đã chọn. | Không phải linear path giả; support switch không phải probability weight. |
+| Searching with no observation | Belief-state reasoning. | belief size, planner votes, fallback reason. | Agent quyết định từ belief set. | Hidden actual state chỉ để debug. |
+| Partially observable search | Known-tile matrix + belief update. | known tiles, observation, belief prune. | Trace reconstruction giáo dục. | Không biến thành solver chuẩn khi chỉ biết vài ô. |
+| LRTA* | Online one-step learning. | H update, local successors, chosen action. | Online demo có legal moves. | Cap là max online steps, không phải node frontier chuẩn. |
+
+### CSP
+
+| Thuật toán | CSP concept | Evidence cần nhìn | Output đúng | Caveat |
+|---|---|---|---|---|
+| CSP Definition | Variables/domains/constraints. | variable count, domain endpoints. | Model definition. | Chưa phải solved trajectory. |
+| Constraint Propagation | AC-3 style exact-horizon pruning. | arc checks, candidate states, domain wipe-out/goal. | Sound pruning for represented constraints. | Horizon parity quan trọng; `T=2` có thể wipe-out đúng logic. |
+| Path Consistency | Triple support explanation. | consistency events, remaining supports. | Educational consistency evidence. | Illustration, không phải shortest-path solver. |
+| Global Constraints | AllDifferent/structural rules. | global check summary. | Rules out invalid assignments. | Không thay thế graph search certificate. |
+| Backtracking Search | DFS over bounded transition model. | assignment/backtrack reason, final path if found. | Can solve small exact horizon. | Dùng Manhattan ordering, không claim full MRV/forward checking. |
+| Min-Conflicts | Local repair of CSP assignment. | conflict count, selected variable. | CSP repair concept. | Tile swaps không nhất thiết là legal blank moves. |
+| Constraint Graphs | Network/factor view. | nodes, edges, high-arity relation. | Structural explanation. | Readability/evidence, not path optimality. |
+
+### AI-vs-AI Tournament
+
+| Thuật toán | Decision model | Evidence cần nhìn | Output đúng | Caveat |
+|---|---|---|---|---|
+| AI-vs-AI Tournament | Scored benchmark against A* reference. | score, optimal cost, verified trajectory. | Fair score if reference certificate exists. | Không phải một đối thủ tự nhiên trong 15-puzzle. |
+| Minimax | MAX vs worst-case MIN branch. | utility, depth, selected root action. | Depth-limited worst-case decision. | MIN không phải người chơi thật; cả hai dùng legal blank moves. |
+| Alpha-Beta Pruning | Minimax with branch-and-bound pruning. | alpha, beta, cutoff events. | Same root value as full Minimax under same searched tree. | Pruning tiết kiệm node, không đổi PEAS thành game thật. |
+| Expectimax | Expected value with CHANCE nodes. | probability model, expected utility. | Depth-limited expected-value policy. | Probability model là giáo dục và phải nêu rõ. |
 
 ## Atlas 28 Thuật Toán Có GIF Chạy Thật
 
@@ -566,9 +627,9 @@ Khi thuyết trình:
 | Caveat | A model is not yet a solved trajectory. |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, `time_horizon=2` |
+| Demo input | seed `42`, termination `model_success`, `time_horizon=1` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | CSP Definition for 15-Puzzle (T=2)  Variables:   X[t][p]: tile at position p at time t, t=0..2, p=0..15   A[t]: action at time t, t=0..1  Total variables: 50  Domains:   X[0][p] = {15} (fixed by initial state)   X[2][p] = {0} (fixed by goal |
+| Result message | CSP Definition for 15-Puzzle (T=1)  Variables:   X[t][p]: tile at position p at time t, t=0..1, p=0..15   A[t]: action at time t, t=0..0  Total variables: 33  Domains:   X[0][p] = {15} (fixed by initial state)   X[1][p] = {0} (fixed by goal |
 
 Khi thuyết trình:
 
@@ -590,10 +651,10 @@ Khi thuyết trình:
 | Guarantee | Sound pruning for represented constraints. |
 | Caveat | Propagation alone may not decide the puzzle. |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
-| Demo input | seed `42`, termination `depth_limit`, `time_horizon=2` |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | AC-3 State-Chain CSP for 15-Puzzle (T=2)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
+| Demo input | seed `42`, termination `goal`, `time_horizon=1` |
+| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | AC-3 State-Chain CSP for 15-Puzzle (T=1)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This |
 
 Khi thuyết trình:
 
@@ -618,7 +679,7 @@ Khi thuyết trình:
 | web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, default demo parameters |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk: for every consistent (Xi, Xj) pair, there must exist a value for Xk consistent with both.  Exampl |
+| Result message | Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk, every allowed (Xi, Xj) pair must have a supporting value of Xk that satisfies both connecting con |
 
 Khi thuyết trình:
 
@@ -643,7 +704,7 @@ Khi thuyết trình:
 | web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, default demo parameters |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once, not j |
+| Result message | Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once. A bin |
 
 Khi thuyết trình:
 
@@ -716,9 +777,9 @@ Khi thuyết trình:
 | Caveat | Graph readability matters more than path optimality here. |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, `time_horizon=2` |
+| Demo input | seed `42`, termination `model_success`, `time_horizon=1` |
 | Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Constraint Graph for 15-Puzzle CSP (T=2)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=2:   Position variables: X[0][0..15], X[1][0..15], ... X[2][0..15]   Action variables: A[0], A[1], ... A[2-1]  Constra |
+| Result message | Constraint Graph for 15-Puzzle CSP (T=1)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=1:   Position variables: X[0][0..15], X[1][0..15], ... X[1][0..15]   Action variables: A[0], A[1], ... A[1-1]  Constra |
 
 Khi thuyết trình:
 
@@ -744,7 +805,7 @@ Khi thuyết trình:
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `ran_tournament_model` - scored tournament model, not one solution path |
 | Demo input | seed `42`, termination `tournament_scored`, default demo parameters |
-| Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
 | Result message | Tournament scoring run |
 
 Khi thuyết trình:

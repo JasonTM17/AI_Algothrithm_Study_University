@@ -13,6 +13,7 @@ from algorithms.local_search import (
 from algorithms.uninformed import bfs
 from core.metrics import SearchResult, TraceStep, search_tree_to_dot
 from core.puzzle import GOAL_STATE, _move_blank
+from ui.components import _search_tree_path_kind
 
 
 START = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 11, 15)
@@ -65,6 +66,7 @@ def test_a_star_exposes_real_parent_child_edges_and_dot():
     assert result.goal_state == GOAL_STATE
     assert result.goal_reached
     assert result.optimality_proven
+    assert _search_tree_path_kind(result) == "solution"
 
 
 def test_local_search_exposes_generated_neighbor_edges():
@@ -197,6 +199,7 @@ def test_failed_run_can_certify_a_legal_partial_trajectory():
     assert len(result.search_tree_edges) == 1
     assert not result.search_tree_edges[0].on_solution_path
     assert all(not node.on_solution_path for node in result.search_tree_nodes)
+    assert _search_tree_path_kind(result) == "trajectory"
 
 
 def test_path_certificate_is_legal_path_not_goal_claim():
@@ -216,6 +219,7 @@ def test_path_certificate_is_legal_path_not_goal_claim():
     assert result.summary_dict()["Legal Path?"] == "Yes"
     assert result.summary_dict()["Reached Goal?"] == "Not reported"
     assert "Path Verified?" not in result.summary_dict()
+    assert _search_tree_path_kind(result) == "trajectory"
 
 
 def test_model_only_success_does_not_report_goal_termination():
