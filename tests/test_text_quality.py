@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from core.theory import THEORY
 
@@ -74,8 +75,23 @@ def test_docs_track_current_ui_evidence_surfaces():
     codebase_summary = Path("docs/codebase-summary.md").read_text(encoding="utf-8")
     architecture = Path("docs/system-architecture.md").read_text(encoding="utf-8")
 
-    assert "Search Tree có readable view" in readme
+    assert "Atlas 28 Thuật Toán Có GIF Chạy Thật" in readme
+    assert "--theme light" in readme
+    assert "--theme dark" in readme
     assert "ui/belief_controls.py" in codebase_summary
     assert "docs/assets/" in codebase_summary
     assert "readable tree" in architecture
     assert "Graphviz evidence" in architecture
+    assert "profile" in architecture
+
+
+def test_readme_relative_markdown_links_exist():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    missing = []
+    for target in re.findall(r"\]\(([^)#][^)]+)\)", readme):
+        if target.startswith(("http://", "https://")):
+            continue
+        path = Path(target)
+        if not path.exists():
+            missing.append(target)
+    assert missing == []

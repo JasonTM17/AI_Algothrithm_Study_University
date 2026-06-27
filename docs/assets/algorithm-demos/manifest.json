@@ -48,12 +48,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": true,
-      "frame_count": 8,
+      "role": "Standard solver",
+      "caption": "A* - Priority queue ordered by g(n)+h(n).",
+      "learning_goal": "Read f(n)=g(n)+h(n) and the Manhattan optimality condition.",
+      "mechanism": "Priority queue ordered by g(n)+h(n).",
+      "evidence": "g/h/f, expanded/generated/frontier, legal path and optimality flag.",
+      "guarantee": "Optimal with admissible and consistent heuristic when resources do not stop the run.",
+      "academic_caveat": "The certificate is valid only for the selected goal and heuristic contract.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
+      "frame_count": 11,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 63569
+      "file_bytes": 153240
     },
     {
       "algorithm": "AI-vs-AI Tournament",
@@ -103,12 +113,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Scoring layer",
+      "caption": "AI-vs-AI Tournament - Run two solvers and classify verified trajectories.",
+      "learning_goal": "Score two agents against the same A* reference.",
+      "mechanism": "Run two solvers and classify verified trajectories.",
+      "evidence": "points, optimal cost, excess cost and invalid-path penalties.",
+      "guarantee": "Fair benchmark when the reference certificate exists.",
+      "academic_caveat": "Tournament is not a natural adversarial PEAS model.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 47095
+      "file_bytes": 105178
     },
     {
       "algorithm": "AND-OR Search",
@@ -161,12 +181,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "AND-OR Search - OR chooses action; AND requires subplans for supported outcomes.",
+      "learning_goal": "Read a conditional plan under possible outcome deflections.",
+      "mechanism": "OR chooses action; AND requires subplans for supported outcomes.",
+      "evidence": "conditional branches, depth limit and deflection support mode.",
+      "guarantee": "Returns a policy-like conditional plan, not a linear shortest path.",
+      "academic_caveat": "The support switch is not probability weighting.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 43558
+      "file_bytes": 94421
     },
     {
       "algorithm": "Alpha-Beta Pruning",
@@ -218,12 +248,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Robustness demo",
+      "caption": "Alpha-Beta Pruning - Prune branches that cannot change the minimax root value.",
+      "learning_goal": "Learn branch-and-bound pruning over the same worst-case tree.",
+      "mechanism": "Prune branches that cannot change the minimax root value.",
+      "evidence": "alpha, beta, pruned branches and root utility.",
+      "guarantee": "Same root value as full Minimax for the searched tree.",
+      "academic_caveat": "Pruning saves nodes; it does not turn the puzzle into a real two-player game.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 47322
+      "file_bytes": 93388
     },
     {
       "algorithm": "BFS",
@@ -273,12 +313,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": true,
+      "role": "Standard solver",
+      "caption": "BFS - FIFO frontier over puzzle states.",
+      "learning_goal": "Understand level-order expansion and why unit-cost BFS can certify shortest paths.",
+      "mechanism": "FIFO frontier over puzzle states.",
+      "evidence": "frontier size, reached set, legal path and path cost.",
+      "guarantee": "Complete and optimal for unit step cost if resources suffice.",
+      "academic_caveat": "Memory grows quickly; good for shallow teaching cases, not deep 15-puzzle production search.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 52930
+      "file_bytes": 84577
     },
     {
       "algorithm": "Backtracking Search",
@@ -330,12 +380,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Backtracking Search - Depth-first assignment with constraint checks.",
+      "learning_goal": "Search assignments in the CSP model.",
+      "mechanism": "Depth-first assignment with constraint checks.",
+      "evidence": "assigned variables, backtrack reason and final path if found.",
+      "guarantee": "Can solve small exact-horizon demos.",
+      "academic_caveat": "Horizon-bound; not a global shortest-path claim.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 43587
+      "file_bytes": 92511
     },
     {
       "algorithm": "CSP Definition",
@@ -387,12 +447,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "CSP Definition - Build a state-chain CSP model.",
+      "learning_goal": "Name variables, domains and constraints.",
+      "mechanism": "Build a state-chain CSP model.",
+      "evidence": "variables/domains/constraints count.",
+      "guarantee": "Model definition only.",
+      "academic_caveat": "A model is not yet a solved trajectory.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 43368
+      "file_bytes": 85817
     },
     {
       "algorithm": "Constraint Graphs",
@@ -444,12 +514,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Constraint Graphs - Build graph nodes/edges from CSP relations.",
+      "learning_goal": "Visualize variables as a constraint network.",
+      "mechanism": "Build graph nodes/edges from CSP relations.",
+      "evidence": "constraint graph summary and consistency evidence.",
+      "guarantee": "Explains structure, not a solver certificate.",
+      "academic_caveat": "Graph readability matters more than path optimality here.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 47760
+      "file_bytes": 103201
     },
     {
       "algorithm": "Constraint Propagation",
@@ -501,12 +581,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Constraint Propagation - Apply AC-3 style propagation.",
+      "learning_goal": "See domains shrink before search.",
+      "mechanism": "Apply AC-3 style propagation.",
+      "evidence": "domain reductions and wipe-out status.",
+      "guarantee": "Sound pruning for represented constraints.",
+      "academic_caveat": "Propagation alone may not decide the puzzle.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 47199
+      "file_bytes": 86102
     },
     {
       "algorithm": "DFS",
@@ -558,12 +648,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "DFS - LIFO stack with depth-aware duplicate handling.",
+      "learning_goal": "See how depth-first commitment differs from optimal state-space search.",
+      "mechanism": "LIFO stack with depth-aware duplicate handling.",
+      "evidence": "expanded nodes, depth limit and legal trajectory when present.",
+      "guarantee": "No shortest-path guarantee in this app setting.",
+      "academic_caveat": "Can chase a deep branch and miss a shorter path.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 8,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 56080
+      "file_bytes": 115629
     },
     {
       "algorithm": "Expectimax",
@@ -617,12 +717,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Chance demo",
+      "caption": "Expectimax - Replace MIN with CHANCE outcomes and success probability.",
+      "learning_goal": "Compare expected value against worst-case reasoning.",
+      "mechanism": "Replace MIN with CHANCE outcomes and success probability.",
+      "evidence": "CHANCE nodes, probabilities and expected utility.",
+      "guarantee": "Depth-limited expected-value policy under the chosen probability model.",
+      "academic_caveat": "Probability model is educational and must be stated before interpreting the result.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 46919
+      "file_bytes": 87439
     },
     {
       "algorithm": "Global Constraints",
@@ -672,12 +782,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Global Constraints - Apply global constraint checks over the state chain.",
+      "learning_goal": "Use all-different and structural constraints.",
+      "mechanism": "Apply global constraint checks over the state chain.",
+      "evidence": "constraint status and domain evidence.",
+      "guarantee": "Rules out impossible assignments.",
+      "academic_caveat": "Does not replace graph-search optimality.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 52829
+      "file_bytes": 106031
     },
     {
       "algorithm": "Greedy Best-First",
@@ -727,12 +847,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Greedy Best-First - Priority queue ordered only by heuristic h(n).",
+      "learning_goal": "Show why h(n) alone is fast but not a certificate.",
+      "mechanism": "Priority queue ordered only by heuristic h(n).",
+      "evidence": "selected h(n), frontier and whether the final path reaches goal.",
+      "guarantee": "No optimality guarantee.",
+      "academic_caveat": "May find a longer path or get misled by a locally attractive state.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 52896
+      "file_bytes": 98886
     },
     {
       "algorithm": "IDA*",
@@ -782,12 +912,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": true,
+      "role": "Standard solver",
+      "caption": "IDA* - Depth-first search bounded by increasing f-threshold.",
+      "learning_goal": "Combine A* evaluation with memory-bounded iterative thresholds.",
+      "mechanism": "Depth-first search bounded by increasing f-threshold.",
+      "evidence": "threshold, reached metric, legal path and optimality flag.",
+      "guarantee": "Optimal with admissible heuristic and sufficient threshold iterations.",
+      "academic_caveat": "May revisit many states; trace is threshold-based, not a single frontier queue.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 45936
+      "file_bytes": 86254
     },
     {
       "algorithm": "IDS",
@@ -839,12 +979,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": true,
+      "role": "Standard solver",
+      "caption": "IDS - Repeated depth-limited DFS with cutoff tracking.",
+      "learning_goal": "Trade BFS optimality for DFS-like memory by increasing the depth limit.",
+      "mechanism": "Repeated depth-limited DFS with cutoff tracking.",
+      "evidence": "depth limit, cutoff/exhausted reason and legal path.",
+      "guarantee": "Complete and optimal for unit step cost if the limit reaches the solution depth.",
+      "academic_caveat": "Repeats work across iterations; the trace should be read by limit, not as one queue.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 49434
+      "file_bytes": 82181
     },
     {
       "algorithm": "LRTA*",
@@ -896,12 +1046,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "LRTA* - Update H(s) after observing local successors.",
+      "learning_goal": "Study online heuristic learning one action at a time.",
+      "mechanism": "Update H(s) after observing local successors.",
+      "evidence": "online step, H update, chosen action and cap reason.",
+      "guarantee": "Online learning demo, not an offline optimal certificate.",
+      "academic_caveat": "The node cap is a max online-step cap in the UI.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 53361
+      "file_bytes": 99335
     },
     {
       "algorithm": "Local Beam Search",
@@ -954,12 +1114,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Local Beam Search - Keep k best states per iteration.",
+      "learning_goal": "Track several local candidates at once.",
+      "mechanism": "Keep k best states per iteration.",
+      "evidence": "beam width, candidate scores and selected beam states.",
+      "guarantee": "No optimality guarantee.",
+      "academic_caveat": "The beam can collapse to similar states and miss the global route.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 8,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 70714
+      "file_bytes": 141573
     },
     {
       "algorithm": "Min-Conflicts",
@@ -1011,12 +1181,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Min-Conflicts - Randomized local repair over CSP variables.",
+      "learning_goal": "Repair an assignment by reducing conflicts.",
+      "mechanism": "Randomized local repair over CSP variables.",
+      "evidence": "conflict count, selected variable and seed.",
+      "guarantee": "Useful concept for CSP repair.",
+      "academic_caveat": "Better suited to N-Queens style CSPs than canonical 15-puzzle.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 39515
+      "file_bytes": 93245
     },
     {
       "algorithm": "Minimax",
@@ -1068,12 +1248,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Robustness demo",
+      "caption": "Minimax - Alternate MAX promising moves with MIN worst-case legal continuations.",
+      "learning_goal": "Interpret MIN as worst-case robustness, not a real puzzle opponent.",
+      "mechanism": "Alternate MAX promising moves with MIN worst-case legal continuations.",
+      "evidence": "MAX/MIN nodes, utility and selected root action.",
+      "guarantee": "Depth-limited worst-case decision rule.",
+      "academic_caveat": "Both sides share legal blank moves because 15-puzzle has no natural adversary.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 45675
+      "file_bytes": 86244
     },
     {
       "algorithm": "Path Consistency",
@@ -1123,12 +1313,22 @@
       "path_verified": false,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Path Consistency - Check pair/triple compatibility in the model.",
+      "learning_goal": "Inspect consistency across triples of variables.",
+      "mechanism": "Check pair/triple compatibility in the model.",
+      "evidence": "consistency events and remaining domains.",
+      "guarantee": "Educational consistency evidence.",
+      "academic_caveat": "Not a shortest-path solver.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 41109
+      "file_bytes": 107579
     },
     {
       "algorithm": "Random-Restart Hill Climbing",
@@ -1182,12 +1382,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Random-Restart Hill Climbing - Run multiple hill climbs from deterministic restart states.",
+      "learning_goal": "Use restarts to escape one bad local basin.",
+      "mechanism": "Run multiple hill climbs from deterministic restart states.",
+      "evidence": "restart index, best h(n) and selected trajectory.",
+      "guarantee": "Still not a complete 15-puzzle solver here.",
+      "academic_caveat": "More restarts improve chances but do not prove optimality.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 59597
+      "file_bytes": 122153
     },
     {
       "algorithm": "Searching for partially observable problems",
@@ -1244,12 +1454,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Searching for partially observable problems - Filter belief candidates using a known-tile matrix.",
+      "learning_goal": "Use known tile positions to reduce the belief set.",
+      "mechanism": "Filter belief candidates using a known-tile matrix.",
+      "evidence": "known positions, belief size, planner votes and fallback reason.",
+      "guarantee": "Can propose legal actions under partial knowledge.",
+      "academic_caveat": "With too few known tiles, the belief set can still be ambiguous.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 48794
+      "file_bytes": 116249
     },
     {
       "algorithm": "Searching with no observation",
@@ -1306,12 +1526,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Extension",
+      "caption": "Searching with no observation - Maintain a belief set when observations reveal no tile positions.",
+      "learning_goal": "Separate hidden actual state from belief-state decision making.",
+      "mechanism": "Maintain a belief set when observations reveal no tile positions.",
+      "evidence": "belief size, planner votes, fallback votes and action trace.",
+      "guarantee": "Demonstrates belief reasoning; not a standard full-observation solver.",
+      "academic_caveat": "Hidden state is shown only as debug evidence.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 42827
+      "file_bytes": 124784
     },
     {
       "algorithm": "Simple Hill Climbing",
@@ -1363,12 +1593,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Simple Hill Climbing - Scan neighbors and move to the first lower h(n).",
+      "learning_goal": "Watch the first improving candidate win or the search stop.",
+      "mechanism": "Scan neighbors and move to the first lower h(n).",
+      "evidence": "candidate h, selected action and stop reason.",
+      "guarantee": "No completeness or optimality guarantee.",
+      "academic_caveat": "Local optimum can stop the run far from the goal.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 55898
+      "file_bytes": 111474
     },
     {
       "algorithm": "Simulated Annealing",
@@ -1421,12 +1661,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Simulated Annealing - Temperature-controlled accept/reject over neighbors.",
+      "learning_goal": "Understand probabilistic acceptance of worse moves.",
+      "mechanism": "Temperature-controlled accept/reject over neighbors.",
+      "evidence": "temperature, probability, accepted flag and legal trajectory.",
+      "guarantee": "No certificate of reaching or optimizing the goal.",
+      "academic_caveat": "A legal trajectory is not automatically a solution.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 8,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 70085
+      "file_bytes": 160454
     },
     {
       "algorithm": "Steepest-Ascent Hill Climbing",
@@ -1478,12 +1728,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Steepest-Ascent Hill Climbing - Choose the neighbor with best h(n) decrease.",
+      "learning_goal": "Compare all local neighbors before moving.",
+      "mechanism": "Choose the neighbor with best h(n) decrease.",
+      "evidence": "evaluated candidates, best candidate and reject/accept reason.",
+      "guarantee": "No completeness or optimality guarantee.",
+      "academic_caveat": "Still local; evaluating every neighbor does not solve plateaus.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 54000
+      "file_bytes": 124000
     },
     {
       "algorithm": "Stochastic Hill Climbing",
@@ -1536,12 +1796,22 @@
       "path_verified": true,
       "goal_reached": false,
       "optimality_proven": false,
+      "role": "Contrast demo",
+      "caption": "Stochastic Hill Climbing - Sample one improving move using a fixed seed.",
+      "learning_goal": "See randomness among improving candidates.",
+      "mechanism": "Sample one improving move using a fixed seed.",
+      "evidence": "candidate pool, chosen action, seed and legal trajectory.",
+      "guarantee": "No deterministic optimality guarantee.",
+      "academic_caveat": "Different seeds can produce different partial trajectories.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 51362
+      "file_bytes": 126205
     },
     {
       "algorithm": "UCS",
@@ -1591,12 +1861,22 @@
       "path_verified": true,
       "goal_reached": true,
       "optimality_proven": true,
+      "role": "Standard solver",
+      "caption": "UCS - Priority queue ordered by cumulative path cost.",
+      "learning_goal": "Connect path cost g(n) to optimal search.",
+      "mechanism": "Priority queue ordered by cumulative path cost.",
+      "evidence": "g(n), frontier, reached and cost certificate.",
+      "guarantee": "Complete and optimal for non-negative costs.",
+      "academic_caveat": "On unit-cost 15-puzzle it behaves like BFS but keeps the general cost model explicit.",
+      "verified_at": "2026-06-27",
+      "profile": "algorithm",
+      "theme": "light",
       "frame_count": 6,
       "dimensions": [
-        800,
-        450
+        960,
+        540
       ],
-      "file_bytes": 46791
+      "file_bytes": 85593
     }
   ]
 }

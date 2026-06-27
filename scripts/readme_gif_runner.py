@@ -17,6 +17,7 @@ class DemoEvidence:
     spec: DemoSpec
     result: SearchResult | None
     states: list[tuple[int, ...]]
+    state_indices: list[int]
     actions: list[str]
     facts: list[str]
     termination: str
@@ -53,12 +54,13 @@ def run_demo(spec: DemoSpec) -> DemoEvidence:
     )
     result: SearchResult = fn(**kwargs)
     _assert_real_evidence(spec, result)
-    states = _select_states(spec, result)
+    states, state_indices = _select_states(spec, result)
     facts = _result_facts(result)
     return DemoEvidence(
         spec=spec,
         result=result,
         states=states,
+        state_indices=state_indices,
         actions=list(result.actions),
         facts=facts,
         termination=result.termination_reason,
@@ -85,24 +87,29 @@ def _assert_real_evidence(spec: DemoSpec, result: SearchResult) -> None:
         raise RuntimeError(f"{spec.algorithm} produced no visible evidence")
 
 
-def _select_states(spec: DemoSpec, result: SearchResult) -> list[tuple[int, ...]]:
+def _select_states(spec: DemoSpec, result: SearchResult) -> tuple[list[tuple[int, ...]], list[int]]:
     if result.path:
-        return _sample_sequence(result.path, 8)
+        max_count = 11 if spec.algorithm == "A*" and len(result.path) <= 11 else 8
+        return _sample_sequence(result.path, max_count)
     trace_states = [step.state for step in result.trace if _is_state(step.state)]
     if trace_states:
         return _sample_sequence([spec.start, *trace_states], 8)
-    return [spec.start, spec.goal, spec.start, spec.goal, spec.start, spec.goal]
+    states = [spec.start, spec.goal, spec.start, spec.goal, spec.start, spec.goal]
+    return states, list(range(len(states)))
 
 
-def _sample_sequence(states: list[tuple[int, ...]], max_count: int) -> list[tuple[int, ...]]:
+def _sample_sequence(states: list[tuple[int, ...]], max_count: int) -> tuple[list[tuple[int, ...]], list[int]]:
     if len(states) <= max_count:
         sample = list(states)
+        indices = list(range(len(states)))
     else:
         step = (len(states) - 1) / (max_count - 1)
-        sample = [states[round(index * step)] for index in range(max_count)]
+        indices = [round(index * step) for index in range(max_count)]
+        sample = [states[index] for index in indices]
     while len(sample) < 6:
         sample.append(sample[-1])
-    return sample[:10]
+        indices.append(indices[-1])
+    return sample[:11], indices[:11]
 
 
 def _is_state(value: object) -> bool:
@@ -150,6 +157,7 @@ def _run_tournament(spec: DemoSpec) -> DemoEvidence:
         spec=spec,
         result=None,
         states=states,
+        state_indices=list(range(len(states))),
         actions=[],
         facts=facts,
         termination="tournament_scored",

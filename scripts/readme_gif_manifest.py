@@ -8,7 +8,9 @@ from pathlib import Path
 
 from PIL import Image, ImageSequence
 
+from scripts.readme_gif_catalog import MEDIA_VERIFIED_AT
 from scripts.readme_gif_runner import DemoEvidence
+from scripts.readme_gif_styles import PROFILES
 from scripts.readme_gif_specs import FEATURED_SPECS, build_specs
 
 
@@ -28,6 +30,14 @@ def manifest_record(evidence: DemoEvidence, gif_meta: dict, path: Path) -> dict:
         "path_verified": evidence.path_verified,
         "goal_reached": evidence.goal_reached,
         "optimality_proven": evidence.optimality_proven,
+        "role": spec.role,
+        "caption": f"{spec.algorithm} - {spec.mechanism}",
+        "learning_goal": spec.learning_goal,
+        "mechanism": spec.mechanism,
+        "evidence": spec.evidence,
+        "guarantee": spec.guarantee,
+        "academic_caveat": spec.academic_caveat,
+        "verified_at": MEDIA_VERIFIED_AT,
         **gif_meta,
     }
 
@@ -56,6 +66,7 @@ def check_generated_assets(root: Path) -> None:
         path = root / record["path"]
         _check_gif(path, record)
     _check_docs_references(root)
+    _check_manifest_metadata(records)
 
 
 def _check_gif(path: Path, record: dict) -> None:
@@ -67,6 +78,9 @@ def _check_gif(path: Path, record: dict) -> None:
             raise AssertionError(f"{path} frame count changed")
         if list(image.size) != record["dimensions"]:
             raise AssertionError(f"{path} dimensions changed")
+        profile = PROFILES[record.get("profile", "algorithm")]
+        if list(image.size) != [profile.width, profile.height]:
+            raise AssertionError(f"{path} does not match {profile.name} profile")
     if path.stat().st_size != record["file_bytes"]:
         raise AssertionError(f"{path} file size changed")
     if record["file_bytes"] <= 0:
@@ -77,7 +91,7 @@ def _check_docs_references(root: Path) -> None:
     docs = [root / "README.md", root / "docs/algorithm-demo-gallery.md"]
     refs: set[Path] = set()
     display_refs: set[str] = set()
-    pattern = re.compile(r"\]\(((?:docs/)?assets/[^)]+\.gif)\)")
+    pattern = re.compile(r"(?:\]\(|src=\")((?:docs/)?assets/[^)\" ]+\.gif)")
     for doc in docs:
         if not doc.exists():
             raise FileNotFoundError(doc)
@@ -91,3 +105,16 @@ def _check_docs_references(root: Path) -> None:
     for ref in refs:
         if not ref.exists():
             raise FileNotFoundError(ref)
+
+
+def _check_manifest_metadata(records: list[dict]) -> None:
+    required = {
+        "profile", "theme", "caption", "learning_goal", "mechanism", "evidence",
+        "guarantee", "academic_caveat", "verified_at",
+    }
+    for record in records:
+        missing = [key for key in required if not record.get(key)]
+        if missing:
+            raise AssertionError(f"{record.get('algorithm')} missing manifest fields: {missing}")
+        if record["profile"] not in PROFILES:
+            raise AssertionError(f"Unknown render profile: {record['profile']}")

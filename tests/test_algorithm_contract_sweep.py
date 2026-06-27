@@ -44,6 +44,13 @@ from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS
 CUSTOM_GOAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 OPPOSITE_PARITY_GOAL = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
 PROVEN_OPTIMAL_ON_ONE_MOVE = {"BFS", "UCS", "IDS", "A*", "IDA*"}
+OPTIMAL_SWEEP_SOLVERS = (
+    ("BFS", bfs, {}),
+    ("UCS", ucs, {}),
+    ("IDS", ids, {"max_depth": 20}),
+    ("A*", a_star, {}),
+    ("IDA*", ida_star, {}),
+)
 _SOLVERS = (
     bfs, dfs, ucs, ids, greedy_best_first, a_star, ida_star,
     simple_hill_climbing, steepest_ascent_hill_climbing, stochastic_hill_climbing,
@@ -238,3 +245,28 @@ def test_ai_vs_ai_tournament_scores_only_verified_goal_paths():
         assert score.path_verified
         assert score.goal_reached
         assert score.status in {"optimal", "suboptimal"}
+
+
+@pytest.mark.parametrize("depth", range(0, 13))
+@pytest.mark.parametrize("name, solver, extra", OPTIMAL_SWEEP_SOLVERS)
+def test_optimal_solvers_replay_random_scrambles_depth_0_to_12(depth, name, solver, extra):
+    start = scramble(goal=GOAL_STATE, depth=depth, seed=9000 + depth)
+    kwargs = {
+        "goal": GOAL_STATE,
+        "timeout": 5,
+        "action_order": "LRUD",
+        "max_nodes": 50000,
+    }
+    if name == "IDS":
+        kwargs["max_depth"] = 24
+    kwargs.update(extra)
+
+    result = solver(start, **kwargs)
+
+    assert result.algorithm == name
+    assert result.goal_state == GOAL_STATE
+    assert result.success
+    assert result.path_verified
+    assert result.goal_reached
+    assert result.optimality_proven
+    _assert_legal_recorded_path(result, start)

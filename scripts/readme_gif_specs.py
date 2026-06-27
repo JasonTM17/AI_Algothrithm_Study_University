@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from core.puzzle import GOAL_STATE, TEACHING_PRESETS, scramble
+from scripts.readme_gif_catalog import DemoNote, note_for
 from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS
 
 
@@ -36,10 +37,39 @@ class DemoSpec:
     params: dict[str, object] = field(default_factory=dict)
     expects_goal_path: bool = False
     featured_slug: str | None = None
+    note: DemoNote | None = None
 
     @property
     def function_name(self) -> str:
         return ALGORITHM_FN_MAP[self.algorithm]
+
+    @property
+    def learning_goal(self) -> str:
+        return self._note.learning_goal
+
+    @property
+    def mechanism(self) -> str:
+        return self._note.mechanism
+
+    @property
+    def evidence(self) -> str:
+        return self._note.evidence
+
+    @property
+    def guarantee(self) -> str:
+        return self._note.guarantee
+
+    @property
+    def academic_caveat(self) -> str:
+        return self._note.academic_caveat
+
+    @property
+    def role(self) -> str:
+        return self._note.role
+
+    @property
+    def _note(self) -> DemoNote:
+        return self.note or note_for(self.algorithm)
 
 
 def slugify(name: str) -> str:
@@ -137,6 +167,7 @@ def _build_spec(algorithm: str, group: str) -> DemoSpec:
         params=params,
         expects_goal_path=expects_goal,
         featured_slug=featured,
+        note=note_for(algorithm),
     )
 
 
