@@ -235,7 +235,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
     dynamic_styles = []
     st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
     st.markdown('<div id="play-board" class="play-board-anchor"></div>', unsafe_allow_html=True)
-    with st.container():
+    with st.container(key=f"{key_prefix}_image_board"):
         for r in range(4):
             cols = st.columns(4, gap="small")
             for c in range(4):

@@ -38,7 +38,7 @@ from algorithms.informed import a_star, greedy_best_first, ida_star
 from algorithms.uninformed import bfs, dfs, ids, ucs
 from ui.localization import LOC
 from ui.academic_panels import EXAM_PATH_STEPS
-from ui.components import comparison_row_for_algorithm, render_clickable_board
+from ui.components import comparison_row_for_algorithm, render_clickable_board, render_image_board
 from ui.run_and_or_panel import run_algorithm_groups
 from ui.sample_images import SAMPLE_IMAGES
 from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, STYLES
@@ -459,6 +459,9 @@ def test_interactive_board_buttons_keep_tile_text_and_touch_stable():
     assert 'div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button' not in STYLES
     assert 'number-board-row' not in STYLES
     assert 'div[class*="number_board"] button' in STYLES
+    assert 'div[class*="image_board"] div[data-testid="stHorizontalBlock"]' in STYLES
+    assert 'grid-template-columns: repeat(4, minmax(0, 1fr))' in STYLES
+    assert 'key=f"{key_prefix}_image_board"' in inspect.getsource(render_image_board)
     assert 'row-0' not in STYLES
     assert 'tile-band-0' in STYLES
     assert 'tile-band-' in inspect.getsource(render_clickable_board)

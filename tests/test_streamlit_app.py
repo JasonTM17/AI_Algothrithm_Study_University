@@ -158,12 +158,16 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     assert app.button(key="btn_play_next")
     assert app.button(key="btn_play_auto")
 
-    assert app.session_state.play_solution_idx == len(app.session_state.play_solution_path) - 1
+    assert app.session_state.play_solution_idx == 0
+    assert app.session_state.play_state == app.session_state.play_solution_path[0]
+    assert app.session_state.play_auto_run is False
+    success_values = [getattr(success, "value", "") for success in app.success]
+    assert "AI Auto-solving complete!" not in success_values
+
+    app.button(key="btn_play_next").click().run()
+    assert app.session_state.play_solution_idx == 1
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_victory_message_key in VICTORY_MESSAGE_KEYS
-    success_values = [getattr(success, "value", "") for success in app.success]
-    assert "AI Auto-solving complete!" in success_values
-    assert "Replay reached the requested goal." in success_values
     assert not app.exception
 
 
@@ -206,6 +210,10 @@ def test_play_ai_replay_updates_the_main_image_board_step_by_step():
     assert "solution-step-mode-image" in markdown_text
     assert "puzzle-grid-mini-image" in markdown_text
     assert "solution-mini-image-tile" in markdown_text
+    assert app.session_state.play_solution_idx == 0
+    assert app.session_state.play_state == app.session_state.play_solution_path[0]
+
+    app.button(key="btn_play_next").click().run()
     assert app.session_state.play_solution_idx == 1
     assert app.session_state.play_state == app.session_state.play_solution_path[1]
     assert not app.exception
@@ -220,11 +228,21 @@ def test_play_auto_replay_advances_one_step_per_tick():
 
     app.button(key="btn_ai_solve").click().run()
     assert len(app.session_state.play_solution_path) == 3
+    assert app.session_state.play_solution_idx == 0
+    assert app.session_state.play_state == app.session_state.play_solution_path[0]
+    assert app.session_state.play_auto_run is False
+
+    app.button(key="btn_play_auto").click().run()
+    assert app.session_state.play_solution_idx == 0
+    assert app.session_state.play_state == app.session_state.play_solution_path[0]
+    assert app.session_state.play_auto_run is True
+
+    app.run()
     assert app.session_state.play_solution_idx == 1
     assert app.session_state.play_state == app.session_state.play_solution_path[1]
     assert app.session_state.play_auto_run is True
 
-    app.button(key="btn_play_auto").click().run()
+    app.run()
     assert app.session_state.play_solution_idx == 2
     assert app.session_state.play_state == app.session_state.play_solution_path[2]
     assert app.session_state.play_auto_run is False

@@ -982,6 +982,36 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
+div[class*="image_board"] {
+    width: min(100%, 620px) !important;
+    margin: 0 auto 6px !important;
+}
+
+div[class*="image_board"] div[data-testid="stHorizontalBlock"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: clamp(6px, 1vw, 10px) !important;
+    width: 100% !important;
+}
+
+div[class*="image_board"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: none !important;
+    align-self: stretch !important;
+}
+
+div[class*="image_board"] div[data-testid="stColumn"] > div,
+div[class*="image_board"] div[data-testid="stVerticalBlock"],
+div[class*="image_board"] div[data-testid="stElementContainer"],
+div[class*="image_board"] div[data-testid="stButton"],
+div[class*="image_board"] div[data-testid="stMarkdown"],
+div[class*="image_board"] div[data-testid="stMarkdownContainer"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 div[class*="number_board"] {
     margin: 0 0 6px !important;
 }
@@ -1863,6 +1893,12 @@ div[data-testid="stAlert"] {
     div[class*="number_board"] div[data-testid="stHorizontalBlock"] {
         width: min(100%, 296px) !important;
         gap: 6px !important;
+    }
+    div[class*="image_board"] {
+        width: min(100%, 366px) !important;
+    }
+    div[class*="image_board"] div[data-testid="stHorizontalBlock"] {
+        gap: 5px !important;
     }
     div[class*="number_board"] button,
     div[class*="number_board"] .puzzle-tile {

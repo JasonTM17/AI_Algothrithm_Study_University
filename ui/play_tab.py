@@ -108,6 +108,9 @@ def _store_ai_replay_result(result) -> None:
     st.session_state.play_solution_res = result
     st.session_state.play_solution_base_history = list(st.session_state.play_history)
     st.session_state.play_solution_base_moves = st.session_state.play_moves
+    st.session_state.play_auto_run = False
+    st.session_state.pop("play_auto_done_pending", None)
+    st.session_state.pop("play_auto_pending_first_tick", None)
     st.session_state.play_slider_version = st.session_state.get("play_slider_version", 0) + 1
 
 
@@ -132,7 +135,7 @@ def _apply_ai_replay_step(index: int) -> None:
     st.session_state.play_moves = base_moves + bounded_index
     if bounded_index > 0:
         st.session_state.play_assisted = True
-    if bounded_index >= len(path) - 1:
+    if bounded_index >= len(path) - 1 and st.session_state.get("play_auto_run", False):
         st.session_state["play_auto_done_pending"] = True
 
 
@@ -611,15 +614,7 @@ def _render_ai_solver_panel(t, goal) -> None:
                 if result.success:
                     _store_ai_replay_result(result)
                     st.session_state.play_ai_solved_steps_pending = len(result.actions)
-                    if len(result.path) > 1:
-                        _apply_ai_replay_step(1)
-                        if len(result.path) - 1 > 1:
-                            st.session_state.play_auto_run = True
-                            st.session_state.play_auto_pending_first_tick = True
-                        else:
-                            st.rerun()
-                    else:
-                        st.rerun()
+                    st.rerun()
                 else:
                     st.error(t("play_ai_error", error=result.message))
     with clear_col:
@@ -686,6 +681,7 @@ def _render_ai_solver_panel(t, goal) -> None:
             width="stretch",
         ):
             st.session_state.play_auto_run = True
+            st.session_state.play_auto_pending_first_tick = True
             st.rerun()
     with ctrl_col4:
         if st.button(
