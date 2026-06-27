@@ -59,11 +59,12 @@ def _record_local_children(
                 frontier_size=len(visible_neighbors),
                 frontier_states=child_states,
                 event=event,
-                reason=(
-                    f"{reason_prefix}: action={action}, h={child_h:.1f} "
-                    f"{comparison} current h={parent_h:.1f}"
-                    + ("; selected" if selected else "")
-                ),
+            reason=(
+                f"Evaluate candidate ({reason_prefix.removesuffix(' generated neighbor')}): "
+                f"action={action}, h={child_h:.1f} "
+                f"{comparison} current h={parent_h:.1f}"
+                + ("; selected" if selected else "")
+            ),
             )
         )
 

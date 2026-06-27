@@ -609,7 +609,9 @@ def partially_observable_search(
                     ),
                 ))
                 return SearchResult(
-                    success=True, algorithm="Partially Observable Search", group="Complex Environments",
+                    success=True,
+                    algorithm="Searching for partially observable problems",
+                    group="Complex Environments",
                     path=actual_path, actions=actual_actions, goal_state=goal,
                     cost=len(actual_actions), depth=len(actual_actions), random_seed=seed,
                     nodes_expanded=step + 1 + planned.nodes_expanded,

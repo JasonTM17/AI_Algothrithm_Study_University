@@ -569,7 +569,7 @@ def test_run_no_observation_uses_known_tile_belief_controls():
     app.session_state["main_tab_label"] = "Run Algorithm"
     app.run()
     app.selectbox(key="algo_group").set_value("Complex Environments").run()
-    app.selectbox(key="algo_name").set_value("No Observation Search").run()
+    app.selectbox(key="algo_name").set_value("Searching with no observation").run()
 
     known_matrix = app.text_area(key="no_observation_search_known_matrix")
     assert known_matrix.label == "Known tiles matrix"
@@ -588,7 +588,7 @@ def test_run_no_observation_uses_known_tile_belief_controls():
 
     result = app.session_state.last_result
     reasons = " ".join(step.reason for step in result.trace)
-    assert result.algorithm == "No Observation Search"
+    assert result.algorithm == "Searching with no observation"
     assert "known positions=2" in reasons
     assert "planner=BFS" in reasons
     assert not app.exception

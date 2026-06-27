@@ -179,8 +179,8 @@ def render_run_algorithm_tab(t=None) -> None:
             extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
         if algo_name == AND_OR_ALGORITHM:
             extra_params["nondet_prob"] = render_and_or_controls(tx)
-        if algo_name in {"No Observation Search", "Partially Observable Search"}:
-            default_known = 0 if algo_name == "No Observation Search" else 2
+        if algo_name in {NO_OBSERVATION_ALGORITHM, PARTIALLY_OBSERVABLE_ALGORITHM}:
+            default_known = 0 if algo_name == NO_OBSERVATION_ALGORITHM else 2
             known_positions, belief_input_error = render_known_positions_editor(
                 tx,
                 key=f"{selected_fn_name}_known_matrix",
