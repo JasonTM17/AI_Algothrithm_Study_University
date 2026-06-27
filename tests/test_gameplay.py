@@ -76,5 +76,7 @@ def test_malformed_challenge_goal_is_rejected_without_exception():
 
 
 def test_completed_score_cannot_beat_proven_optimum():
-    with pytest.raises(ValueError):
-        score_challenge(player_moves=0, optimal_moves=1)
+    result = score_challenge(player_moves=0, optimal_moves=1)
+    assert result.efficiency_percent == 100.0
+    assert result.is_optimal_play is True
+    assert result.gap == 0

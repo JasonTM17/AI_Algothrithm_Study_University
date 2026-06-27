@@ -31,11 +31,49 @@ def test_search_tree_renderer_has_no_legacy_trace_fallback():
     hand_tracing_source = (ROOT / "ui" / "hand_tracing.py").read_text(encoding="utf-8")
 
     assert "_render_legacy_search_trace" not in components_source
+    assert "def render_puzzle_with_image" not in components_source
+    assert "play-board-anchor" in components_source
     assert "search_tree_to_dot" in components_source
     assert 't("search_tree_caption")' in components_source
     assert "hand_trace_tree_dot" in hand_tracing_source
     assert "st.graphviz_chart" in hand_tracing_source
     assert "Compatibility for tree display" not in hand_tracing_source
+
+
+def test_result_message_is_escaped_before_html_render():
+    components_source = (ROOT / "ui" / "components.py").read_text(encoding="utf-8")
+
+    assert "safe_message = escape(str(result.message))" in components_source
+    assert "{result.message}</div>" not in components_source
+
+
+def test_search_tree_readable_view_has_legend_and_filters():
+    components_source = (ROOT / "ui" / "components.py").read_text(encoding="utf-8")
+
+    assert "search-tree-legend" in components_source
+    assert "search_tree_view_label" in components_source
+    assert "search_tree_view_neighborhood" in components_source
+    assert "search_tree_graphviz_evidence" in components_source
+
+
+def test_streamlit_theme_uses_public_keys_only():
+    config = (ROOT / ".streamlit" / "config.toml").read_text(encoding="utf-8")
+
+    assert 'primaryColor = "#7AA66A"' in config
+    assert 'secondaryBackgroundColor = "#18201A"' in config
+    assert 'textColor = "#F4F1E8"' in config
+    assert 'borderColor = "#4B5A4D"' in config
+    assert "showWidgetBorder = true" in config
+    assert "[theme.sidebar]" not in config
+    assert "widgetBackgroundColor" not in config
+    assert "widgetBorderColor" not in config
+    assert "skeletonBackgroundColor" not in config
+
+
+def test_streamlit_version_includes_sidebar_theme_fix():
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+
+    assert "streamlit==1.58.0" in requirements
 
 
 def test_advanced_mode_function_kwargs_match_app_dispatch():
@@ -87,8 +125,8 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
         max_iterations=50,
         seed=1,
     )
-    assert not min_conflicts_result.success
-    assert "not a 15-puzzle solution" in min_conflicts_result.message
+    assert min_conflicts_result.success
+    assert "NOT a sequence of legal 15-puzzle moves" in min_conflicts_result.message
 
     planning_result = backtracking_search(
         start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
@@ -188,4 +226,51 @@ def test_run_solver_solvability_guard_is_relative_to_goal():
     assert not blocked.success
     assert "not solvable" in blocked.message
     assert allowed.success
+
+
+def test_run_solver_preserves_zero_runtime_and_reports_goal():
+    from core.metrics import SearchResult
+    from core.puzzle import GOAL_STATE
+    from core.utils import run_solver
+
+    def instant_solver(start, goal, timeout=1.0):
+        return SearchResult(
+            success=True,
+            algorithm="Instant",
+            path=[start],
+            actions=[],
+            runtime=0.0,
+        )
+
+    result = run_solver(instant_solver, GOAL_STATE, timeout=1.0)
+
+    assert result.runtime == 0.0
+    assert result.goal_state == GOAL_STATE
+    assert result.path_verified
+    assert result.goal_reached
+
+
+def test_run_solver_error_results_report_requested_goal():
+    from core.puzzle import GOAL_STATE
+    from core.utils import run_solver
+
+    custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+
+    def failing_solver(start, goal, timeout=1.0):
+        raise TimeoutError
+
+    result = run_solver(failing_solver, custom_goal, goal=custom_goal, timeout=1.0)
+
+    assert not result.success
+    assert result.goal_state == custom_goal
+    assert result.termination_reason == "timeout"
+
+
+def test_app_image_sample_loading_is_explicit():
+    app_source = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    assert "on_sample_image_change" not in app_source
+    assert "on_change=on_sample" not in app_source
+    assert 'if __name__ == "__main__"' not in app_source
+    assert "btn_load_sample" in app_source
 

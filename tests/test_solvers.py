@@ -1,6 +1,9 @@
 """Tests for all solver algorithms."""
 
+import inspect
+
 import pytest
+import algorithms.uninformed as uninformed_module
 from core.puzzle import (
     GOAL_STATE,
     TEACHING_PRESETS,
@@ -70,6 +73,13 @@ class TestDFS:
         result = dfs(MEDIUM_STATE, max_depth=5, timeout=5)
         assert result is not None
 
+    def test_duplicate_policy_is_depth_aware(self):
+        source = inspect.getsource(uninformed_module.dfs)
+        assert "best_depth: dict" in source
+        assert "seen_states = {start}" not in source
+        assert "child.depth >= prev_depth" in source
+        assert "ancestor_states" in source
+
 
 class TestUCS:
     def test_solves_easy(self):
@@ -88,6 +98,45 @@ class TestIDS:
         # IDS should solve this easy state
         assert result.success is True
         assert_valid_solution(EASY_STATE, result)
+
+    @pytest.mark.parametrize(
+        ("kwargs", "termination_reason"),
+        [
+            ({"timeout": -1.0}, "timeout"),
+            ({"max_nodes": 0, "max_depth": 2}, "resource_limit"),
+            ({"max_depth": 0}, "depth_limit"),
+        ],
+    )
+    def test_failure_results_preserve_custom_goal(self, kwargs, termination_reason):
+        result = ids(GOAL_STATE, goal=ONE_MOVE_CUSTOM_GOAL, **kwargs)
+
+        assert not result.success
+        assert result.algorithm == "IDS"
+        assert result.group == "Uninformed Search"
+        assert result.goal_state == ONE_MOVE_CUSTOM_GOAL
+        assert result.termination_reason == termination_reason
+
+
+class TestPathValidation:
+    @pytest.mark.parametrize(
+        ("start", "goal"),
+        [
+            ((1, 2, 3), GOAL_STATE),
+            (GOAL_STATE, (1, 2, 3)),
+        ],
+    )
+    def test_validate_path_rejects_invalid_boundary_states(self, start, goal):
+        valid, message, final_state = validate_path(start, [], goal=goal)
+
+        assert not valid
+        assert "state" in message.lower()
+        assert final_state is None
+
+    def test_validate_solution_path_rejects_invalid_recorded_state(self):
+        valid, message = validate_solution_path([(1, 2, 3)], [], goal=GOAL_STATE)
+
+        assert not valid
+        assert "state" in message.lower()
 
 
 class TestGreedyBestFirst:
@@ -130,6 +179,14 @@ class TestIDAStar:
         result = ida_star(EASY_STATE, timeout=10)
         assert result.is_optimal is True
 
+    def test_reached_size_tracks_best_g_not_recursion_stack(self):
+        result = ida_star(EASY_STATE, timeout=10)
+        reached_sizes = [step.reached_size for step in result.trace if step.reached_size]
+
+        assert reached_sizes
+        assert max(reached_sizes) >= 2
+        assert result.reached_size >= max(reached_sizes)
+
 
 class TestHillClimbing:
     def test_simple_returns_result(self):
@@ -149,6 +206,16 @@ class TestHillClimbing:
     def test_random_restart_returns_result(self):
         result = random_restart_hill_climbing(EASY_STATE, timeout=10, seed=42)
         assert result.algorithm == "Random-Restart Hill Climbing"
+
+    def test_random_restart_exposes_random_trial_path_before_hill_climb(self):
+        result = random_restart_hill_climbing(
+            EASY_STATE,
+            max_iterations=1,
+            max_restarts=2,
+            timeout=10,
+            seed=42,
+        )
+        assert any("random-walk probe" in step.reason for step in result.trace)
 
     def test_beam_search_returns_result(self):
         result = local_beam_search(EASY_STATE, beam_width=3, timeout=10)
@@ -213,6 +280,9 @@ class TestMinimax:
     def test_has_game_tree(self):
         result = minimax(EASY_STATE, depth=2, timeout=10)
         assert result.message is not None
+        assert "MIN branch models worst-case legal continuations" in result.message
+        assert "not a real opponent" in result.message
+        assert "tries to obstruct" not in result.message
 
 
 class TestAlphaBeta:
@@ -225,6 +295,11 @@ class TestAlphaBeta:
         result_mm = minimax(EASY_STATE, depth=2, timeout=10)
         result_ab = alpha_beta_pruning(EASY_STATE, depth=2, timeout=10)
         assert result_ab.nodes_expanded <= result_mm.nodes_expanded
+
+    def test_message_preserves_minimax_value_under_worst_case_tree(self):
+        result = alpha_beta_pruning(EASY_STATE, depth=2, timeout=10)
+        assert "same fully searched worst-case tree" in result.message
+        assert "not a real opponent" in result.message
 
 
 class TestExpectimax:
@@ -241,6 +316,8 @@ class TestExpectimax:
         if result.trace:
             probs = [s.probability for s in result.trace if s.probability is not None]
             assert len(probs) > 0
+        assert "EXPECTED outcome with CHANCE nodes" in result.message
+        assert "WORST-CASE legal continuations" in result.message
 
     def test_seed_replays_the_same_sampled_outcome_path(self):
         first = expectimax(EASY_STATE, depth=2, success_prob=0.5, timeout=10, seed=123)
@@ -437,6 +514,23 @@ def test_simulated_annealing_keeps_the_original_path_prefix():
     )
     assert result.path[0] == EASY_STATE
     assert len(result.path) == len(result.actions) + 1
+
+
+@pytest.mark.parametrize(
+    "solver, kwargs",
+    [
+        (simple_hill_climbing, {"max_iterations": 2}),
+        (steepest_ascent_hill_climbing, {"max_iterations": 2}),
+        (stochastic_hill_climbing, {"max_iterations": 2, "seed": 7}),
+        (simulated_annealing, {"max_iterations": 2, "seed": 7}),
+    ],
+)
+def test_local_search_trace_exposes_each_evaluated_candidate(solver, kwargs):
+    result = solver(EASY_STATE, timeout=5, **kwargs)
+    reasons = " ".join(step.reason for step in result.trace)
+
+    assert "Evaluate candidate" in reasons
+    assert "selected" in reasons or "accepted" in reasons or "rejected" in reasons
 
 
 def test_local_beam_failure_keeps_best_legal_partial_trajectory():

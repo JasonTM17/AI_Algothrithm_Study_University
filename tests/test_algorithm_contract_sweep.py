@@ -35,7 +35,7 @@ from algorithms.uninformed import bfs, dfs, ids, ucs
 from core.academic import ALGORITHM_TAXONOMY
 from core.ai_vs_ai_tournament import TournamentAgentConfig, run_ai_vs_ai_tournament
 from core.metrics import SearchResult
-from core.puzzle import GOAL_STATE, _move_blank
+from core.puzzle import GOAL_STATE, _move_blank, scramble
 from core.randomness import RANDOMIZED_SOLVERS
 from core.solver_dispatch import build_solver_kwargs
 from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS
@@ -155,6 +155,50 @@ def test_every_displayed_solver_reports_requested_goal_and_safe_certificate(
         assert not result.optimality_proven
     if fn_name in RANDOMIZED_SOLVERS:
         assert result.random_seed == 123
+
+
+@pytest.mark.parametrize("depth", range(1, 6))
+@pytest.mark.parametrize("display_name, fn_name", _displayed_solver_cases())
+def test_algorithm_contract_sweep_on_shallow_scrambles(
+    display_name: str,
+    fn_name: str,
+    depth: int,
+):
+    start = scramble(goal=GOAL_STATE, depth=depth, seed=4100 + depth)
+    result = _call_from_dispatch(fn_name, start, GOAL_STATE)
+
+    assert isinstance(result, SearchResult), display_name
+    assert result.algorithm == display_name
+    assert result.goal_state == GOAL_STATE
+    assert result.runtime >= 0
+    if result.path:
+        _assert_legal_recorded_path(result, start)
+    else:
+        assert not result.path_verified
+        assert not result.goal_reached
+    if result.success and result.termination_reason == "goal":
+        assert result.path_verified
+        assert result.goal_reached
+
+
+@pytest.mark.parametrize(
+    "solver, kwargs",
+    [
+        (simulated_annealing, {"max_iterations": 1, "seed": 17}),
+        (
+            no_observation_search,
+            {"num_belief_states": 1, "max_steps": 1, "seed": 17},
+        ),
+    ],
+)
+def test_legal_non_goal_trajectory_is_not_certified_as_a_solution(solver, kwargs):
+    start = scramble(goal=GOAL_STATE, depth=5, seed=5521)
+    result = solver(start, goal=GOAL_STATE, timeout=2, **kwargs)
+
+    assert not result.success
+    assert result.path_verified
+    assert not result.goal_reached
+    _assert_legal_recorded_path(result, start)
 
 
 @pytest.mark.parametrize("solver, kwargs", [

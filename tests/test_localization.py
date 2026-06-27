@@ -54,6 +54,28 @@ def test_localization_keys_match_between_languages():
     assert resolve_language("\u0054\u0069\u00e1\u00ba\u00bf\u006e\u0067\u0020\u0056\u0069\u00e1\u00bb\u2021\u0074") == VIETNAMESE
 
 
+def test_and_or_support_control_is_not_described_as_probability():
+    assert LOC["English"]["adv_nondet_prob"] == "Deflection outcome support"
+    assert "probability" not in LOC["English"]["adv_nondet_prob"].lower()
+    assert "xác suất" not in LOC[VIETNAMESE]["adv_nondet_prob"].lower()
+
+
+def test_localization_source_has_no_duplicate_language_keys():
+    source = Path("ui/localization.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    loc_assignment = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.AnnAssign)
+        and isinstance(node.target, ast.Name)
+        and node.target.id == "LOC"
+    )
+
+    for language_dict in loc_assignment.value.values:
+        keys = [ast.literal_eval(key) for key in language_dict.keys]
+        assert len(keys) == len(set(keys))
+
+
 def test_ui_source_has_no_legacy_mojibake_markers():
     for path in [Path("app.py"), *Path("ui").glob("*.py")]:
         source = path.read_text(encoding="utf-8-sig")

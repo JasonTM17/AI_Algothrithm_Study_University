@@ -67,3 +67,15 @@ def test_ai_vs_ai_tournament_theory_text_is_clean_and_keeps_terms():
     assert "benchmark" in joined.lower()
     for marker in MOJIBAKE_MARKERS:
         assert marker not in joined
+
+
+def test_docs_track_current_ui_evidence_surfaces():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    codebase_summary = Path("docs/codebase-summary.md").read_text(encoding="utf-8")
+    architecture = Path("docs/system-architecture.md").read_text(encoding="utf-8")
+
+    assert "Search Tree có readable view" in readme
+    assert "ui/belief_controls.py" in codebase_summary
+    assert "docs/assets/" in codebase_summary
+    assert "readable tree" in architecture
+    assert "Graphviz evidence" in architecture

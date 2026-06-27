@@ -1,5 +1,8 @@
 """Regression tests for academic presentation data."""
 
+import inspect
+from pathlib import Path
+
 from core.academic import (
     ALGORITHM_TAXONOMY,
     ILLUSTRATIVE_EXTENSION,
@@ -32,12 +35,13 @@ from core.theory import THEORY
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
 from algorithms.informed import a_star, greedy_best_first, ida_star
-from algorithms.uninformed import bfs, ids, ucs
+from algorithms.uninformed import bfs, dfs, ids, ucs
 from ui.localization import LOC
 from ui.academic_panels import EXAM_PATH_STEPS
-from ui.components import comparison_row_for_algorithm
+from ui.components import comparison_row_for_algorithm, render_clickable_board
+from ui.run_and_or_panel import run_algorithm_groups
 from ui.sample_images import SAMPLE_IMAGES
-from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, SOLVER_GROUPS, STYLES
+from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, STYLES
 
 
 def test_taxonomy_covers_all_displayed_algorithms():
@@ -72,6 +76,77 @@ def test_run_evaluation_table_uses_exact_display_algorithm_names():
         row = comparison_row_for_algorithm(algorithm)
         assert row is not None
         assert row["Algorithm"] == algorithm
+
+
+def test_priority_search_sources_match_academic_contracts():
+    dfs_source = inspect.getsource(dfs)
+    greedy_source = inspect.getsource(greedy_best_first)
+    a_star_source = inspect.getsource(a_star)
+    ucs_source = inspect.getsource(ucs)
+
+    assert "best_depth: dict" in dfs_source
+    assert "child.depth >= prev_depth" in dfs_source
+    assert "seen_states = {start}" not in dfs_source
+    assert "reject_cycle" in dfs_source
+    assert "reject_duplicate" not in dfs_source
+    assert "reached = {start}" not in dfs_source
+    assert "child.g < reached" not in greedy_source
+    assert "best_h: dict[tuple[int, ...], float] = {start: start_h}" in greedy_source
+    assert "sorted(frontier)" not in greedy_source
+    assert "sorted(frontier)" not in a_star_source
+    assert "sorted(frontier)" not in ucs_source
+
+
+def test_theory_pseudocode_matches_depth_and_heuristic_duplicate_policies():
+    assert "best_depth" in THEORY["DFS"]["pseudocode_en"]
+    assert "ancestor" in THEORY["DFS"]["pseudocode_en"].lower()
+    assert "best_h" in THEORY["Greedy"]["pseudocode_en"]
+    assert "Reached set" not in THEORY["Greedy"]["pseudocode_en"]
+
+
+def test_academic_docs_do_not_restore_stale_search_or_adversary_wording():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    reference = Path("docs/algorithm-groups-academic-reference.md").read_text(encoding="utf-8")
+    combined = f"{readme}\n{reference}"
+
+    assert "code có reached set" not in combined
+    assert "MIN làm xấu utility" not in combined
+    assert "MIN không phải đối thủ thật" in combined
+    assert "binary support switch" in reference
+
+
+def test_extension_theory_has_real_english_learning_fields():
+    fields = tuple(
+        f"{field}_en"
+        for field in (
+            "goal", "idea", "data_structure", "formula", "pseudocode", "application",
+            "suitable", "pros", "cons", "complexity", "bad_example", "comparison",
+            "exam_tips",
+        )
+    )
+    algorithms = [
+        "Simple HC", "Steepest Ascent HC", "Stochastic HC", "Random-Restart HC",
+        "Local Beam Search", "Simulated Annealing", "AND-OR", "No Observation",
+        "Partially Observable", "LRTA*", "CSP Definition", "Constraint Propagation",
+        "Path Consistency", "Global Constraints", "Backtracking Search", "Min-Conflicts",
+        "Constraint Graphs",
+    ]
+    vietnamese_letters = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
+
+    for algorithm in algorithms:
+        for field in fields:
+            value = THEORY[algorithm].get(field, "")
+            assert value, f"{algorithm} is missing {field}"
+            text = " ".join(value) if isinstance(value, list) else value
+            assert not vietnamese_letters.intersection(text.lower()), (algorithm, field, text)
+
+
+def test_ui_styles_keep_required_markers_without_duplicate_blocks():
+    assert STYLES.count('div[data-testid="stSelectbox"] label p {') == 1
+    assert STYLES.count(".ai-contract-grid {") == 2  # desktop + mobile override
+    assert STYLES.count(".search-tree-readable-summary {") == 2  # desktop + mobile override
+    assert STYLES.count("/* Prevent grey out/dimming of stale elements during script rerun/autoplay */") == 1
+    assert "interactive-board-container-image" in STYLES
 
 
 def test_syllabus_coverage_matrix_covers_uploaded_screenshot_topics():
@@ -150,13 +225,29 @@ def test_csp_backtracking_label_does_not_claim_mrv_lcv():
     assert "MRV+LCV" not in " ".join(str(row) for row in COMPARISON_TABLE)
 
 
-def test_standard_solver_pages_exclude_extension_environment_models():
-    displayed = {name for names in SOLVER_GROUPS.values() for name in names}
+def test_run_selector_exposes_full_academic_taxonomy_with_extension_caveats():
+    groups = run_algorithm_groups(lambda key, **kwargs: key)
+    displayed = {name for names in groups.values() for name in names}
+
+    assert groups == ALGORITHM_GROUPS
+    assert list(groups) == [
+        "Uninformed Search",
+        "Informed Search",
+        "Local Search",
+        "Complex Environments",
+        "CSP",
+        "AI-vs-AI Tournament",
+    ]
     assert "A*" in displayed
-    assert "Minimax" not in displayed
-    assert "AI-vs-AI Tournament" not in displayed
-    assert "Min-Conflicts" not in displayed
-    assert "AND-OR Search" not in displayed
+    assert "Minimax" in displayed
+    assert "AI-vs-AI Tournament" in displayed
+    assert "Min-Conflicts" in displayed
+    assert "AND-OR Search" in displayed
+    for algorithm in ["Minimax", "AI-vs-AI Tournament", "Min-Conflicts", "AND-OR Search"]:
+        assert ALGORITHM_TAXONOMY[algorithm].role in {
+            ILLUSTRATIVE_EXTENSION,
+            STOCHASTIC_GAME_DEMO,
+        }
 
 
 def test_real_solvers_are_limited_to_standard_search_algorithms():
@@ -357,7 +448,7 @@ def test_interactive_board_buttons_keep_tile_text_and_touch_stable():
         'touch-action: pan-y pinch-zoom',
         'will-change: transform, box-shadow',
         '@media (hover: none)',
-        'border-bottom-color: #503720',
+        'border-bottom-color: #3d3024',
     ]
 
     for token in required_tokens:
@@ -366,6 +457,15 @@ def test_interactive_board_buttons_keep_tile_text_and_touch_stable():
     assert 'border-bottom: 2px solid #503720' not in STYLES
     assert 'border-right: 2px solid #503720' not in STYLES
     assert 'div[data-testid="stVerticalBlock"]:has(.interactive-board-container-image) button' not in STYLES
+    assert 'number-board-row' not in STYLES
+    assert 'div[class*="number_board"] button' in STYLES
+    assert 'row-0' not in STYLES
+    assert 'tile-band-0' in STYLES
+    assert 'tile-band-' in inspect.getsource(render_clickable_board)
+    assert '#b8793e' not in STYLES
+    assert '#5f705c' not in STYLES
+    assert '#242a27' not in STYLES
+    assert 'palette = {' not in inspect.getsource(render_clickable_board)
 
 
 def test_play_title_compaction_keeps_semantic_heading_accessible():
@@ -405,15 +505,22 @@ def test_academic_grading_report_contains_required_sections():
 def test_game_tree_theory_states_resource_bound_caveats():
     alpha_beta = THEORY["Alpha-Beta"]
     minimax = THEORY["Minimax"]
+    expectimax = THEORY["Expectimax"]
     combined_alpha_beta_text = " ".join(
         str(value) for value in alpha_beta.values()
     )
+    combined_minimax_text = " ".join(str(value) for value in minimax.values())
 
     assert "fully searched" in alpha_beta["comparison_en"]
     assert "timeout" in alpha_beta["comparison_en"]
     assert "finite game tree is searched completely" in minimax["pros_en"][0]
+    assert "worst-case robustness" in minimax["transferable_concept_en"]
+    assert "Branch-and-bound pruning" in alpha_beta["transferable_concept_en"]
+    assert "Expected value under uncertainty" in expectimax["transferable_concept_en"]
+    assert "adversary trying to move MAX away from the goal" not in combined_minimax_text
+    assert "worst-case branch" in combined_minimax_text
     assert "Yields IDENTICAL results" not in combined_alpha_beta_text
-    assert "Complete with evaluation function" not in " ".join(str(value) for value in minimax.values())
+    assert "Complete with evaluation function" not in combined_minimax_text
 
 
 def test_primary_labels_do_not_use_decorative_emoji():
