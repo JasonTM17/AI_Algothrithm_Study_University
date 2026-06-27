@@ -1,52 +1,50 @@
-# Roadmap dự án
+# Roadmap Dự Án
 
-## Trạng thái hiện tại
+## Trạng Thái Hiện Tại
 
-Dự án đã có một web app Streamlit đầy đủ cho bài thi AI: Play, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory và Advanced. Các contract quan trọng đã có test: puzzle validity, heuristic, solver, custom goal, search tree evidence, CSP AC-3, Tournament, localization, text quality và Streamlit AppTest.
+App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory và Advanced. Contract học thuật hiện tại:
 
-## Ưu tiên ngắn hạn
+- 6 nhóm / 28 thuật toán.
+- Puzzle số và puzzle ảnh replay theo state thật.
+- Search tree có readable view và Graphviz evidence.
+- Belief-state UI có known-tile matrix.
+- Group 6 dùng framing worst-case robustness/chance.
+- README có 7 GIF nổi bật, gallery có 28 GIF và manifest semantic.
+
+## Ưu Tiên Ngắn Hạn
 
 | Ưu tiên | Việc cần làm | Lý do |
 |---|---|---|
-| P0 | Giữ tài liệu tiếng Việt có dấu, đúng code hiện tại. | Đây là bề mặt chấm bài và onboarding chính. |
-| P0 | Chạy full test suite trước release. | Solver/certificate sai sẽ phá tính đúng học thuật. |
-| P1 | Rà lại UI mobile cho board, trace và table. | Lớp học có thể dùng màn hình nhỏ. |
-| P1 | Chuẩn hóa thêm copy localization còn sót trong UI. | Tránh hardcoded text và lỗi mã hóa. |
-| P1 | Tối ưu presentation của trace lớn. | Trace là evidence chính nhưng có thể nặng trên puzzle sâu. |
+| P0 | Giữ full suite và GIF manifest check xanh trước release. | Solver/certificate/media sai sẽ làm mất độ tin cậy học thuật. |
+| P0 | Không để wording cũ quay lại: probability/adversary/solver chuẩn sai ngữ cảnh. | Người học dễ hiểu sai PEAS. |
+| P1 | Tiếp tục kiểm visual Play/Run trên mobile. | Board, trace và tree là phần người dùng nhìn nhiều nhất. |
+| P1 | Giữ tile number palette trung tính, stable by value. | Tránh cảm giác rối màu, thiếu chuyên nghiệp. |
 
-## Cải tiến trung hạn
+## Nợ Kỹ Thuật Được Ghi Nhận
 
-| Hạng mục | Mô tả | Điều kiện chấp nhận |
+| File | Nợ | Hướng xử lý |
 |---|---|---|
-| Benchmark presets rõ hơn | Thêm preset theo độ sâu và mục tiêu học thuật. | Mỗi preset ghi seed, expected difficulty và thuật toán khuyến nghị. |
-| Report bảo vệ tốt hơn | Mở rộng grading report với bảng kết quả Compare/Tournament. | Report download được, không claim quá mức. |
-| Documentation index | Thêm trang index nếu số lượng docs tiếp tục tăng. | Link nội bộ kiểm tra được, không trùng nội dung README. |
-| UI trace filtering | Lọc event goal/generate/reject và node id. | Không đổi `TraceStep` contract nếu không cần. |
-| Accessibility pass | Kiểm tra keyboard focus, contrast và responsive table. | AppTest hoặc kiểm tra thủ công ghi lại trong test plan. |
+| `ui/styles.py` | CSS lớn. | Tách theo tab/component khi có vòng UI refactor riêng. |
+| `ui/components.py` | Board, trace, tree, cards cùng một file. | Tách renderer board/tree nếu cần sửa lớn. |
+| `ui/play_tab.py` | Replay, scoring, image setup cùng module. | Tách state/replay helpers khi thêm mode mới. |
+| `ui/localization.py` | Dictionary lớn. | Có thể tách namespace hoặc JSON khi copy tăng thêm. |
+| `algorithms/complex_env.py` | Nhiều model giáo dục trong cùng file. | Chỉ tách khi signature và tests đủ ổn. |
 
-## Cải tiến dài hạn
+## Cải Tiến Trung Hạn
 
-| Hạng mục | Ghi chú |
+| Hạng mục | Điều kiện chấp nhận |
 |---|---|
-| Solver nâng cao | Pattern database hoặc stronger heuristic chỉ nên thêm khi có test optimality/certificate đủ. |
-| Larger puzzle variants | Chỉ mở rộng nếu tách rõ state contract khỏi 4x4 hiện tại. |
-| Export artifact | Có thể xuất report HTML/PDF, nhưng không thay web app làm sản phẩm chính. |
-| Docs site | Mintlify hoặc static docs chỉ cần khi README/docs hiện tại quá dài cho người chấm. |
+| Better trace filtering | Lọc generate/select/reject/prune không đổi `TraceStep` contract nếu chưa cần. |
+| Report export nâng cao | Xuất Compare/Tournament evidence vào HTML/PDF, không claim quá mức. |
+| Stronger heuristic | Chỉ thêm pattern database hoặc heuristic mới khi có optimality corpus và docs caveat. |
+| Accessibility pass | Keyboard focus, contrast, responsive tables được kiểm AppTest/manual. |
 
-## Rủi ro cần quản lý
-
-- Gọi extension là solver chuẩn làm sai PEAS.
-- Claim optimality khi run bị timeout hoặc node cap.
-- So sánh node count giữa các họ thuật toán như cùng một đơn vị tuyệt đối.
-- Dùng runtime để phân thắng thua khi hai path có cùng chất lượng.
-- Sửa UI text nhưng không cập nhật localization/test.
-- Tài liệu không dấu hoặc lỗi mã hóa làm giảm độ tin cậy khi bảo vệ.
-
-## Definition of done cho release
+## Definition Of Done Cho Release
 
 ```bash
-python -m compileall -q app.py core algorithms ui
-python -m pytest tests -q
+python -m compileall -q app.py core algorithms ui scripts
+python scripts/generate-readme-gifs.py --check
+python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65
 ```
 
-Ngoài test, kiểm tra thủ công các tab Play, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory và Advanced trên một board nông để bảo đảm app trình bày đúng certificate và caveat.
+Sau đó smoke thủ công các tab Play, Run Algorithm, Theory và Advanced trên desktop/mobile.

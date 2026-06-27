@@ -16,7 +16,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-dev.txt
-      - run: python -m compileall -q app.py core algorithms ui
+      - run: python -m compileall -q app.py core algorithms ui scripts
+      - run: python scripts/generate-readme-gifs.py --check
       - run: python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65
       - name: Streamlit health smoke test
         shell: bash

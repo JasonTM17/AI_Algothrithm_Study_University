@@ -156,6 +156,42 @@ def test_no_observation_reconstructs_belief_from_known_tiles_and_group_planner()
     assert result.random_seed == 123
 
 
+def test_belief_planner_trace_reports_successful_planner_votes():
+    result = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        seed=123,
+        belief_planner="BFS",
+    )
+
+    reasons = " ".join(step.reason for step in result.trace)
+    assert "planner_votes=" in reasons
+    assert "fallback_votes={'L': 0, 'R': 0, 'U': 0, 'D': 0}" in reasons
+    assert "fallback_reason=none" in reasons
+
+
+def test_belief_planner_trace_reports_exception_fallback(monkeypatch):
+    def broken_bfs(*args, **kwargs):
+        raise RuntimeError("test planner failure")
+
+    monkeypatch.setattr("algorithms.uninformed.bfs", broken_bfs)
+    result = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        seed=123,
+        belief_planner="BFS",
+    )
+
+    reasons = " ".join(step.reason for step in result.trace)
+    assert "planner_votes={'L': 0, 'R': 0, 'U': 0, 'D': 0}" in reasons
+    assert "fallback_votes=" in reasons
+    assert "fallback_reason=planner=BFS raised RuntimeError" in reasons
+
+
 def test_partially_observable_search_returns_certified_actual_trajectory():
     result = partially_observable_search(
         ONE_MOVE,

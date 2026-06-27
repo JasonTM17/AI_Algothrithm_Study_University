@@ -127,7 +127,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
 
 
 def _number_tile_button_style(button_key: str) -> str:
-    top, bottom, text, border = ("#d9c6a6", "#9b8466", "#17130f", "#51402f")
+    top, bottom, text, border = ("#b8b5a6", "#898b7f", "#111411", "#474d43")
     button_scope = f"div.st-key-{button_key} button"
     return f"""
     {button_scope} {{

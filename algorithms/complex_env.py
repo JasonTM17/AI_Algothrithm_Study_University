@@ -6,6 +6,7 @@ These algorithms are modeled as extended versions for academic illustration.
 
 import time
 import random
+from dataclasses import dataclass
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable, scramble
 from core.heuristics import get_heuristic
@@ -13,6 +14,15 @@ from core.metrics import SearchResult, TraceStep
 
 
 BELIEF_PLANNERS = ("BFS", "A* Search", "Stochastic Hill Climbing")
+
+
+@dataclass(frozen=True)
+class _PlannerProposal:
+    action: str | None
+    requested_planner: str
+    used_planner: str
+    used_fallback: bool
+    reason: str
 
 
 def parse_known_positions_matrix(text: str) -> dict[int, int]:
@@ -164,11 +174,12 @@ def _first_planned_action(
     h_fn,
     *,
     seed: int | None = None,
-) -> str | None:
+) -> _PlannerProposal:
     """Use a group 1/2/3 algorithm to propose the first action from a belief state."""
     if state == goal:
-        return None
+        return _PlannerProposal(None, planner, planner, False, "state already matches goal")
     planner_name = planner if planner in BELIEF_PLANNERS else "A* Search"
+    normalized_fallback = planner_name != planner
     try:
         if planner_name == "BFS":
             from algorithms.uninformed import bfs
@@ -186,10 +197,28 @@ def _first_planned_action(
                 max_nodes=6000, timeout=0.25, action_order=action_order,
             )
         if result.actions:
-            return result.actions[0]
-    except Exception:
-        pass
-    return _best_heuristic_action(state, goal, action_order, h_fn)
+            reason = (
+                f"unsupported planner={planner}; normalized to A* Search"
+                if normalized_fallback
+                else f"planner={planner_name} returned a planned action"
+            )
+            return _PlannerProposal(
+                result.actions[0], planner, planner_name, normalized_fallback, reason,
+            )
+        fallback_reason = (
+            f"planner={planner_name} returned no action "
+            f"(termination={result.termination_reason or 'unknown'})"
+        )
+    except Exception as exc:
+        fallback_reason = f"planner={planner_name} raised {type(exc).__name__}"
+
+    return _PlannerProposal(
+        _best_heuristic_action(state, goal, action_order, h_fn),
+        planner,
+        "Greedy heuristic fallback",
+        True,
+        fallback_reason,
+    )
 
 
 def _choose_belief_action(
@@ -202,13 +231,21 @@ def _choose_belief_action(
     seed: int | None = None,
 ) -> tuple[str | None, str]:
     votes = {action: 0 for action in action_order}
+    planner_votes = {action: 0 for action in action_order}
+    fallback_votes = {action: 0 for action in action_order}
+    fallback_reasons: list[str] = []
     for idx, state in enumerate(sorted(belief)):
-        action = _first_planned_action(
+        proposal = _first_planned_action(
             state, goal, planner, action_order, h_fn,
             seed=None if seed is None else seed + idx,
         )
+        action = proposal.action
         if action in votes:
             votes[action] += 1
+            vote_bucket = fallback_votes if proposal.used_fallback else planner_votes
+            vote_bucket[action] += 1
+        if proposal.used_fallback and proposal.reason not in fallback_reasons:
+            fallback_reasons.append(proposal.reason)
 
     scored: list[tuple[int, float, int, str]] = []
     for order_idx, action in enumerate(action_order):
@@ -216,10 +253,21 @@ def _choose_belief_action(
         avg_h = sum(h_fn(state) for state in next_states) / max(1, len(next_states))
         scored.append((-votes[action], avg_h, order_idx, action))
     if not scored:
-        return None, f"No legal belief action; planner={planner}"
+        return None, (
+            f"No legal belief action; planner={planner}, planner_votes={planner_votes}, "
+            f"fallback_votes={fallback_votes}"
+        )
     scored.sort()
     action = scored[0][3]
-    return action, f"planner={planner}, votes={votes}, avg_h={scored[0][1]:.1f}"
+    fallback_note = (
+        f", fallback_reason={' | '.join(fallback_reasons[:3])}"
+        if fallback_reasons else ", fallback_reason=none"
+    )
+    return action, (
+        f"planner={planner}, votes={votes}, planner_votes={planner_votes}, "
+        f"fallback_votes={fallback_votes}, avg_h={scored[0][1]:.1f}"
+        f"{fallback_note}"
+    )
 
 
 def and_or_search(

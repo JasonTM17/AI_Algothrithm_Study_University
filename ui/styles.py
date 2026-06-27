@@ -613,17 +613,20 @@ button:disabled {
 .puzzle-tile.tile-band-1,
 .puzzle-tile.tile-band-2,
 .puzzle-tile.tile-band-3 {
-    background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
-    color: #17130f !important;
+    background: linear-gradient(145deg, #b8b5a6, #898b7f) !important;
+    color: #111411 !important;
     box-shadow:
         0 5px 12px rgba(4,7,6,0.48),
-        inset 0 1px 0 rgba(255,255,255,0.30);
-    border-top: 1px solid rgba(255,255,255,0.26) !important;
-    border-left: 1px solid rgba(255,255,255,0.11) !important;
-    border-bottom: 4px solid #51402f !important;
-    border-right: 4px solid #51402f !important;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.18) !important;
+        inset 0 1px 0 rgba(255,255,255,0.22);
+    border-top: 1px solid rgba(255,255,255,0.18) !important;
+    border-left: 1px solid rgba(255,255,255,0.09) !important;
+    border-bottom: 4px solid #474d43 !important;
+    border-right: 4px solid #474d43 !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.12) !important;
 }
+.puzzle-tile.tile-band-1 { background: linear-gradient(145deg, #adab9d, #7f8579) !important; }
+.puzzle-tile.tile-band-2 { background: linear-gradient(145deg, #a2a394, #747e72) !important; }
+.puzzle-tile.tile-band-3 { background: linear-gradient(145deg, #949d90, #657166) !important; }
 
 .puzzle-tile:hover {
     transform: translateY(-3px) rotate(-0.25deg);
@@ -713,15 +716,15 @@ button:disabled {
     text-shadow: 0 1px 1px rgba(255,255,255,0.18);
 }
 .puzzle-cell.filled {
-    background: linear-gradient(145deg, #dec49a, #a77a4a);
-    color: #21160e;
+    background: linear-gradient(145deg, #b8b5a6, #898b7f);
+    color: #111411;
     box-shadow: 
         0 4px 8px rgba(0,0,0,0.4),
         inset 0 1px 0 rgba(255,255,255,0.2);
     border-top: 1px solid rgba(255,255,255,0.3);
     border-left: 1px solid rgba(255,255,255,0.15);
-    border-bottom: 3px solid #674020;
-    border-right: 3px solid #674020;
+    border-bottom: 3px solid #474d43;
+    border-right: 3px solid #474d43;
 }
 .puzzle-cell.blank {
     background: #080b0a !important;
@@ -730,8 +733,8 @@ button:disabled {
     color: transparent !important;
 }
 .puzzle-cell.correct {
-    background: linear-gradient(145deg, #bfd0ad, #697d5f) !important;
-    color: #10160f !important;
+    background: linear-gradient(145deg, #b8b5a6, #898b7f) !important;
+    color: #111411 !important;
     box-shadow: 
         0 4px 8px rgba(0,0,0,0.4),
         inset 0 1px 0 rgba(255,255,255,0.2) !important;
@@ -739,6 +742,7 @@ button:disabled {
     border-left: 1px solid rgba(255,255,255,0.1) !important;
     border-bottom: 3px solid #3d5139 !important;
     border-right: 3px solid #3d5139 !important;
+    outline: 2px solid rgba(122,166,106,0.44);
     text-shadow: 0 1px 1px rgba(255,255,255,0.18) !important;
 }
 .puzzle-cell img.tile-img {
@@ -776,17 +780,18 @@ button:disabled {
     font-size: 8px;
 }
 .puzzle-grid-mini .mc.f {
-    background: linear-gradient(135deg, #dec49a, #a77a4a);
-    color: #21160e;
-    border-bottom: 1px solid #674020;
+    background: linear-gradient(135deg, #b8b5a6, #898b7f);
+    color: #111411;
+    border-bottom: 1px solid #474d43;
 }
 .puzzle-grid-mini .mc.b {
     background: transparent;
 }
 .puzzle-grid-mini .mc.c {
-    background: linear-gradient(135deg, #bfd0ad, #697d5f);
-    color: #10160f;
+    background: linear-gradient(135deg, #b8b5a6, #898b7f);
+    color: #111411;
     border-bottom: 1px solid #3d5139;
+    outline: 1px solid rgba(122,166,106,0.46);
 }
 
 /* Parsed Start/Goal previews beside the matrix editors. */
@@ -1022,15 +1027,15 @@ div[class*="number_board"] button {
     border-radius: 11px !important;
     margin: 0 !important;
     padding: 0 !important;
-    color: #17130f !important;
-    background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
+    color: #111411 !important;
+    background: linear-gradient(145deg, #b8b5a6, #898b7f) !important;
     box-shadow: 
         0 5px 12px rgba(4,7,6,0.48),
         inset 0 1px 0 rgba(255,255,255,0.35) !important;
     border-top: 1px solid rgba(255,255,255,0.28) !important;
     border-left: 1px solid rgba(255,255,255,0.12) !important;
-    border-bottom: 4px solid #51402f !important;
-    border-right: 4px solid #51402f !important;
+    border-bottom: 4px solid #474d43 !important;
+    border-right: 4px solid #474d43 !important;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast) !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.25) !important;
     cursor: pointer !important;
@@ -1054,7 +1059,7 @@ div[class*="number_board"] button:hover {
     box-shadow: 
         0 12px 22px rgba(4,7,6,0.58),
         inset 0 1px 0 rgba(255,255,255,0.38) !important;
-    background: linear-gradient(145deg, #e3d1b4, #a68f70) !important;
+    background: linear-gradient(145deg, #c0bdad, #939689) !important;
 }
 
 div[class*="number_board"] button:active {
@@ -1070,7 +1075,7 @@ div[class*="number_board"] button:active {
     }
     div[class*="number_board"] button:hover {
         transform: translateZ(0) !important;
-        background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
+        background: linear-gradient(145deg, #b8b5a6, #898b7f) !important;
         box-shadow:
             0 5px 12px rgba(4,7,6,0.48),
             inset 0 1px 0 rgba(255,255,255,0.35) !important;
