@@ -78,7 +78,9 @@ def test_docs_track_current_ui_evidence_surfaces():
     assert "Atlas 28 Thuật Toán Có GIF Chạy Thật" in readme
     assert "live Streamlit browser capture" in readme
     assert "web_run_status" in readme
-    assert "--theme dark" in readme
+    assert "Workflow Bảo Vệ Đồ Án" not in readme
+    assert "Tái Tạo GIF Và Kiểm Thử" not in readme
+    assert "git diff --check" not in readme
     assert "ui/belief_controls.py" in codebase_summary
     assert "docs/assets/" in codebase_summary
     assert "readable tree" in architecture

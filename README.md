@@ -20,8 +20,6 @@ GIF hero ở trên được chụp từ live Streamlit browser capture bằng `a
 - [Cách Đọc Từng Nhóm](#cách-đọc-từng-nhóm)
 - [Atlas 28 Thuật Toán Có GIF Chạy Thật](#atlas-28-thuật-toán-có-gif-chạy-thật)
 - [Cách Đọc Evidence](#cách-đọc-evidence)
-- [Workflow Bảo Vệ Đồ Án](#workflow-bảo-vệ-đồ-án)
-- [Tái Tạo GIF Và Kiểm Thử](#tái-tạo-gif-và-kiểm-thử)
 - [Tài Liệu](#tài-liệu)
 
 ## Chạy Nhanh
@@ -852,64 +850,6 @@ Ba tầng chứng minh phải đọc riêng:
 Path legal       !=  Goal reached
 Goal reached     !=  Optimal
 Algorithm success !=  Solver chuẩn của 15-puzzle
-```
-
-## Workflow Bảo Vệ Đồ Án
-
-### Demo 5 phút
-
-1. Mở Play, chọn Puzzle ảnh và chạy A* từng bước.
-2. Nói công thức `f(n)=g(n)+h(n)` và Manhattan Distance.
-3. Mở Run Algorithm, chạy A* hoặc BFS, chỉ vào frontier/reached/search tree.
-4. Mở Theory, chỉ bảng 6 nhóm và caveat solver chuẩn vs extension.
-5. Kết luận bằng certificate: legal path, goal reached, optimality proven.
-
-### Demo 15 phút
-
-1. PEAS: single-agent, deterministic, fully observable, static, discrete, sequential.
-2. Uninformed: BFS/UCS/IDS và trade-off memory/depth/cost.
-3. Informed: Greedy vs A* vs IDA*, vì sao Greedy không đủ certificate.
-4. Local Search: candidate evidence và local optimum.
-5. Complex: AND-OR conditional plan, belief matrix `_`, LRTA* online update.
-6. CSP: variables/domains/constraints, propagation và horizon caveat.
-7. Group 6: Minimax/Alpha-Beta là robustness branch, Expectimax là chance model.
-8. Tournament: dùng A* reference để chấm điểm solver, không phải đối thủ tự nhiên.
-
-### Câu trả lời mẫu khi giảng viên hỏi
-
-> Vì sao A* được claim optimal?
-
-Vì 15-puzzle ở đây dùng unit step cost, Manhattan Distance là admissible/consistent, và `SearchResult` chỉ bật `optimality_proven=True` khi path legal, tới đúng goal, thuật toán optimal và termination là `goal`.
-
-> Vì sao Local Search có GIF nhưng không gọi là solver chuẩn?
-
-Vì local search chỉ xét neighborhood cục bộ; nó có thể tạo legal trajectory nhưng không đảm bảo tới goal hoặc shortest path. App hiển thị candidate/reject/accept để minh họa trade-off, không claim certificate.
-
-> MIN trong Minimax là ai?
-
-Không phải người chơi thật của 15-puzzle. MIN là nhánh phân tích worst-case robustness: nếu các legal continuations tiếp theo làm heuristic xấu nhất thì sao. Cả MAX/MIN dùng cùng legal blank moves vì puzzle không có adversary tự nhiên.
-
-> AND-OR có dùng xác suất không?
-
-Không. Trong app, `nondet_prob > 0` chỉ bật hỗ trợ outcome lệch hướng như một support switch. Nó không là probability weighting; output đúng là conditional plan.
-
-## Tái Tạo GIF Và Kiểm Thử
-
-```bash
-python scripts/generate-readme-gifs.py --featured --profile all --theme dark
-python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
-python scripts/generate-readme-gifs.py --check --check-readability
-python scripts/generate-readme-gifs.py --contact-sheet
-```
-
-`--theme` hiện được giữ cho metadata tương thích; hình ảnh lấy từ live Streamlit browser capture. Nếu web route lỗi, GIF sẽ ghi lỗi hoặc generator fail thay vì dựng mockup.
-
-Quality gates:
-
-```bash
-python -m compileall -q app.py core algorithms ui scripts
-python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65
-git diff --check
 ```
 
 ## Tài Liệu
