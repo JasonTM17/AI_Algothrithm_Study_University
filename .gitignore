@@ -39,6 +39,7 @@ desktop.ini
 .playwright-mcp/
 CLAUDE.md
 AGENTS.md
+GEMINI.md
 
 # Archived implementation plans
 20260606-puzzle-game-feel/
@@ -60,6 +61,7 @@ DRAFT*.md
 # Streamlit
 .streamlit/secrets.toml
 streamlit-ui-review*.log
+streamlit-*.log
 
 # Test / coverage
 htmlcov/
@@ -68,6 +70,9 @@ coverage.xml
 .pytest_cache/
 verification-*.png
 *-review.png
+tmp_visual_checks/
+ui-smoke-*.png
+codex_*_smoke*.png
 
 # MyPy
 .mypy_cache/

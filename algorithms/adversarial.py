@@ -1,8 +1,11 @@
-"""Group 6: Adversarial / Stochastic Search — Minimax, Alpha-Beta, Expectimax.
+"""Group 6: game-tree robustness / stochastic search.
 
-Note: 15-puzzle is NOT a two-player game. These algorithms are modeled
-as extended versions for academic illustration, treating the puzzle
-as a MAX vs MIN game where MIN tries to increase heuristic distance.
+Note: 15-puzzle is NOT a two-player game. Minimax and Alpha-Beta are
+shown as worst-case robustness analysis over legal puzzle continuations:
+MAX picks the most promising move, while MIN asks what happens if every
+subsequent legal move is the worst for the heuristic. In a true
+two-player game MIN would have its own action set; here both sides share
+blank-tile moves because the puzzle has no natural adversary.
 """
 
 import time
@@ -37,10 +40,11 @@ def minimax(
     depth: int = 3, heuristic: str = "Manhattan Distance",
     timeout: float = 60.0, action_order: str = "LRUD",
 ) -> SearchResult:
-    """Minimax search treating 15-puzzle as MAX vs MIN game.
+    """Minimax search as worst-case robustness analysis.
 
-    MAX: puzzle solver, wants to minimize heuristic (maximize utility).
-    MIN: adversary, wants to maximize heuristic (minimize utility).
+    MAX: solver selecting the most promising legal move.
+    MIN: worst-case branch selecting legal continuations that maximize
+    heuristic damage. This is not a real opponent in the 15-puzzle.
     """
     t0 = time.perf_counter()
     h_fn = get_heuristic(heuristic, goal)
@@ -117,8 +121,9 @@ def minimax(
 
     status = "Timeout: partial depth-limited evaluation" if timed_out[0] else f"Completed depth {depth}"
     msg = f"Minimax (depth={depth})\n{status}\nBest utility: {utility:.1f}\n"
-    msg += f"This is a GAME model: MAX tries to solve, MIN tries to obstruct.\n"
-    msg += f"Standard 15-puzzle has NO adversary — this is for illustration only.\n"
+    msg += "MAX selects the most promising legal move.\n"
+    msg += "MIN branch models worst-case legal continuations, not a real opponent.\n"
+    msg += "Standard 15-puzzle has no natural adversary; this is robustness analysis.\n"
     msg += "Returned actions are the selected variation, not an optimality certificate for the standard puzzle.\n\n"
     msg += f"Principal variation (not the full evaluated tree):\n{tree_lines}"
 
@@ -137,7 +142,10 @@ def minimax(
 def _format_principal_variation(tree: list, max_depth: int) -> str:
     """Format the selected root-to-leaf variation, not a full game tree."""
     lines = []
-    for i, (node_type, state, util, h) in enumerate(tree[:30]):
+    for i, entry in enumerate(tree[:30]):
+        if not isinstance(entry, tuple) or len(entry) < 4:
+            continue
+        node_type, state, util, h = entry[0], entry[1], entry[2], entry[3]
         indent = "  " * min(i, max_depth)
         state_short = f"[{state[0]:2d},{state[1]:2d},{state[2]:2d},{state[3]:2d}...]"
         lines.append(f"{indent}{node_type}: h={h:.0f}, util={util:.1f}, state≈{state_short}")
@@ -151,7 +159,7 @@ def alpha_beta_pruning(
     depth: int = 3, heuristic: str = "Manhattan Distance",
     timeout: float = 60.0, action_order: str = "LRUD",
 ) -> SearchResult:
-    """Alpha-Beta Pruning: same as Minimax but prunes branches that can't affect outcome."""
+    """Alpha-Beta Pruning over the same worst-case tree as Minimax."""
     t0 = time.perf_counter()
     h_fn = get_heuristic(heuristic, goal)
     trace: list[TraceStep] = []
@@ -163,29 +171,31 @@ def alpha_beta_pruning(
         if time.perf_counter() - t0 > timeout:
             timed_out[0] = True
             util = -h_fn(state)
-            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state))], []
+            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state), [])], []
         nodes_expanded[0] += 1
 
         if state == goal:
-            return 1000.0, [("MAX" if is_max else "MIN", state, 1000.0, h_fn(state))], []
+            return 1000.0, [("MAX" if is_max else "MIN", state, 1000.0, h_fn(state), [])], []
 
         if depth_left <= 0:
             util = -h_fn(state)
-            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state))], []
+            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state), [])], []
 
         ps = PuzzleState(state)
         neighbors = ps.get_neighbors(action_order)
 
         if not neighbors:
             util = -h_fn(state)
-            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state))], []
+            return util, [("MAX" if is_max else "MIN", state, util, h_fn(state), [])], []
 
         if is_max:
             best_val = float("-inf")
             best_tree = []
             best_actions = []
+            children = []
             for ns, action, cost in neighbors:
                 val, tree, acts = ab_search(ns, depth_left - 1, alpha, beta, False)
+                children.append(tree)
                 if val > best_val:
                     best_val = val
                     best_tree = tree
@@ -198,15 +208,17 @@ def alpha_beta_pruning(
                             step=nodes_expanded[0], state=ns, action=action,
                             node_type="MAX", alpha=alpha, beta=beta,
                             reason=f"PRUNE: β({beta:.1f})≤α({alpha:.1f})"))
-                    break  # Beta cutoff
-            tree_entry = ("MAX", state, best_val, h_fn(state))
+                    break
+            tree_entry = ("MAX", state, best_val, h_fn(state), children)
             return best_val, [tree_entry] + best_tree, best_actions
         else:
             best_val = float("inf")
             best_tree = []
             best_actions = []
+            children = []
             for ns, action, cost in neighbors:
                 val, tree, acts = ab_search(ns, depth_left - 1, alpha, beta, True)
+                children.append(tree)
                 if val < best_val:
                     best_val = val
                     best_tree = tree
@@ -219,18 +231,28 @@ def alpha_beta_pruning(
                             step=nodes_expanded[0], state=ns, action=action,
                             node_type="MIN", alpha=alpha, beta=beta,
                             reason=f"PRUNE: β({beta:.1f})≤α({alpha:.1f})"))
-                    break  # Alpha cutoff
-            tree_entry = ("MIN", state, best_val, h_fn(state))
+                    break
+            tree_entry = ("MIN", state, best_val, h_fn(state), children)
             return best_val, [tree_entry] + best_tree, best_actions
 
     utility, game_tree, actions = ab_search(start, depth, float("-inf"), float("inf"), True)
 
-    # Add non-pruning trace entries
-    for i, (node_type, state, util, h) in enumerate(game_tree[:100]):
-        trace.append(TraceStep(
-            step=i, state=state, node_type=node_type,
-            utility=util, h=h,
-            reason=f"{node_type}: utility={util:.1f}, h={h:.1f}"))
+    # Flatten the full tree (with all explored siblings) into trace entries
+    def _flatten_tree(tree: list, step_counter: list[int]) -> None:
+        for entry in tree:
+            if not isinstance(entry, tuple) or len(entry) < 4:
+                continue
+            node_type, st, util, h = entry[0], entry[1], entry[2], entry[3]
+            children = entry[4] if len(entry) > 4 else []
+            step_counter[0] += 1
+            if len(trace) < 200:
+                trace.append(TraceStep(
+                    step=step_counter[0], state=st, node_type=node_type,
+                    utility=util, h=h,
+                    reason=f"{node_type}: utility={util:.1f}, h={h:.1f}"))
+            _flatten_tree(children, step_counter)
+
+    _flatten_tree(game_tree, [0])
 
     tree_text = _format_principal_variation(game_tree[:50], depth)
 
@@ -239,7 +261,8 @@ def alpha_beta_pruning(
     msg += f"Best utility: {utility:.1f}\n"
     msg += f"Nodes expanded: {nodes_expanded[0]}\n"
     msg += f"Cutoff events: {pruned[0]}\n"
-    msg += "With identical ordering, no timeout, and a completed depth, Alpha-Beta preserves the Minimax root value.\n\n"
+    msg += "MIN branch models worst-case legal continuations, not a real opponent.\n"
+    msg += "With identical ordering, no timeout, and a completed depth, Alpha-Beta preserves the same root value as Minimax under the same fully searched worst-case tree.\n\n"
     msg += "Returned actions are the selected variation, not an optimality certificate for the standard puzzle.\n\n"
     msg += f"Principal variation (not the full evaluated tree):\n{tree_text}"
 
@@ -411,8 +434,8 @@ def expectimax(
     msg += f"Expected utility from start: {utility:.1f}\n"
     msg += f"Nodes expanded: {nodes_expanded[0]}\n\n"
     msg += f"Comparison with Minimax:\n"
-    msg += f"  Minimax: assumes WORST outcome (adversarial)\n"
-    msg += f"  Expectimax: computes EXPECTED outcome (probabilistic)\n"
+    msg += f"  Minimax: evaluates WORST-CASE legal continuations\n"
+    msg += f"  Expectimax: computes EXPECTED outcome with CHANCE nodes\n"
     msg += f"  Result differs when success_prob < 1.0\n\n"
     msg += "Returned actions are one seeded probability-sampled outcome path, not the full stochastic policy.\n\n"
     msg += f"Selected policy subtree (truncated, not the full evaluated tree):\n{tree_text}"

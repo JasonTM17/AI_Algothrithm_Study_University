@@ -109,7 +109,7 @@ def render_tournament_replay(round_result: TournamentRoundResult) -> None:
     st.markdown(f"#### {_t('tournament_replay_title')}")
     st.caption(_t("tournament_replay_caption"))
 
-    play_col, speed_col = st.columns([1, 2])
+    play_col = st.columns([1])[0]
     with play_col:
         if st.session_state.get(auto_key, False):
             if st.button(_t("play_stop_run"), key=f"{prefix}_stop"):
@@ -125,27 +125,8 @@ def render_tournament_replay(round_result: TournamentRoundResult) -> None:
             st.session_state[auto_step_key] = current_step
             st.rerun()
 
-    with speed_col:
-        speed_options = {
-            _t("anim_per_step", sec=value): value
-            for value in (0.1, 0.3, 0.5, 1.0, 2.0)
-        }
-        speed_label = st.selectbox(
-            _t("anim_speed"),
-            list(speed_options),
-            index=2,
-            key=speed_key,
-        )
-        speed = speed_options[speed_label]
-
     if st.session_state.get(auto_key, False):
-        auto_step = int(st.session_state.get(auto_step_key, current_step))
-        if auto_step < max_step:
-            next_step = auto_step + 1
-            st.session_state[slider_key] = next_step
-            st.session_state[auto_step_key] = next_step
-            time.sleep(speed)
-            st.rerun()
+        st.session_state[slider_key] = max_step
         st.session_state[auto_key] = False
         st.session_state[auto_step_key] = 0
         st.success(_t("anim_complete"))

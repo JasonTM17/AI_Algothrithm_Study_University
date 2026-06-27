@@ -85,21 +85,17 @@ if st.session_state.image_active and not st.session_state.get("image_tiles"):
     default_img = list(SAMPLE_IMAGES.keys())[0]
     st.session_state.image_tiles = generate_sample_tiles(default_img)
 
-def on_sample_image_change():
-    st.session_state.image_tiles = generate_sample_tiles(st.session_state.sample_select)
-    st.session_state.image_active = True
-
 with st.sidebar.expander(t("sidebar_image_setup"), expanded=False):
     sample_choice = st.selectbox(
         t("sb_builtin"),
         list(SAMPLE_IMAGES.keys()),
         key="sample_select",
         index=0,
-        on_change=on_sample_image_change,
     )
     if st.button(t("sb_load_img"), key="btn_load_sample"):
         st.session_state.image_tiles = generate_sample_tiles(sample_choice)
         st.session_state.image_active = True
+        st.session_state.play_board_mode = "image"
 
     if "show_numbers" not in st.session_state:
         st.session_state.show_numbers = True
@@ -124,6 +120,10 @@ with st.sidebar.expander(t("sidebar_active_contract"), expanded=False):
         st.error(t("sb_unsolvable"))
 
 # Main tab router.
+if tab != "Play":
+    if st.session_state.get("play_auto_run", False):
+        st.session_state.play_auto_run = False
+
 if tab == "Play":
     render_play_tab(t=t, solvable=solvable, global_lang=global_lang)
 elif tab == "Run Algorithm":
@@ -138,7 +138,3 @@ elif tab == "Theory":
     render_theory_tab(t=t)
 elif tab == "Advanced":
     render_advanced_tab(st.session_state.start_state, st.session_state.goal_state)
-
-
-if __name__ == "__main__":
-    pass

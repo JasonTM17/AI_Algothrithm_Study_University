@@ -371,14 +371,15 @@ def min_conflicts(
         conflicts = [idx for idx in range(16) if current[idx] != goal[idx]]
         if not conflicts:
             return SearchResult(
-                success=False, algorithm="Min-Conflicts", group="CSP",
+                success=True, algorithm="Min-Conflicts", group="CSP",
                 path=[], actions=[], goal_state=goal, cost=0, depth=0,
                 random_seed=seed,
                 nodes_expanded=i, nodes_generated=i,
                 runtime=time.perf_counter() - t0,
-                message=(f"Tile-placement assignment reached the goal after {i} iterations, but this is not "
-                         "a 15-puzzle solution because arbitrary swaps are not legal blank moves."),
+                message=(f"Goal reached after {i} iterations via tile swaps. "
+                         "This is a CSP repair trace, NOT a sequence of legal 15-puzzle moves."),
                 trace=trace, uses_randomness=True, suitable_for_puzzle=False,
+                path_verified=False,
                 is_complete=False, is_optimal=False)
 
         # Pick a conflicting position

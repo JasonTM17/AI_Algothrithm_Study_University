@@ -22,14 +22,10 @@ from ui.academic_panels import (
 from ui.components import render_comparison_table, render_start_goal_contract
 from ui.components import render_puzzle_board
 from ui.start_goal_controls import apply_goal_state, apply_start_state
-from ui.styles import ALGORITHM_FN_MAP, SOLVER_GROUPS, COMPARISON_TABLE, NOTES
+from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS, COMPARISON_TABLE, NOTES
 
 
-BENCHMARK_GROUPS = (
-    "Uninformed Search",
-    "Informed Search",
-    "Local Search",
-)
+BENCHMARK_GROUPS = tuple(ALGORITHM_GROUPS)
 COMPARE_MAX_NODES_MIN = 1000
 COMPARE_MAX_NODES_CAP = 20000
 COMPARE_TIMEOUT_MIN = 5
@@ -61,7 +57,7 @@ def _sync_default_selection_for_preset(preset_name: str, preset: dict) -> None:
         st.session_state[f"compare_{group}"] = [
             algorithm
             for algorithm in recommended_algorithms
-            if algorithm in SOLVER_GROUPS[group]
+            if algorithm in ALGORITHM_GROUPS[group]
         ]
     st.session_state["compare_selection_preset"] = preset_name
 
@@ -152,12 +148,12 @@ def render_compare_tab(t=None) -> None:
     for g in selected_groups:
         algos = st.multiselect(
             tx("compare_algorithms_from", group=g),
-            SOLVER_GROUPS[g],
+            ALGORITHM_GROUPS[g],
             default=[
                 algorithm
                 for algorithm in preset.get("recommended_algorithms", ())
-                if algorithm in SOLVER_GROUPS[g]
-            ] or SOLVER_GROUPS[g][:2],
+                if algorithm in ALGORITHM_GROUPS[g]
+            ] or ALGORITHM_GROUPS[g][:2],
             key=f"compare_{g}",
         )
         selected_algos.extend(algos)

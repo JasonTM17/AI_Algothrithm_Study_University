@@ -15,12 +15,12 @@ from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE
 from core.randomness import is_randomized_solver
 from ui.components import render_puzzle_board
-from ui.localization import translate
+from ui.localization import VIETNAMESE, translate
 from ui.tournament_replay import render_tournament_replay
 
 
 def t(key, **kwargs):
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = st.session_state.get("global_lang_select", VIETNAMESE)
     return translate(global_lang, key, **kwargs)
 
 

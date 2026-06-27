@@ -201,6 +201,20 @@ div[data-testid="stExpander"] {
     border-radius: var(--radius-md) !important;
     background: rgba(18,21,20,0.72) !important;
 }
+div[data-testid="stSelectbox"] label p {
+    color: var(--accent) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+div[data-testid="stSelectbox"] div[data-baseweb="select"] {
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--radius-md) !important;
+    background-color: rgba(18, 21, 20, 0.72) !important;
+}
+div[data-testid="stSelectbox"] div[data-baseweb="select"]:hover {
+    border-color: var(--accent) !important;
+}
 div[data-testid="stFileUploaderDropzone"] {
     border: 1px dashed rgba(214,161,95,0.38) !important;
     border-radius: var(--radius-lg) !important;
@@ -595,51 +609,20 @@ button:disabled {
     pointer-events: none;
 }
 
-.puzzle-tile.row-0 {
-    background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
-    color: #20150d !important;
+.puzzle-tile.tile-band-0,
+.puzzle-tile.tile-band-1,
+.puzzle-tile.tile-band-2,
+.puzzle-tile.tile-band-3 {
+    background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
+    color: #17130f !important;
     box-shadow:
         0 5px 12px rgba(4,7,6,0.48),
-        inset 0 1px 0 rgba(255,255,255,0.35);
-    border-top: 1px solid rgba(255,255,255,0.28) !important;
-    border-left: 1px solid rgba(255,255,255,0.12) !important;
-    border-bottom: 4px solid #6e4324 !important;
-    border-right: 4px solid #6e4324 !important;
-}
-.puzzle-tile.row-1 {
-    background: linear-gradient(145deg, #d7c7ad, #8d765b) !important;
-    color: #171310 !important;
-    box-shadow:
-        0 5px 12px rgba(4,7,6,0.48),
-        inset 0 1px 0 rgba(255,255,255,0.26);
-    border-top: 1px solid rgba(255,255,255,0.25) !important;
-    border-left: 1px solid rgba(255,255,255,0.1) !important;
-    border-bottom: 4px solid #554333 !important;
-    border-right: 4px solid #554333 !important;
-}
-.puzzle-tile.row-2 {
-    background: linear-gradient(145deg, #a8b19d, #5f705c) !important;
-    color: #f7f1e7 !important;
-    box-shadow:
-        0 5px 12px rgba(4,7,6,0.48),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-    border-top: 1px solid rgba(255,255,255,0.2) !important;
-    border-left: 1px solid rgba(255,255,255,0.1) !important;
-    border-bottom: 4px solid #344435 !important;
-    border-right: 4px solid #344435 !important;
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.36) !important;
-}
-.puzzle-tile.row-3 {
-    background: linear-gradient(145deg, #4d5651, #242a27) !important;
-    color: #f8fafc !important;
-    box-shadow:
-        0 5px 12px rgba(4,7,6,0.54),
-        inset 0 1px 0 rgba(255,255,255,0.15);
-    border-top: 1px solid rgba(255,255,255,0.15) !important;
-    border-left: 1px solid rgba(255,255,255,0.08) !important;
-    border-bottom: 4px solid #111513 !important;
-    border-right: 4px solid #111513 !important;
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.55) !important;
+        inset 0 1px 0 rgba(255,255,255,0.30);
+    border-top: 1px solid rgba(255,255,255,0.26) !important;
+    border-left: 1px solid rgba(255,255,255,0.11) !important;
+    border-bottom: 4px solid #51402f !important;
+    border-right: 4px solid #51402f !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.18) !important;
 }
 
 .puzzle-tile:hover {
@@ -654,19 +637,13 @@ button:disabled {
     box-shadow: 0 3px 8px rgba(4,7,6,0.42) !important;
 }
 
-/* Correct position tiles (jade green) */
+/* Correct position tiles use an indicator only; tile color stays tied to tile identity. */
 .puzzle-tile.correct {
-    background: linear-gradient(145deg, #bfd0ad, #697d5f) !important;
-    color: #10160f !important;
     box-shadow:
         0 5px 12px rgba(4,7,6,0.48),
         inset 0 0 0 2px rgba(244,239,229,0.24),
+        0 0 0 2px rgba(122,166,106,0.48),
         inset 0 1px 0 rgba(255,255,255,0.24) !important;
-    border-top: 1px solid rgba(255,255,255,0.2) !important;
-    border-left: 1px solid rgba(255,255,255,0.1) !important;
-    border-bottom: 4px solid #3d5139 !important;
-    border-right: 4px solid #3d5139 !important;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.22) !important;
 }
 .puzzle-tile.correct::after {
     content: "";
@@ -810,6 +787,41 @@ button:disabled {
     background: linear-gradient(135deg, #bfd0ad, #697d5f);
     color: #10160f;
     border-bottom: 1px solid #3d5139;
+}
+
+/* Parsed Start/Goal previews beside the matrix editors. */
+.start-goal-matrix-preview {
+    display: grid;
+    gap: 7px;
+    align-content: start;
+    padding-top: 2px;
+}
+.state-matrix-preview-label {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+}
+.state-matrix-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(22px, 1fr));
+    gap: 3px;
+    width: min(100%, 150px);
+    aspect-ratio: 1;
+}
+.state-matrix-preview-cell {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    border: 1px solid rgba(214, 196, 166, 0.22);
+    border-radius: 4px;
+    background: #202621;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 750;
+}
+.state-matrix-preview-cell.blank {
+    background: #080b0a;
+    border-style: dashed;
 }
 
 /* Result cards */
@@ -965,27 +977,11 @@ div.interactive-board-container-number, div.interactive-board-container-image {
     display: none;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) {
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-}
-
-div[data-testid="stElementContainer"]:has(.number-board-row) .number-board-row {
-    display: none !important;
-}
-
-div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .number-board-row) {
-    gap: 6px !important;
-}
-
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] {
+div[class*="number_board"] {
     margin: 0 0 6px !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
+div[class*="number_board"] div[data-testid="stHorizontalBlock"] {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: clamp(6px, 1.1vw, 10px) !important;
@@ -995,7 +991,7 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     margin-right: auto !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+div[class*="number_board"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -1003,17 +999,17 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     align-self: stretch !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stColumn"] > div,
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stVerticalBlock"],
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stElementContainer"],
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stButton"],
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stMarkdown"],
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stMarkdownContainer"] {
+div[class*="number_board"] div[data-testid="stColumn"] > div,
+div[class*="number_board"] div[data-testid="stVerticalBlock"],
+div[class*="number_board"] div[data-testid="stElementContainer"],
+div[class*="number_board"] div[data-testid="stButton"],
+div[class*="number_board"] div[data-testid="stMarkdown"],
+div[class*="number_board"] div[data-testid="stMarkdownContainer"] {
     width: 100% !important;
     max-width: 100% !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button {
+div[class*="number_board"] button {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;
@@ -1026,15 +1022,15 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     border-radius: 11px !important;
     margin: 0 !important;
     padding: 0 !important;
-    color: #20150d !important;
-    background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
+    color: #17130f !important;
+    background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
     box-shadow: 
         0 5px 12px rgba(4,7,6,0.48),
         inset 0 1px 0 rgba(255,255,255,0.35) !important;
     border-top: 1px solid rgba(255,255,255,0.28) !important;
     border-left: 1px solid rgba(255,255,255,0.12) !important;
-    border-bottom: 4px solid #6e4324 !important;
-    border-right: 4px solid #6e4324 !important;
+    border-bottom: 4px solid #51402f !important;
+    border-right: 4px solid #51402f !important;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast) !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.25) !important;
     cursor: pointer !important;
@@ -1044,48 +1040,48 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     touch-action: pan-y pinch-zoom;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button p,
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button div,
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button span {
+div[class*="number_board"] button p,
+div[class*="number_board"] button div,
+div[class*="number_board"] button span {
     color: inherit !important;
     font: inherit !important;
     line-height: 1 !important;
     margin: 0 !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:hover {
+div[class*="number_board"] button:hover {
     transform: translateY(-3px) rotate(-0.25deg) !important;
     box-shadow: 
         0 12px 22px rgba(4,7,6,0.58),
         inset 0 1px 0 rgba(255,255,255,0.38) !important;
-    background: linear-gradient(145deg, #f6ddb0, #c88543) !important;
+    background: linear-gradient(145deg, #e3d1b4, #a68f70) !important;
 }
 
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:active {
+div[class*="number_board"] button:active {
     transform: translateY(1px) scale(0.985) !important;
-    border-bottom-color: #503720 !important;
-    border-right-color: #503720 !important;
+    border-bottom-color: #3d3024 !important;
+    border-right-color: #3d3024 !important;
     box-shadow: 0 3px 8px rgba(4,7,6,0.42) !important;
 }
 
 @media (hover: none) {
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button {
+    div[class*="number_board"] button {
         transition: transform 90ms ease-out, box-shadow 90ms ease-out, filter 90ms ease-out !important;
     }
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:hover {
+    div[class*="number_board"] button:hover {
         transform: translateZ(0) !important;
-        background: linear-gradient(145deg, #f2d5a4, #b8793e) !important;
+        background: linear-gradient(145deg, #d9c6a6, #9b8466) !important;
         box-shadow:
             0 5px 12px rgba(4,7,6,0.48),
             inset 0 1px 0 rgba(255,255,255,0.35) !important;
     }
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button:active {
+    div[class*="number_board"] button:active {
         transform: translateY(1px) scale(0.99) !important;
     }
 }
 
 /* Ensure puzzle tiles in the number container are responsive squares */
-div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] .puzzle-tile {
+div[class*="number_board"] .puzzle-tile {
     width: 100% !important;
     aspect-ratio: 1 !important;
     height: auto !important;
@@ -1411,6 +1407,253 @@ div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="
     line-height: 1.58 !important;
     margin: 0 !important;
 }
+.ai-contract-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 16px;
+}
+.ai-contract-row {
+    min-width: 0;
+    padding: 10px 11px;
+    border: 1px solid rgba(214,196,166,0.18);
+    border-radius: 7px;
+    background: rgba(18,21,20,0.72);
+}
+.ai-contract-row span {
+    display: block;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+.ai-contract-row strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 800;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.solution-step-table-wrap {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: rgba(12,15,14,0.88);
+    margin: 10px 0 16px;
+    padding: 10px;
+}
+.solution-step-list {
+    display: grid;
+    gap: 10px;
+}
+.solution-step-card {
+    display: grid;
+    grid-template-columns: minmax(86px, 0.38fr) minmax(130px, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid rgba(214,196,166,0.13);
+    border-radius: var(--radius-sm);
+    background: rgba(18,21,20,0.82);
+}
+.solution-step-card.is-current {
+    border-color: rgba(122,166,106,0.62);
+    box-shadow: inset 3px 0 0 rgba(122,166,106,0.86);
+    background: linear-gradient(90deg, rgba(122,166,106,0.12), rgba(18,21,20,0.88));
+}
+.solution-step-meta {
+    display: grid;
+    gap: 7px;
+    align-content: center;
+}
+.solution-step-index-pill {
+    width: fit-content;
+    min-width: 34px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(214,161,95,0.14);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 850;
+    text-align: center;
+}
+.solution-step-action-name {
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.25;
+}
+.solution-step-board {
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+}
+.solution-step-board .puzzle-grid-mini {
+    transform-origin: center;
+}
+.solution-step-mode-image .solution-step-card {
+    grid-template-columns: minmax(92px, 0.34fr) minmax(150px, 1fr);
+}
+.solution-step-mode-image .puzzle-grid-mini-image .mc {
+    width: 34px;
+    height: 34px;
+}
+.search-tree-readable {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid rgba(214,196,166,0.14);
+    border-radius: var(--radius-md);
+    background: rgba(12,15,14,0.78);
+}
+.search-tree-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.3;
+}
+.search-tree-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.search-tree-legend i {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.32);
+    flex: 0 0 auto;
+}
+.legend-solution {
+    background: #7aa66a;
+}
+.legend-explored {
+    background: #8ea0ff;
+}
+.legend-frontier {
+    background: #d6a15f;
+}
+.search-tree-readable-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.search-tree-readable-summary span {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(18,21,20,0.92);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.25;
+}
+.search-tree-readable-summary strong {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 15px;
+}
+.search-tree-readable-context {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.search-tree-snapshot-panel {
+    min-width: 0;
+    border: 1px solid rgba(214,196,166,0.12);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    background: rgba(18,21,20,0.7);
+}
+.search-tree-snapshot-panel strong,
+.search-tree-snapshot-panel span {
+    display: block;
+}
+.search-tree-snapshot-panel strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+.search-tree-snapshot-panel span {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+.search-tree-snapshot-boards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.search-tree-snapshot-board {
+    max-width: 100%;
+}
+.search-tree-snapshot-empty {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.search-tree-readable-spine {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+    gap: 12px;
+}
+.search-tree-readable-card {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid rgba(142,160,255,0.26);
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, rgba(142,160,255,0.08), rgba(18,21,20,0.86));
+}
+.search-tree-readable-card.is-solution {
+    border-color: rgba(122,166,106,0.55);
+    background: linear-gradient(180deg, rgba(122,166,106,0.16), rgba(18,21,20,0.88));
+    box-shadow: inset 0 0 0 1px rgba(122,166,106,0.18);
+}
+.search-tree-readable-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 7px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.2;
+}
+.search-tree-readable-meta strong {
+    color: var(--accent);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.search-tree-readable-board {
+    display: flex;
+    justify-content: center;
+}
+.search-tree-readable .puzzle-grid-mini {
+    transform: scale(1.12);
+    transform-origin: center;
+    margin: 7px 0;
+}
+.search-tree-readable.is-image .puzzle-grid-mini-image .mc {
+    width: 36px;
+    height: 36px;
+}
+.search-tree-readable-card.is-more {
+    min-height: 118px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+}
+.search-tree-readable-card.is-more strong {
+    color: var(--accent);
+    font-size: 24px;
+}
 .play-compact-strip {
     border: 1px solid rgba(214,161,95,0.24);
     border-radius: var(--radius-md);
@@ -1612,12 +1855,12 @@ div[data-testid="stAlert"] {
     div[data-testid="stHorizontalBlock"]:has(.play-panel-heading):has(.ai-solver-card) {
         gap: 8px !important;
     }
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] div[data-testid="stHorizontalBlock"] {
+    div[class*="number_board"] div[data-testid="stHorizontalBlock"] {
         width: min(100%, 296px) !important;
         gap: 6px !important;
     }
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] button,
-    div[data-testid="stElementContainer"]:has(.number-board-row) + div[data-testid="stLayoutWrapper"] .puzzle-tile {
+    div[class*="number_board"] button,
+    div[class*="number_board"] .puzzle-tile {
         font-size: 22px !important;
         border-radius: 9px !important;
     }
@@ -1663,6 +1906,30 @@ div[data-testid="stAlert"] {
     .ai-solver-desc {
         display: none;
     }
+    .ai-contract-grid {
+        grid-template-columns: 1fr;
+    }
+    .solution-step-card,
+    .solution-step-mode-image .solution-step-card {
+        grid-template-columns: 1fr;
+    }
+    .solution-step-meta {
+        grid-template-columns: auto 1fr;
+        align-items: center;
+    }
+    .search-tree-readable-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .search-tree-readable-context {
+        grid-template-columns: 1fr;
+    }
+    .search-tree-readable-spine {
+        grid-template-columns: 1fr;
+    }
+    .search-tree-readable .puzzle-grid-mini {
+        transform: none;
+        margin: 0;
+    }
     .play-status-grid {
         gap: 8px;
     }
@@ -1681,6 +1948,21 @@ div[data-testid="stAlert"] {
     div[data-testid="stMetric"] {
         padding: 10px 11px;
     }
+}
+/* Prevent grey out/dimming of stale elements during script rerun/autoplay */
+div[data-stale="true"],
+div[stale-data="true"],
+.st-stale,
+[data-stale="true"],
+[stale-data="true"] {
+    opacity: 1 !important;
+    filter: none !important;
+}
+[data-stale="true"] *,
+[stale-data="true"] *,
+.st-stale * {
+    opacity: 1 !important;
+    filter: none !important;
 }
 </style>
 """

@@ -2,7 +2,10 @@
 
 import streamlit as st
 
-from core.algorithm_comparison import comparison_rows_for_group
+from core.algorithm_comparison import (
+    comparison_rows_for_group,
+    group6_robustness_comparison_rows,
+)
 from core.theory import THEORY
 from ui.action_states import render_action_state
 from ui.academic_panels import (
@@ -57,6 +60,14 @@ def render_theory_tab(t=None) -> None:
         width="stretch",
         hide_index=True,
     )
+    if group == "AI-vs-AI Tournament":
+        st.markdown(f"### {tx('theory_group6_cross_comparison')}")
+        st.caption(tx("theory_group6_cross_caption"))
+        st.dataframe(
+            group6_robustness_comparison_rows(),
+            width="stretch",
+            hide_index=True,
+        )
     algo_name = st.selectbox(tx("run_algo"), algorithms, key="theory_algo")
 
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)

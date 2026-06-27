@@ -1,9 +1,10 @@
 """Utility helpers for 15-Puzzle AI project."""
 
 import time
-from typing import Callable, Optional
-from core.puzzle import PuzzleState, GOAL_STATE, is_solvable, _move_blank
-from core.metrics import SearchResult, TraceStep
+from typing import Callable
+
+from core.metrics import SearchResult
+from core.puzzle import GOAL_STATE, is_solvable
 
 
 def run_solver(
@@ -14,9 +15,18 @@ def run_solver(
     **kwargs,
 ) -> SearchResult:
     """Run a solver function with timeout and return SearchResult."""
-    if not is_solvable(start, goal):
+    try:
+        solvable = is_solvable(start, goal)
+    except (TypeError, ValueError) as exc:
         return SearchResult(
             success=False,
+            goal_state=goal,
+            message=f"Invalid puzzle state: {exc}",
+        )
+    if not solvable:
+        return SearchResult(
+            success=False,
+            goal_state=goal,
             message="Puzzle is not solvable.",
         )
     t0 = time.perf_counter()
@@ -25,23 +35,27 @@ def run_solver(
     except TimeoutError:
         result = SearchResult(
             success=False,
+            goal_state=goal,
             message=f"Timeout after {timeout}s",
             runtime=time.perf_counter() - t0,
         )
     except MemoryError:
         result = SearchResult(
             success=False,
+            goal_state=goal,
             message="Memory limit exceeded",
             runtime=time.perf_counter() - t0,
         )
     except Exception as e:
         result = SearchResult(
             success=False,
+            goal_state=goal,
             message=f"Error: {e}",
             runtime=time.perf_counter() - t0,
         )
-    if not result.runtime:
-        result.runtime = time.perf_counter() - t0
+    if result.goal_state is None:
+        result.goal_state = goal
+        result.refresh_certificate()
     return result
 
 

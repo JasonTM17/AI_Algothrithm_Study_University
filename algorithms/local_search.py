@@ -215,6 +215,16 @@ def steepest_ascent_hill_climbing(
         for ns, action, cost, nh in evaluated_neighbors:
             if nh < best_h:
                 best_ns, best_action, best_h = ns, action, nh
+            if len(trace) < 200:
+                status = "eligible improvement" if nh < current_h else "rejected: not better"
+                trace.append(TraceStep(
+                    step=i, state=ns, node_state=current, action=action,
+                    current_h=current_h, candidate_h=nh, h=nh,
+                    reason=(
+                        f"Evaluate candidate {action}: h(candidate)={nh:.1f}, "
+                        f"h(current)={current_h:.1f}; {status}."
+                    ),
+                ))
 
         if best_ns is not None and best_h < current_h:
             _record_local_children(
@@ -306,6 +316,16 @@ def stochastic_hill_climbing(
         for ns, a, _, nh in evaluated_neighbors:
             if nh < current_h:
                 better.append((ns, a, nh))
+            if len(trace) < 200:
+                status = "eligible for random selection" if nh < current_h else "rejected: not better"
+                trace.append(TraceStep(
+                    step=i, state=ns, node_state=current, action=a,
+                    current_h=current_h, candidate_h=nh, h=nh,
+                    reason=(
+                        f"Evaluate candidate {a}: h(candidate)={nh:.1f}, "
+                        f"h(current)={current_h:.1f}; {status}."
+                    ),
+                ))
 
         if better:
             ns, action, nh = rng.choice(better)
@@ -392,6 +412,20 @@ def random_restart_hill_climbing(
                 current = ns
                 path.append(current)
                 actions_taken.append(action)
+                previous_action = action
+                probe_h = h_fn(current)
+                if len(trace) < 200:
+                    trace.append(TraceStep(
+                        step=restart,
+                        state=current,
+                        action=action,
+                        h=probe_h,
+                        current_h=probe_h,
+                        reason=(
+                            f"Restart {restart}: random-walk probe action={action}, "
+                            "then hill climbing evaluates this trial state."
+                        ),
+                    ))
         current_h = h_fn(current)
 
         for i in range(max_iterations):
@@ -533,7 +567,7 @@ def local_beam_search(
         new_beam = []
         new_best_path = {}
         seen = set()
-        for nh, ns, action, parent in all_neighbors[:beam_width * 3]:
+        for nh, ns, action, parent in all_neighbors:
             if ns not in seen:
                 seen.add(ns)
                 pp, pa = best_path.get(parent, ([parent], []))

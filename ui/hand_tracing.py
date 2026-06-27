@@ -8,7 +8,7 @@ from core.heuristics import HEURISTICS, manhattan_distance
 from ui.action_states import render_action_state
 from ui.components import render_puzzle_board, _state_to_mini_grid, _state_to_grid_str
 from ui.academic_panels import render_exam_path
-from ui.localization import translate
+from ui.localization import VIETNAMESE, translate
 
 
 def _register_hand_trace_node(node: Node) -> str:
@@ -48,13 +48,13 @@ def hand_trace_tree_dot() -> str:
         "digraph HandTraceTree {",
         "rankdir=TB;",
         "graph [bgcolor=transparent];",
-        'node [shape=box style="rounded,filled" fontname="Arial" fontsize=9];',
-        'edge [fontname="Arial" fontsize=9 color="#64748B"];',
+        'node [shape=box style="rounded,filled" fontname="Courier" fontsize=12];',
+        'edge [fontname="Arial" fontsize=10 color="#64748B"];',
     ]
     for node_id, record in node_records.items():
         state = record["state"]
         rows = [state[i:i + 4] for i in range(0, 16, 4)]
-        grid = "\\n".join(" ".join("_" if value == 0 else str(value) for value in row) for row in rows)
+        grid = "\\n".join(" ".join(" _" if val == 0 else f"{val:2d}" for val in row) for row in rows)
         label = (
             f"{node_id} | d={record['depth']} g={record['g']} "
             f"h={record['h']:.1f} f={record['f']:.1f}\\n{grid}"
@@ -78,7 +78,7 @@ def render_hand_trace_tree() -> None:
 
 
 def t(key, **kwargs):
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = st.session_state.get("global_lang_select", VIETNAMESE)
     return translate(global_lang, key, **kwargs)
 
 

@@ -6,6 +6,7 @@ import streamlit as st
 
 from algorithms.adversarial import alpha_beta_pruning, expectimax, minimax
 from algorithms.complex_env import (
+    BELIEF_PLANNERS,
     and_or_search,
     no_observation_search,
     online_search_lrta,
@@ -33,7 +34,9 @@ from ui.components import (
     render_start_goal_contract,
     render_trace_table,
 )
+from ui.belief_controls import render_known_positions_editor
 from ui.localization import translate
+from ui.run_and_or_panel import render_and_or_controls
 
 
 ADVANCED_TRACE_ROWS = 80
@@ -270,8 +273,7 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
 
     elif mode == "AND-OR Search (Nondeterministic)":
         depth = st.number_input(t("adv_max_depth"), 1, 15, 5, key="andor_depth")
-        support = st.slider(t("adv_deflection_support"), 0.0, 1.0, 0.3, key="andor_prob")
-        st.caption(t("adv_andor_support_caption"))
+        support = render_and_or_controls(t, key="andor_deflection_mode")
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
             variation = _next_variation("and_or_search")
             _store_advanced_outputs(mode, [
@@ -293,8 +295,21 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     elif mode == "No Observation (Belief State)":
         count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="no_obs_n")
         steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="no_obs_steps")
+        known_positions, known_error = render_known_positions_editor(
+            t,
+            key="no_obs_known_matrix",
+            start=start,
+            default_count=0,
+        )
+        planner = st.selectbox(
+            t("run_belief_planner"), list(BELIEF_PLANNERS), index=1,
+            key="no_obs_belief_planner", help=t("run_belief_planner_help"),
+        )
         st.info(t("adv_no_observation_note"))
-        if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
+        if st.button(
+            t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary",
+            disabled=known_error is not None,
+        ):
             variation = _next_variation("no_observation_search")
             _store_advanced_outputs(mode, [
                 _result_entry(
@@ -303,6 +318,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                         no_observation_search(
                             num_belief_states=count,
                             max_steps=steps,
+                            known_positions=known_positions,
+                            belief_planner=planner,
                             seed=variation.solver_seed,
                             timeout=30.0,
                             action_order=variation.action_order,
@@ -317,8 +334,21 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     elif mode == "Partially Observable":
         count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="po_n")
         steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="po_steps")
+        known_positions, known_error = render_known_positions_editor(
+            t,
+            key="po_known_matrix",
+            start=start,
+            default_count=2,
+        )
+        planner = st.selectbox(
+            t("run_belief_planner"), list(BELIEF_PLANNERS), index=1,
+            key="po_belief_planner", help=t("run_belief_planner_help"),
+        )
         st.info(t("adv_partial_observation_note"))
-        if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
+        if st.button(
+            t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary",
+            disabled=known_error is not None,
+        ):
             variation = _next_variation("partially_observable_search")
             _store_advanced_outputs(mode, [
                 _result_entry(
@@ -327,6 +357,8 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                         partially_observable_search(
                             num_belief_states=count,
                             max_steps=steps,
+                            known_positions=known_positions,
+                            belief_planner=planner,
                             seed=variation.solver_seed,
                             timeout=30.0,
                             action_order=variation.action_order,

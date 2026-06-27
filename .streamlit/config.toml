@@ -11,3 +11,5 @@ primaryColor = "#7AA66A"
 backgroundColor = "#101512"
 secondaryBackgroundColor = "#18201A"
 textColor = "#F4F1E8"
+borderColor = "#4B5A4D"
+showWidgetBorder = true

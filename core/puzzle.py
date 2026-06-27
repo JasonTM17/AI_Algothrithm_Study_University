@@ -155,8 +155,17 @@ def validate_solution_path(
     path: list[tuple[int, ...]], actions: list[str], goal: tuple[int, ...] = GOAL_STATE,
 ) -> tuple[bool, str]:
     """Validate every recorded edge, action count, and final state."""
+    try:
+        validate_state(goal)
+    except (TypeError, ValueError) as exc:
+        return False, f"Invalid goal state: {exc}"
     if not path:
         return False, "Solution path is empty"
+    for index, state in enumerate(path):
+        try:
+            validate_state(state)
+        except (TypeError, ValueError) as exc:
+            return False, f"Invalid path state at step {index}: {exc}"
     if len(path) != len(actions) + 1:
         return False, "A solution path must contain exactly one more state than actions"
     for index, action in enumerate(actions):
@@ -175,6 +184,15 @@ def validate_path(start: tuple[int, ...], actions: list[str], goal: tuple[int, .
 
     Returns (valid, message, final_state).
     """
+    try:
+        validate_state(start)
+    except (TypeError, ValueError) as exc:
+        return False, f"Invalid start state: {exc}", None
+    try:
+        validate_state(goal)
+    except (TypeError, ValueError) as exc:
+        return False, f"Invalid goal state: {exc}", None
+
     state = start
     for i, a in enumerate(actions):
         ns = _move_blank(state, a)

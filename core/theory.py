@@ -70,26 +70,28 @@ THEORY["DFS"] = {
     "formula_en": "No evaluation function. Prioritizes the deepest node.",
     "pseudocode": """DFS(start, goal, max_depth):
   Stack ← [start]
-  Visited ← set()
+  best_depth ← {start: 0}
   while Stack không rỗng:
     node ← Stack.pop()
-    if node.depth > max_depth: continue
+    if node.depth > best_depth[node.state]: continue
     if node.state == goal: return path
-    if node.state in Visited: continue
-    Visited.add(node.state)
     for neighbor của node (reverse order):
-      Stack.push(neighbor)""",
+      if neighbor nằm trong ancestor path: continue
+      if neighbor chưa có hoặc depth mới < best_depth[neighbor]:
+        best_depth[neighbor] ← depth mới
+        Stack.push(neighbor)""",
     "pseudocode_en": """DFS(start, goal, max_depth):
   Stack ← [start]
-  Visited ← set()
+  best_depth ← {start: 0}
   while Stack is not empty:
     node ← Stack.pop()
-    if node.depth > max_depth: continue
+    if node.depth > best_depth[node.state]: continue
     if node.state == goal: return path
-    if node.state in Visited: continue
-    Visited.add(node.state)
     for neighbor of node (reverse order):
-      Stack.push(neighbor)""",
+      if neighbor is in the ancestor path: continue
+      if neighbor is unseen or new_depth < best_depth[neighbor]:
+        best_depth[neighbor] ← new_depth
+        Stack.push(neighbor)""",
     "application": "DFS ít tốn bộ nhớ (chỉ lưu đường đi hiện tại) nhưng có thể đi rất sâu và tìm đường rất dài. Cho 15-puzzle, DFS có thể tạo đường đi hàng ngàn bước.",
     "application_en": "DFS consumes very little memory (only stores the current path) but can go extremely deep, returning long paths. For the 15-puzzle, DFS can generate paths of thousands of steps.",
     "suitable": "KHÔNG phù hợp cho 15-puzzle vì không đảm bảo tối ưu và đường đi có thể rất dài. Chỉ dùng để minh họa.",
@@ -214,23 +216,25 @@ THEORY["Greedy"] = {
     "formula_en": "Prioritizes lowest h(n). h(n) = estimated cost from n to goal.",
     "pseudocode": """Greedy(start, goal, h):
   Frontier ← PriorityQueue [(h(start), start)]
-  Reached ← {start}
+  best_h ← {start: h(start)}
   while Frontier:
     node ← Frontier.dequeue_min_h()
+    if node.h > best_h[node.state]: continue
     if node.state == goal: return path
     for mỗi neighbor của node:
-      if neighbor.state not in Reached:
-        Reached.add(neighbor.state)
+      if neighbor chưa có hoặc h(neighbor) < best_h[neighbor]:
+        best_h[neighbor] ← h(neighbor)
         Frontier.insert((h(neighbor.state), neighbor))""",
     "pseudocode_en": """Greedy(start, goal, h):
   Frontier ← PriorityQueue [(h(start), start)]
-  Reached ← {start}
+  best_h ← {start: h(start)}
   while Frontier is not empty:
     node ← Frontier.dequeue_min_h()
+    if node.h > best_h[node.state]: continue
     if node.state == goal: return path
     for each neighbor of node:
-      if neighbor.state not in Reached:
-        Reached.add(neighbor.state)
+      if neighbor is unseen or h(neighbor) < best_h[neighbor]:
+        best_h[neighbor] ← h(neighbor)
         Frontier.insert((h(neighbor.state), neighbor))""",
     "application": "Chạy nhanh cho 15-puzzle vì h(n) dẫn đường, nhưng có thể bị lừa bởi heuristic — chọn đường gần goal hơn nhưng thực ra đường dài hơn.",
     "application_en": "Runs fast for the 15-puzzle because h(n) guides the search, but can be misled by the heuristic — choosing a node closer to the goal that actually lies on a longer path.",
@@ -428,6 +432,90 @@ for key in THEORY:
         d["pseudocode"] = d.get("pseudocode", "See algorithm description above.")
         d["bad_example"] = d.get("bad_example", "Hill Climbing kẹt ở h=2, không thể xuống h=0 dù chỉ cần 2 bước.")
 
+_LOCAL_SEARCH_ENGLISH = {
+    "Simple HC": {
+        "idea_en": "Scan legal neighbors in action order and move to the first state with a lower heuristic. Stop when no improving neighbor exists.",
+        "pseudocode_en": """current = start
+while current != goal:
+  next = first neighbor with h(next) < h(current)
+  if no such neighbor: return local optimum
+  current = next""",
+        "application_en": "A low-memory contrast case that shows how a 15-puzzle heuristic landscape can trap a purely improving walk.",
+        "suitable_en": "Not a reliable 15-puzzle solver because local optima and plateaus can stop progress.",
+        "exam_tips_en": "Simple hill climbing accepts the first improvement. It is neither complete nor optimal.",
+    },
+    "Steepest Ascent HC": {
+        "idea_en": "Evaluate every legal neighbor and move to the one with the lowest heuristic, but only when it improves the current state.",
+        "pseudocode_en": """current = start
+while current != goal:
+  next = argmin(h(n) for n in neighbors(current))
+  if h(next) >= h(current): return local optimum
+  current = next""",
+        "application_en": "Makes the locally best move visible, while demonstrating that best immediate progress need not reach the global goal.",
+        "suitable_en": "More selective than simple hill climbing, but still not a complete or optimal 15-puzzle solver.",
+        "exam_tips_en": "Steepest ascent checks all neighbors; simple hill climbing stops at the first improving neighbor.",
+    },
+    "Stochastic HC": {
+        "idea_en": "Choose randomly among improving neighbors so repeated seeded runs can explore different legal trajectories.",
+        "pseudocode_en": """current = start
+while current != goal:
+  better = [n for n in neighbors(current) if h(n) < h(current)]
+  if not better: return local optimum
+  current = seeded_random_choice(better)""",
+        "application_en": "Shows how controlled randomness changes the explored legal path without accepting worse states.",
+        "suitable_en": "Useful for stochastic comparison, but it still stops at local optima and has no solution guarantee.",
+        "exam_tips_en": "Stochastic hill climbing randomizes the choice among improvements; it does not automatically escape every local optimum.",
+    },
+    "Random-Restart HC": {
+        "idea_en": "Run hill climbing from several seeded, solvable starting states and retain the best run found within the restart budget.",
+        "pseudocode_en": """best = None
+for each seeded restart:
+  result = hill_climb(solvable_restart_state)
+  best = better_of(best, result)
+return best""",
+        "application_en": "Demonstrates how independent restarts reduce sensitivity to a single poor starting basin.",
+        "suitable_en": "Can improve success rate, but finite restarts still provide neither completeness nor optimality.",
+        "exam_tips_en": "Restarts diversify starting basins. A finite restart budget is not a proof of completeness.",
+    },
+    "Local Beam Search": {
+        "idea_en": "Maintain the best k states, expand all of them, then keep the best k successors for the next iteration.",
+        "pseudocode_en": """beam = k seeded states
+while budget remains:
+  candidates = all legal successors of beam
+  if goal in candidates: return its legal path
+  beam = k candidates with lowest h""",
+        "application_en": "Lets several legal search trajectories exchange information through a shared top-k selection step.",
+        "suitable_en": "Usually broader than one-state hill climbing, but a narrow beam can still lose the route to the goal.",
+        "exam_tips_en": "Beam width k controls diversity and memory. Local beam search is not breadth-first search.",
+    },
+    "Simulated Annealing": {
+        "idea_en": "Always accept improving moves and sometimes accept worse moves with probability exp(-delta/T), decreasing T over time.",
+        "pseudocode_en": """current = start
+for t in schedule:
+  next = seeded_random_neighbor(current)
+  delta = h(next) - h(current)
+  if delta < 0 or random() < exp(-delta / T(t)):
+    current = next""",
+        "application_en": "Uses temporary uphill moves to escape local optima while preserving a legal, replayable puzzle trajectory.",
+        "suitable_en": "A useful stochastic optimization demo, but its result depends on the schedule, seed, and iteration budget.",
+        "exam_tips_en": "High temperature explores; low temperature exploits. Simulated annealing is not guaranteed optimal under a finite schedule.",
+    },
+}
+
+for _algorithm, _english_fields in _LOCAL_SEARCH_ENGLISH.items():
+    _entry = THEORY[_algorithm]
+    _entry.update(_english_fields)
+    _entry.update({
+        "goal_en": _english_fields["idea_en"],
+        "data_structure_en": "Current state or a bounded candidate set, heuristic values, and a seeded RNG for stochastic variants.",
+        "formula_en": "Select legal candidates by h(s): first improvement, best improvement, random improvement, top-k, or temperature-based acceptance.",
+        "pros_en": ["Low memory", "Makes heuristic behavior visible", "Seeded variants are reproducible"],
+        "cons_en": ["Not complete", "Not optimal", "Can stop away from the goal"],
+        "complexity_en": "Time: O(max_iterations x neighbor evaluations), Space: O(1) for one-state methods or O(k) for beam search.",
+        "bad_example_en": "A legal trajectory can reach a local optimum or plateau even when a route to the goal still exists.",
+        "comparison_en": "Local search optimizes the current candidate set; graph search preserves a frontier and reached evidence for systematic solution search.",
+    })
+
 # ============================================================
 # GROUP 4: COMPLEX ENVIRONMENTS
 # ============================================================
@@ -523,6 +611,64 @@ THEORY["LRTA*"] = {
     "exam_tips": "Online search ⇒ không biết trước môi trường. LRTA* cập nhật H(s) sau mỗi bước. Offline search (A*) ⇒ biết trước môi trường.",
 }
 
+_COMPLEX_ENVIRONMENT_ENGLISH = {
+    "AND-OR": {
+        "idea_en": "An OR node chooses an action; its AND node requires a subplan for every supported outcome.",
+        "pseudocode_en": """AND_OR(state):
+  if state == goal: return empty plan
+  for action in legal_actions(state):
+    plans = {outcome: AND_OR(outcome) for outcome in supported_outcomes(action)}
+    if every outcome has a plan: return action, plans
+  return failure""",
+        "application_en": "The standard 15-puzzle is deterministic. This extension treats deflections as supported outcomes; the control is binary support, not probability weighting.",
+        "suitable_en": "Not a standard 15-puzzle solver. Its correct output is a conditional plan, not a linear path.",
+        "exam_tips_en": "OR means the agent chooses; AND means every supported outcome needs a subplan.",
+    },
+    "No Observation": {
+        "idea_en": "Plan over a belief state containing every state still possible when the agent receives no observations.",
+        "pseudocode_en": """belief = initial_belief
+while not all states satisfy the goal:
+  choose an action over the whole belief
+  belief = union(result(state, action) for state in belief)""",
+        "application_en": "The trace may retain the hidden actual state for debugging, but the agent decision must depend only on the belief state.",
+        "suitable_en": "An observability teaching model, not the natural fully observable 15-puzzle formulation.",
+        "exam_tips_en": "With no observation, the agent reasons over sets of possible states rather than one known state.",
+    },
+    "Partially Observable": {
+        "idea_en": "Predict a belief through an action, then filter it using the observation returned by the sensor model.",
+        "pseudocode_en": """predicted = update(belief, action)
+observation = sense()
+belief = {state for state in predicted if observe(state) == observation}""",
+        "application_en": "A limited sensor, such as the blank position and adjacent tiles, narrows uncertainty without revealing the complete board.",
+        "suitable_en": "Useful for belief-state teaching, but not the standard fully observable 15-puzzle solver.",
+        "exam_tips_en": "Partial observation alternates prediction and observation-based belief filtering.",
+    },
+    "LRTA*": {
+        "idea_en": "Act online, select the neighbor minimizing immediate cost plus learned H, then update H for the state just left.",
+        "pseudocode_en": """current = start
+while current != goal and steps < max_steps:
+  H[current] = min(cost(current, a) + H[result(current, a)])
+  current = argmin_result(cost(current, a) + H[result(current, a)])""",
+        "application_en": "Shows an agent learning while acting. In this UI the resource cap is the maximum number of online steps.",
+        "suitable_en": "An online-search demonstration; ordinary 15-puzzle solving already exposes the complete transition model.",
+        "exam_tips_en": "LRTA* updates learned heuristic values during execution; unlike offline A*, its first trial can be long.",
+    },
+}
+
+for _algorithm, _english_fields in _COMPLEX_ENVIRONMENT_ENGLISH.items():
+    _entry = THEORY[_algorithm]
+    _entry.update(_english_fields)
+    _entry.update({
+        "goal_en": _english_fields["idea_en"],
+        "data_structure_en": "Model-specific evidence: an AND-OR tree, a belief-state set, or a learned online H table.",
+        "formula_en": "Evaluate transitions using supported outcomes, belief updates, or learned online costs according to the selected environment model.",
+        "pros_en": ["Exposes assumptions hidden by fully observable deterministic search", "Produces model-specific evidence"],
+        "cons_en": ["Not the natural standard 15-puzzle model", "Can require much larger state representations"],
+        "complexity_en": "Depends on conditional-tree size, belief size, or the online step budget; worst cases can grow exponentially.",
+        "bad_example_en": "Treating model evidence as a certified linear solution path would overstate what the algorithm returned.",
+        "comparison_en": "Standard A* searches one known deterministic state; these extensions model outcomes, uncertainty, or online learning.",
+    })
+
 # ============================================================
 # GROUP 5: CSP
 # ============================================================
@@ -540,7 +686,7 @@ THEORY["CSP Definition"] = {
     "pros": ["Khung bài toán chính quy", "Có thể dùng constraint propagation"],
     "cons": ["CSP planning cho 15-puzzle rất lớn", "Không hiệu quả bằng A*", "Số biến tăng tuyến tính theo horizon"],
     "complexity": "Số biến: O(16 × T + T). Số ràng buộc: AllDifferent (T siêu ràng buộc) + Transition.",
-    "bad_example": "Với T=20, cần 16×21+20 = 356 biếnvà AllDifferent constraint cho mỗi timestep.",
+    "bad_example": "Với T=20, cần 16×21+20 = 356 biến và AllDifferent constraint cho mỗi timestep.",
     "comparison": "CSP → mô hình hóa bài toán bằng ràng buộc. Search → mô hình hóa bằng trạng thái + hành động.",
     "exam_tips": "CSP = (X, D, C). X=variables, D=domains, C=constraints. 15-puzzle CSP planning: X[t][p] cho mỗi timestep.",
 }
@@ -564,6 +710,37 @@ for algo_name in ["Constraint Propagation", "Path Consistency", "Global Constrai
             "comparison": "CSP planning vs state-space search: CSP models constraints explicitly, search explores states.",
             "exam_tips": "CSP techniques: arc consistency, path consistency, backtracking with MRV/forward checking, min-conflicts.",
         }
+
+THEORY["CSP Definition"].update({
+    "idea_en": "Use variables X[t][p] for tile positions over a bounded time horizon, with initial, goal, legality, transition, and AllDifferent constraints.",
+    "pseudocode_en": """build variables X[t][position] and actions A[t]
+add initial-state and goal-state constraints
+add AllDifferent and legal-transition constraints
+solve the bounded model or increase the horizon""",
+    "application_en": "Models bounded 15-puzzle planning as a CSP so constraint structure can be inspected explicitly.",
+    "suitable_en": "Academically useful, but state-space A* is the more natural standard solver for this puzzle.",
+    "exam_tips_en": "A CSP is (X, D, C): variables, domains, and constraints. A bounded plan also needs a time horizon.",
+    "goal_en": "Represent a bounded 15-puzzle plan as variables, domains, and constraints.",
+    "data_structure_en": "Variables, domains, constraints, and a bounded time horizon.",
+    "formula_en": "CSP = (X, D, C), with initial, goal, AllDifferent, legal-action, and transition constraints.",
+    "pros_en": ["Formal declarative model", "Supports constraint propagation evidence"],
+    "cons_en": ["The bounded model grows with the horizon", "Less natural than A* for standard 15-puzzle solving"],
+    "complexity_en": "Variables: O(16T + T); solving cost depends on domain size, constraint density, and horizon.",
+    "bad_example_en": "A large horizon creates hundreds of tile-time variables before search even begins.",
+    "comparison_en": "CSP planning encodes legal trajectories as constraints; state-space search expands legal puzzle states directly.",
+})
+
+for _algorithm in [
+    "Constraint Propagation", "Path Consistency", "Global Constraints",
+    "Backtracking Search", "Min-Conflicts", "Constraint Graphs",
+]:
+    _entry = THEORY[_algorithm]
+    for _field in (
+        "goal", "idea", "data_structure", "formula", "pseudocode", "application",
+        "suitable", "pros", "cons", "complexity", "bad_example", "comparison",
+        "exam_tips",
+    ):
+        _entry[f"{_field}_en"] = _entry[_field]
 
 # ============================================================
 # GROUP 6: AI-VS-AI TOURNAMENT / GAME-CHANCE EXTENSIONS
@@ -608,10 +785,12 @@ THEORY["AI-vs-AI Tournament"] = {
 THEORY["Minimax"] = {
     "name": "Minimax",
     "group": "AI-vs-AI Tournament",
-    "goal": "Tìm chiến lược tối ưu trong game 2 người zero-sum. MAX maximize, MIN minimax.",
-    "goal_en": "Find the optimal strategy in a 2-player zero-sum game. MAX maximizes utility, MIN minimizes it.",
-    "idea": "MAX chọn action tối đa hóa utility. MIN chọn action tối tiểu hóa utility. Depth-limited với evaluation function.",
-    "idea_en": "MAX selects actions that maximize utility. MIN selects actions that minimize utility. Depth-limited with an evaluation function.",
+    "goal": "Tìm quy tắc quyết định zero-sum/worst-case trong cây hữu hạn. MAX tối đa utility, MIN biểu diễn nhánh xấu nhất.",
+    "goal_en": "Find a zero-sum/worst-case decision rule in a finite tree. MAX maximizes utility, MIN represents the worst-case branch.",
+    "idea": "MAX chọn action hứa hẹn nhất. MIN không phải đối thủ thật trong 15-puzzle; MIN hỏi nếu legal continuation tiếp theo làm heuristic xấu nhất thì sao.",
+    "idea_en": "MAX selects the most promising action. In the 15-puzzle, MIN is not a real opponent; it asks what happens if the next legal continuation is worst for the heuristic.",
+    "transferable_concept": "Zero-sum decision rule và worst-case robustness analysis.",
+    "transferable_concept_en": "Zero-sum decision rule and worst-case robustness analysis.",
     "data_structure": "Game tree. MAX node: chọn max. MIN node: chọn min.",
     "data_structure_en": "Game tree. MAX node: selects max. MIN node: selects min.",
     "formula": "Minimax(s) = utility(s) if terminal. Max_a Minimax(Result(s,a)) if MAX. Min_a Minimax(Result(s,a)) if MIN.",
@@ -623,22 +802,22 @@ THEORY["Minimax"] = {
     return max(Minimax(Result(state, a), depth-1, False) for a in actions)
   else:
     return min(Minimax(Result(state, a), depth-1, True) for a in actions)""",
-    "application": "15-puzzle KHÔNG phải game 2 người. Mô phỏng: MAX = solver, MIN = adversary cố gắng làm MAX xa goal.",
-    "application_en": "15-puzzle is NOT a 2-player game. Simulation: MAX = solver, MIN = adversary trying to move MAX away from the goal.",
+    "application": "15-puzzle KHÔNG phải game 2 người. Trong app: MAX = solver chọn move tốt; MIN = nhánh phân tích worst-case trên cùng legal blank moves, không phải người chơi thật.",
+    "application_en": "15-puzzle is NOT a 2-player game. In this app: MAX = solver choosing a good move; MIN = worst-case analysis over the same legal blank moves, not a real player.",
     "suitable": "KHÔNG phù hợp cho 15-puzzle chuẩn. Chỉ minh họa khái niệm game tree.",
     "suitable_en": "NOT suitable for standard 15-puzzle. Only for illustrating game tree concepts.",
     "pros": ["Tối ưu nếu duyệt hết cây game hữu hạn", "Rõ vai trò MAX/MIN và evaluation function"],
     "pros_en": ["Optimal when the finite game tree is searched completely", "Makes MAX/MIN roles and evaluation functions explicit"],
-    "cons": ["O(b^m) thời gian", "Không phải thuật toán chuẩn cho 15-puzzle", "MIN không có ý nghĩa cho puzzle"],
-    "cons_en": ["O(b^m) time complexity", "Not a standard solver for 15-puzzle", "MIN has no physical meaning in puzzle"],
+    "cons": ["O(b^m) thời gian", "Không phải thuật toán chuẩn cho 15-puzzle", "MIN là nhánh worst-case, không phải đối thủ vật lý"],
+    "cons_en": ["O(b^m) time complexity", "Not a standard solver for 15-puzzle", "MIN is a worst-case branch, not a physical opponent"],
     "complexity": "Thời gian: O(b^m), Bộ nhớ: O(b×m) với depth-first.",
     "complexity_en": "Time: O(b^m), Space: O(bm) with depth-first search",
     "bad_example": "Game tree cho 15-puzzle: mỗi node có 2-4 nhánh, depth 3 đã hàng trăm node.",
     "bad_example_en": "Game tree for 15-puzzle: each node has 2-4 branches, depth 3 already contains hundreds of nodes.",
-    "comparison": "Minimax → game 2 người. Alpha-Beta → Minimax + pruning. Expectimax → game ngẫu nhiên.",
-    "comparison_en": "Minimax is for 2-player games. Alpha-Beta is Minimax + pruning. Expectimax is for stochastic environments.",
-    "exam_tips": "Minimax: MAX chọn max, MIN chọn min. Zero-sum game. Alpha-Beta cắt nhánh không ảnh hưởng kết quả.",
-    "exam_tips_en": "Minimax: MAX chooses max, MIN chooses min. Zero-sum games. Alpha-Beta prunes branches that do not affect the outcome.",
+    "comparison": "Minimax → worst-case. Alpha-Beta → cùng worst-case tree nhưng pruning. Expectimax → kỳ vọng xác suất, không có MIN.",
+    "comparison_en": "Minimax -> worst-case. Alpha-Beta -> same worst-case tree with pruning. Expectimax -> probability expectation with no MIN node.",
+    "exam_tips": "Minimax: giữ tên MIN theo lý thuyết, nhưng với 15-puzzle phải nói đây là nhánh worst-case robustness, không phải đối thủ thật.",
+    "exam_tips_en": "Minimax keeps the MIN name from theory, but for the 15-puzzle it must be explained as a worst-case robustness branch, not a real opponent.",
 }
 
 THEORY["Alpha-Beta"] = {
@@ -646,8 +825,10 @@ THEORY["Alpha-Beta"] = {
     "group": "AI-vs-AI Tournament",
     "goal": "Tối ưu Minimax bằng cách cắt nhánh không ảnh hưởng kết quả.",
     "goal_en": "Optimize Minimax by pruning branches that do not affect the final decision.",
-    "idea": "Alpha: best value MAX đã thấy. Beta: best value MIN đã thấy. Cắt khi alpha ≥ beta.",
-    "idea_en": "Alpha: best value MAX can guarantee. Beta: best value MIN can guarantee. Prune when alpha >= beta.",
+    "idea": "Alpha: best value MAX đã thấy. Beta: bound của nhánh worst-case MIN đã thấy. Cắt khi alpha ≥ beta.",
+    "idea_en": "Alpha: best value MAX can guarantee. Beta: bound from the worst-case MIN branch. Prune when alpha >= beta.",
+    "transferable_concept": "Branch-and-bound pruning cho cây tìm kiếm có bound.",
+    "transferable_concept_en": "Branch-and-bound pruning for bounded search trees.",
     "data_structure": "Giống Minimax + alpha/beta bounds.",
     "data_structure_en": "Same as Minimax with alpha/beta bounds.",
     "formula": "Alpha-beta: if alpha ≥ beta → PRUNE. Với cùng cây hữu hạn được duyệt đủ, giá trị root giống Minimax.",
@@ -668,8 +849,8 @@ THEORY["Alpha-Beta"] = {
       beta = min(beta, value)
       if alpha ≥ beta: break  # alpha cutoff
     return value""",
-    "application": "Cùng mô hình game tree với Minimax nhưng có thể duyệt ít node hơn. Nếu không timeout và cùng depth/order, giá trị root giống Minimax.",
-    "application_en": "Uses the same game-tree model as Minimax but can visit fewer nodes. Without timeout and with the same depth/order, the root value matches Minimax.",
+    "application": "Dùng cùng cây worst-case như Minimax nhưng có thể duyệt ít node hơn. Nếu không timeout và cùng depth/order, giá trị root giống Minimax.",
+    "application_en": "Uses the same worst-case tree as Minimax but can visit fewer nodes. Without timeout and with the same depth/order, the root value matches Minimax.",
     "suitable": "Không phù hợp cho 15-puzzle chuẩn. Minh họa pruning technique.",
     "suitable_en": "NOT suitable for standard 15-puzzle. Illustrates pruning techniques.",
     "pros": ["Giữ giá trị root của Minimax khi duyệt đủ", "Duyệt ít node hơn", "Hiệu quả nhất khi node được sắp xếp tốt"],
@@ -680,10 +861,10 @@ THEORY["Alpha-Beta"] = {
     "complexity_en": "Best: O(b^(m/2)), Worst: O(b^m) same as Minimax. Average is significantly better.",
     "bad_example": "Với bad move ordering, Alpha-Beta duyệt gần bằng Minimax.",
     "bad_example_en": "With bad move ordering, Alpha-Beta pruning evaluates almost as many nodes as Minimax.",
-    "comparison": "Alpha-Beta = Minimax + pruning. Khi duyệt đủ cùng depth/order thì giá trị root giống Minimax; timeout hoặc depth khác chỉ là đánh giá xấp xỉ.",
-    "comparison_en": "Alpha-Beta = Minimax + pruning. With the same fully searched depth/order, the root value matches Minimax; timeout or different depth makes it approximate evidence.",
-    "exam_tips": "Alpha-beta pruning ⇒ giữ giá trị root của Minimax nếu cây được duyệt đủ, thường duyệt ÍT HƠN. Alpha = best for MAX, Beta = best for MIN. Cắt khi α ≥ β.",
-    "exam_tips_en": "Alpha-beta pruning preserves the Minimax root value if the tree is fully searched, usually with FEWER node expansions. Alpha = best for MAX, Beta = best for MIN. Prune when α >= β.",
+    "comparison": "Alpha-Beta = Minimax + pruning. Khi duyệt đủ cùng worst-case tree/depth/order thì giá trị root giống Minimax; timeout hoặc depth khác chỉ là đánh giá xấp xỉ.",
+    "comparison_en": "Alpha-Beta = Minimax + pruning. With the same fully searched worst-case tree/depth/order, the root value matches Minimax; timeout or different depth makes it approximate evidence.",
+    "exam_tips": "Alpha-beta pruning giữ root value của Minimax nếu cây worst-case được duyệt đủ, thường duyệt ÍT HƠN. Alpha = best for MAX, Beta = bound của MIN branch. Cắt khi α ≥ β.",
+    "exam_tips_en": "Alpha-beta pruning preserves the Minimax root value if the worst-case tree is fully searched, usually with FEWER node expansions. Alpha = best for MAX, Beta = bound of the MIN branch. Prune when α >= β.",
 }
 
 THEORY["Expectimax"] = {
@@ -691,8 +872,10 @@ THEORY["Expectimax"] = {
     "group": "AI-vs-AI Tournament",
     "goal": "Tính kỳ vọng utility khi có yếu tố ngẫu nhiên (chance node).",
     "goal_en": "Calculate expected utility under random chance nodes.",
-    "idea": "MAX node: chọn max. CHANCE node: tính kỳ vọng dựa trên xác suất. Không giả sử đối thủ xấu nhất.",
-    "idea_en": "MAX node: selects max. CHANCE node: calculates expected value based on probabilities. Does not assume worst-case play from opponent.",
+    "idea": "MAX node: chọn max. CHANCE node: tính kỳ vọng dựa trên xác suất. Không có MIN; outcome được mô hình bằng phân phối xác suất.",
+    "idea_en": "MAX node: selects max. CHANCE node: calculates expected value based on probabilities. There is no MIN; outcomes are modeled by a probability distribution.",
+    "transferable_concept": "Expected value under uncertainty.",
+    "transferable_concept_en": "Expected value under uncertainty.",
     "data_structure": "Game tree với MAX node và CHANCE node.",
     "data_structure_en": "Game tree with MAX nodes and CHANCE nodes.",
     "formula": "Expectimax(s) = utility if terminal. Max_a Expectimax(Result(s,a)) if MAX. Σ P(a) × Expectimax(Result(s,a)) if CHANCE.",
@@ -707,16 +890,16 @@ THEORY["Expectimax"] = {
     "application_en": "Extended 15-puzzle: actions have success probabilities (e.g. 80% success, 20% slide failure).",
     "suitable": "Không phải thuật toán cho 15-puzzle chuẩn. Minh họa decision-making dưới uncertainty.",
     "suitable_en": "NOT suitable for standard 15-puzzle. Illustrates decision-making under uncertainty.",
-    "pros": ["Tính kỳ vọng thay vì worst-case", "Phù hợp môi trường ngẫu nhiên", "Thực tế hơn Minimax khi không có đối thủ"],
-    "pros_en": ["Calculates average utility instead of worst-case", "Ideal for stochastic environments", "More realistic than Minimax when there is no active adversary"],
+    "pros": ["Tính kỳ vọng thay vì worst-case", "Phù hợp môi trường ngẫu nhiên", "Thực tế hơn Minimax khi mô hình là xác suất thay vì đối thủ"],
+    "pros_en": ["Calculates average utility instead of worst-case", "Ideal for stochastic environments", "More realistic than Minimax when the model is probabilistic rather than adversarial"],
     "cons": ["Không pruning được như alpha-beta", "Cần biết xác suất", "O(b^m) như Minimax nhưng không cắt được"],
     "cons_en": ["Cannot prune like Alpha-Beta", "Requires known probabilities", "O(b^m) time complexity without cuts"],
     "complexity": "O(b^m) — không thể pruning vì cần tính tất cả outcomes.",
     "complexity_en": "O(b^m) — cannot prune because all outcomes must be evaluated for expectation.",
     "bad_example": "Expectimax tạo nhiều node hơn Minimax vì mỗi MAX node sinh CHANCE node với nhiều outcomes.",
     "bad_example_en": "Expectimax generates more nodes than Minimax because each MAX node spawns CHANCE nodes with multiple outcomes.",
-    "comparison": "Minimax ⇒ giả sử đối thủ xấu nhất. Expectimax ⇒ tính kỳ vọng theo xác suất. Expectimax không cắt được như alpha-beta.",
-    "comparison_en": "Minimax assumes worst-case opponent. Expectimax computes expectation based on probability. Expectimax cannot be pruned like Alpha-Beta.",
+    "comparison": "Minimax ⇒ nhánh worst-case. Expectimax ⇒ kỳ vọng theo xác suất. Expectimax không cắt được như alpha-beta vì phải tính đủ outcome.",
+    "comparison_en": "Minimax uses a worst-case branch. Expectimax computes probability-weighted expectation. Expectimax cannot be pruned like Alpha-Beta because all outcomes contribute to the expectation.",
     "exam_tips": "Expectimax ⇒ MAX + CHANCE node. CHANCE node tính kỳ vọng. Không pruning được. Kết quả khác Minimax khi xác suất ≠ worst-case.",
     "exam_tips_en": "Expectimax ⇒ MAX + CHANCE nodes. CHANCE nodes calculate expected value. Pruning is not possible. Results differ from Minimax when probabilities differ from worst-case.",
 }

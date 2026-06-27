@@ -5,7 +5,7 @@ import streamlit as st
 
 from core.puzzle import GOAL_STATE, is_solvable
 from ui.action_states import render_action_state
-from ui.localization import translate
+from ui.localization import VIETNAMESE, translate
 from ui.components import (
     _format_trace_state,
     _format_trace_state_list,
@@ -18,7 +18,7 @@ from ui.components import (
 
 
 def t(key, **kwargs):
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = st.session_state.get("global_lang_select", VIETNAMESE)
     return translate(global_lang, key, **kwargs)
 
 

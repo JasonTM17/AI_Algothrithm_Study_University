@@ -34,6 +34,7 @@ STATE_DEPENDENT_KEYS = (
     "play_auto_run",
     "play_auto_done_pending",
     "play_slider_val",
+    "play_slider_version",
     "play_optimal_result",
     "play_victory_signature",
     "play_victory_message_key",
@@ -42,7 +43,11 @@ STATE_DEPENDENT_KEYS = (
 
 
 def state_text(state: tuple[int, ...]) -> str:
-    return " ".join(str(tile) for tile in state)
+    rows = [
+        " ".join(str(tile) for tile in state[row_start:row_start + 4])
+        for row_start in range(0, 16, 4)
+    ]
+    return "\n".join(rows)
 
 
 def normalize_state(state: tuple[int, ...]) -> tuple[int, ...]:
@@ -64,6 +69,9 @@ def clear_start_goal_dependents() -> None:
     """Clear cached outputs that were computed for an older start/goal pair."""
     for key in STATE_DEPENDENT_KEYS:
         st.session_state.pop(key, None)
+    for key in list(st.session_state):
+        if str(key).startswith("play_slider_val_"):
+            st.session_state.pop(key, None)
     st.session_state.benchmark_results = []
 
 

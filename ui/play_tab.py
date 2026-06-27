@@ -17,7 +17,9 @@ from ui.components import (
     render_puzzle_board,
     render_search_detail_table,
     render_search_tree,
+    render_solution_steps,
 )
+from ui.sample_images import SAMPLE_IMAGES, generate_sample_tiles
 
 VICTORY_MESSAGE_KEYS = (
     "play_victory_1",
@@ -26,6 +28,40 @@ VICTORY_MESSAGE_KEYS = (
     "play_victory_4",
     "play_victory_5",
 )
+
+PLAY_TEXT_FALLBACKS = {
+    "play_ai_solver": "A* Search từng bước",
+    "play_ai_desc": "A* mở rộng state có f(n)=g(n)+h(n) nhỏ nhất, với h(n) là Manhattan Distance.",
+    "play_ai_solve_btn": "Chạy A* từng bước",
+    "play_ai_algorithm_label": "Thuật toán",
+    "play_ai_eval_label": "Hàm đánh giá",
+    "play_ai_heuristic_label": "Heuristic",
+    "play_ai_cost_label": "Cost model",
+    "play_ai_cost_value": "Mỗi bước trượt ô trống hợp lệ có cost 1",
+    "play_ai_goal_label": "Goal test",
+    "play_ai_goal_value": "State hiện tại bằng goal đã chọn",
+    "play_ai_optimality_label": "Tính tối ưu",
+    "play_ai_optimality_value": "Đúng khi h(n) admissible/consistent và search không bị giới hạn tài nguyên",
+    "play_ai_current_step_title": "Bước replay A* hiện tại",
+    "play_ai_g_metric": "g(n)",
+    "play_ai_h_metric": "h(n)",
+    "play_ai_f_metric": "f(n)",
+    "play_ai_frontier_reached_metric": "Frontier / Reached",
+    "play_ai_trace_not_captured": "State replay ban đầu; trace bắt đầu sau khi mở rộng node.",
+    "play_ai_step_evidence": "Action trước: **{prev}** | Action kế tiếp: **{next}** | Lý do trace: `{reason}`",
+}
+
+
+def _play_text(t, key: str, **kwargs) -> str:
+    fallback = PLAY_TEXT_FALLBACKS.get(key, key)
+    try:
+        value = t(key, **kwargs)
+    except Exception:
+        value = fallback.format(**kwargs) if kwargs else fallback
+    if not isinstance(value, str) or value == key or value.lower() == key.lower():
+        value = fallback.format(**kwargs) if kwargs else fallback
+    return value
+
 
 def _clear_victory_state() -> None:
     st.session_state.pop("play_victory_signature", None)
@@ -54,7 +90,14 @@ def _clear_ai_replay() -> None:
     st.session_state.play_auto_run = False
     st.session_state.play_replay_speed = st.session_state.get("play_replay_speed", 0.35)
     st.session_state.pop("play_auto_done_pending", None)
+    st.session_state.pop("play_auto_pending_first_tick", None)
+    st.session_state.pop("play_auto_start_pending", None)
+    st.session_state.pop("play_ai_solved_steps_pending", None)
     st.session_state.pop("play_slider_val", None)
+    st.session_state.pop("play_slider_version", None)
+    for key in list(st.session_state):
+        if str(key).startswith("play_slider_val_"):
+            st.session_state.pop(key, None)
 
 
 def _store_ai_replay_result(result) -> None:
@@ -65,6 +108,7 @@ def _store_ai_replay_result(result) -> None:
     st.session_state.play_solution_res = result
     st.session_state.play_solution_base_history = list(st.session_state.play_history)
     st.session_state.play_solution_base_moves = st.session_state.play_moves
+    st.session_state.play_slider_version = st.session_state.get("play_slider_version", 0) + 1
 
 
 def _apply_ai_replay_step(index: int) -> None:
@@ -79,12 +123,17 @@ def _apply_ai_replay_step(index: int) -> None:
         base_history = [path[0]]
         base_moves = 0
 
+    previous_index = int(st.session_state.get("play_solution_idx", 0))
     st.session_state.play_solution_idx = bounded_index
+    if previous_index != bounded_index:
+        st.session_state.play_slider_version = st.session_state.get("play_slider_version", 0) + 1
     st.session_state.play_state = path[bounded_index]
     st.session_state.play_history = base_history + list(path[1:bounded_index + 1])
     st.session_state.play_moves = base_moves + bounded_index
     if bounded_index > 0:
         st.session_state.play_assisted = True
+    if bounded_index >= len(path) - 1:
+        st.session_state["play_auto_done_pending"] = True
 
 
 def _render_victory_notice(t) -> None:
@@ -151,6 +200,52 @@ def _ensure_play_state(goal) -> None:
         st.session_state.pop("play_optimal_result", None)
 
 
+def _ensure_play_board_mode() -> None:
+    labels_to_values = {
+        "Number board": "number",
+        "Image puzzle": "image",
+        "Bàn số": "number",
+        "Puzzle ảnh": "image",
+    }
+    stored_mode = st.session_state.get("play_board_mode")
+    if stored_mode in labels_to_values:
+        st.session_state.play_board_mode = labels_to_values[stored_mode]
+    elif stored_mode not in {"number", "image"}:
+        st.session_state.play_board_mode = (
+            "image"
+            if st.session_state.get("image_active") and st.session_state.get("image_tiles")
+            else "number"
+        )
+
+
+def _sync_play_board_mode_from_choice(mode_options: dict[str, str]) -> None:
+    """Copy the radio label into the stable internal board-mode value."""
+    choice = st.session_state.get("play_board_mode_choice")
+    mode = mode_options.get(choice, st.session_state.get("play_board_mode", "number"))
+    if mode not in {"number", "image"}:
+        mode = "number"
+    st.session_state.play_board_mode = mode
+    st.session_state.play_board_mode_choice_synced_to = mode
+
+
+def _load_default_image_tiles() -> bool:
+    """Load the selected built-in image so the image puzzle works immediately."""
+    sample_name = st.session_state.get("sample_select")
+    if sample_name not in SAMPLE_IMAGES:
+        sample_name = next(iter(SAMPLE_IMAGES), None)
+    if not sample_name:
+        return False
+
+    tiles = generate_sample_tiles(sample_name)
+    if not tiles:
+        return False
+
+    st.session_state.image_tiles = tiles
+    st.session_state.image_active = True
+    st.session_state.play_image_sample_name = sample_name
+    return True
+
+
 def _ensure_ai_replay_state() -> None:
     if "play_solution_path" not in st.session_state:
         st.session_state.play_solution_path = None
@@ -164,11 +259,15 @@ def _ensure_ai_replay_state() -> None:
         st.session_state.play_auto_run = False
     if "play_replay_speed" not in st.session_state:
         st.session_state.play_replay_speed = 0.35
+    if "play_slider_version" not in st.session_state:
+        st.session_state.play_slider_version = 0
 
 
 def _advance_auto_replay_one_step() -> None:
     """Advance one solver frame; Streamlit fragments call this repeatedly."""
     if not st.session_state.get("play_auto_run", False):
+        return
+    if st.session_state.pop("play_auto_pending_first_tick", False):
         return
     path = st.session_state.get("play_solution_path")
     if not path:
@@ -228,6 +327,42 @@ def _render_play_board_panel(t, goal, solvable: bool) -> None:
         unsafe_allow_html=True,
     )
 
+    mode_options = {
+        t("play_mode_number"): "number",
+        t("play_mode_image"): "image",
+    }
+    stored_mode = st.session_state.get("play_board_mode", "number")
+    if stored_mode not in mode_options.values():
+        stored_mode = "number"
+        st.session_state.play_board_mode = stored_mode
+    selected_label = next(
+        label for label, value in mode_options.items() if value == stored_mode
+    )
+    current_choice = st.session_state.get("play_board_mode_choice")
+    current_choice_mode = mode_options.get(current_choice)
+    synced_mode = st.session_state.get("play_board_mode_choice_synced_to")
+    if current_choice_mode is None or synced_mode != stored_mode:
+        st.session_state.play_board_mode_choice = selected_label
+        st.session_state.play_board_mode_choice_synced_to = stored_mode
+
+    mode_label = st.radio(
+        t("play_board_mode"),
+        options=list(mode_options),
+        index=list(mode_options).index(selected_label),
+        key="play_board_mode_choice",
+        on_change=_sync_play_board_mode_from_choice,
+        args=(mode_options,),
+        horizontal=True,
+        width="stretch",
+    )
+    mode = mode_options.get(mode_label, "number")
+    st.session_state.play_board_mode = mode
+    st.session_state.play_board_mode_choice_synced_to = mode
+
+    if mode == "image":
+        _render_image_mode_board(t, goal)
+        return
+
     render_clickable_board(
         st.session_state.play_state,
         key_prefix="play_main",
@@ -235,6 +370,81 @@ def _render_play_board_panel(t, goal, solvable: bool) -> None:
         on_click_fn=_handle_play_slide,
         goal=goal,
     )
+
+
+def _render_image_mode_board(t, goal) -> None:
+    """Keep uploaded imagery in the primary play surface instead of a hidden panel."""
+    if not st.session_state.get("image_tiles"):
+        if _load_default_image_tiles():
+            st.caption(t("play_default_image_loaded", name=st.session_state.play_image_sample_name))
+
+    uploaded_img = st.file_uploader(
+        t("play_upload_label"),
+        type=["png", "jpg", "jpeg", "webp"],
+        key="puzzle_img",
+    )
+    if uploaded_img:
+        image_signature = (uploaded_img.name, uploaded_img.size)
+        if st.session_state.get("play_uploaded_image_signature") != image_signature:
+            tiles = process_uploaded_image(uploaded_img)
+            if tiles:
+                st.session_state.image_tiles = tiles
+                st.session_state.image_active = True
+                st.session_state.play_uploaded_image_signature = image_signature
+                st.success(t("play_img_loaded", count=len(tiles)))
+            else:
+                st.error(t("play_img_failed"))
+
+    if not st.session_state.get("image_tiles"):
+        st.info(t("play_image_missing"))
+        return
+
+    image_action_col, image_status_col, image_target_col = st.columns([1, 1, 1])
+    with image_action_col:
+        if st.button(t("play_remove_img"), key="remove_img", width="stretch"):
+            st.session_state.image_tiles = {}
+            st.session_state.image_active = False
+            st.session_state.play_board_mode = "number"
+            st.session_state.play_board_mode_choice_synced_to = "number"
+            st.session_state.pop("play_uploaded_image_signature", None)
+            st.rerun()
+    with image_status_col:
+        st.session_state.show_numbers = st.checkbox(
+            t("play_show_numbers"),
+            value=st.session_state.get("show_numbers", False),
+            key="chk_show_numbers"
+        )
+    with image_target_col:
+        with st.popover(t("play_view_goal_image")):
+            st.caption(t("play_complete_image_to_arrange"))
+            st.markdown('<div style="pointer-events: none; width: 300px;">', unsafe_allow_html=True)
+            render_image_board(
+                goal,
+                st.session_state.image_tiles,
+                key_prefix="play_target_image_preview",
+                highlight_correct=False,
+                on_click_fn=None,
+                show_numbers=False,
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="play-image-game-frame">', unsafe_allow_html=True)
+    render_image_board(
+        st.session_state.play_state,
+        st.session_state.image_tiles,
+        key_prefix="play_main_image",
+        highlight_correct=True,
+        on_click_fn=_handle_play_slide,
+        show_numbers=st.session_state.get("show_numbers", False),
+        action_labels={
+            "L": t("slide_right"),
+            "R": t("slide_left"),
+            "U": t("slide_down"),
+            "D": t("slide_up"),
+        },
+        goal=goal,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _render_play_status_controls(t, goal, solvable: bool) -> None:
@@ -277,13 +487,84 @@ def _render_play_status_controls(t, goal, solvable: bool) -> None:
 
 
 def _render_solver_evidence(t, res) -> None:
-    with st.expander(t("play_ai_evidence_title"), expanded=False):
+    with st.expander(t("play_ai_evidence_title"), expanded=True):
         st.caption(t("play_ai_evidence_desc"))
+        render_search_detail_table(res.trace, max_rows=24, key="play_ai_detail_step_slider")
         if st.session_state.get("play_auto_run"):
             st.info(t("play_ai_evidence_pause_hint"))
-            return
-        render_search_detail_table(res.trace, max_rows=24, key="play_ai_detail_step_slider")
-        render_search_tree(res, max_nodes=24)
+        render_search_tree(
+            res,
+            max_nodes=12,
+            compact=True,
+            board_mode=st.session_state.get("play_board_mode", "number"),
+            image_tiles=st.session_state.get("image_tiles"),
+        )
+
+
+def _trace_step_for_state(trace: list, state: tuple[int, ...]):
+    """Find the captured A* trace row that generated the displayed replay state."""
+    for step in trace:
+        if step.state == state:
+            return step
+    return None
+
+
+def _render_ai_academic_contract(t) -> None:
+    rows = [
+        (_play_text(t, "play_ai_algorithm_label"), "A* Search"),
+        (_play_text(t, "play_ai_eval_label"), "f(n)=g(n)+h(n)"),
+        (_play_text(t, "play_ai_heuristic_label"), "Manhattan Distance"),
+        (_play_text(t, "play_ai_cost_label"), _play_text(t, "play_ai_cost_value")),
+        (_play_text(t, "play_ai_goal_label"), _play_text(t, "play_ai_goal_value")),
+        (_play_text(t, "play_ai_optimality_label"), _play_text(t, "play_ai_optimality_value")),
+    ]
+    markup = "".join(
+        '<div class="ai-contract-row">'
+        f'<span>{escape(label)}</span>'
+        f'<strong>{escape(value)}</strong>'
+        "</div>"
+        for label, value in rows
+    )
+    st.markdown(
+        f'<div class="ai-contract-grid">{markup}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_ai_step_evidence(t, res, idx: int, replay_state: tuple[int, ...], goal) -> None:
+    current_h = HEURISTICS["Manhattan Distance"](replay_state, goal=goal)
+    current_g = idx
+    current_f = current_g + current_h
+    trace_step = _trace_step_for_state(res.trace, replay_state)
+    frontier_size = trace_step.frontier_size if trace_step else res.max_frontier_size
+    reached_size = trace_step.reached_size if trace_step else res.reached_size
+    previous_action = (
+        _direction_label(t, res.actions[idx - 1])
+        if 0 < idx <= len(res.actions)
+        else t("dir_start_short")
+    )
+    next_action = (
+        _direction_label(t, res.actions[idx])
+        if idx < len(res.actions)
+        else t("anim_goal")
+    )
+    trace_reason = trace_step.reason if trace_step else _play_text(t, "play_ai_trace_not_captured")
+
+    st.markdown(f"#### {_play_text(t, 'play_ai_current_step_title')}")
+    evidence_cols = st.columns(4)
+    evidence_cols[0].metric(_play_text(t, "play_ai_g_metric"), current_g)
+    evidence_cols[1].metric(_play_text(t, "play_ai_h_metric"), f"{current_h:.1f}")
+    evidence_cols[2].metric(_play_text(t, "play_ai_f_metric"), f"{current_f:.1f}")
+    evidence_cols[3].metric(_play_text(t, "play_ai_frontier_reached_metric"), f"{frontier_size} / {reached_size}")
+    st.markdown(
+        _play_text(
+            t,
+            "play_ai_step_evidence",
+            prev=previous_action,
+            next=next_action,
+            reason=trace_reason,
+        )
+    )
 
 
 def _render_ai_solver_panel(t, goal) -> None:
@@ -295,22 +576,26 @@ def _render_ai_solver_panel(t, goal) -> None:
         <div class="ai-solver-card">
             <div class="ai-solver-header">
                 <div class="ai-solver-title-container">
-                    <span class="ai-solver-badge">A* + Manhattan</span>
-                    <h3>{escape(t("play_ai_solver"))}</h3>
+                    <span class="ai-solver-badge">A* Search</span>
+                    <h3>{escape(_play_text(t, "play_ai_solver"))}</h3>
                 </div>
             </div>
-            <p class="ai-solver-desc">{escape(t("play_ai_desc"))}</p>
+            <p class="ai-solver-desc">{escape(_play_text(t, "play_ai_desc"))}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    _render_ai_academic_contract(t)
 
     if st.session_state.pop("play_auto_done_pending", False):
         st.success(t("play_auto_done"))
+    solved_steps_pending = st.session_state.pop("play_ai_solved_steps_pending", None)
+    if solved_steps_pending is not None:
+        st.success(t("play_ai_solved_msg", steps=solved_steps_pending))
 
     solve_col, clear_col = st.columns([1, 1])
     with solve_col:
-        if st.button(t("play_ai_solve_btn"), key="btn_ai_solve", type="primary", width="stretch"):
+        if st.button(_play_text(t, "play_ai_solve_btn"), key="btn_ai_solve", type="primary", width="stretch"):
             if st.session_state.play_state == goal:
                 st.info(t("play_ai_already_goal"))
             elif not is_solvable(st.session_state.play_state, goal):
@@ -325,7 +610,16 @@ def _render_ai_solver_panel(t, goal) -> None:
                     )
                 if result.success:
                     _store_ai_replay_result(result)
-                    st.success(t("play_ai_solved_msg", steps=len(result.actions)))
+                    st.session_state.play_ai_solved_steps_pending = len(result.actions)
+                    if len(result.path) > 1:
+                        _apply_ai_replay_step(1)
+                        if len(result.path) - 1 > 1:
+                            st.session_state.play_auto_run = True
+                            st.session_state.play_auto_pending_first_tick = True
+                        else:
+                            st.rerun()
+                    else:
+                        st.rerun()
                 else:
                     st.error(t("play_ai_error", error=result.message))
     with clear_col:
@@ -392,7 +686,6 @@ def _render_ai_solver_panel(t, goal) -> None:
             width="stretch",
         ):
             st.session_state.play_auto_run = True
-            _advance_auto_replay_one_step()
             st.rerun()
     with ctrl_col4:
         if st.button(
@@ -419,15 +712,25 @@ def _render_ai_solver_panel(t, goal) -> None:
     )
     st.session_state.play_replay_speed = speed_options[speed_label]
 
-    slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key="play_slider_val")
+    slider_key = f"play_slider_val_{st.session_state.get('play_slider_version', 0)}"
+    slider_val = st.slider(t("play_curr_step"), 0, len(res.actions), idx, key=slider_key)
     if slider_val != idx:
         _apply_ai_replay_step(slider_val)
         st.rerun()
+
+    _render_ai_step_evidence(t, res, idx, replay_state, goal)
 
     if 0 < idx <= len(res.actions):
         act_label = _direction_label(t, res.actions[idx - 1])
         st.markdown(t("play_action_performed", step=idx, total=len(res.actions), act=act_label))
 
+    render_solution_steps(
+        path,
+        res.actions,
+        board_mode=st.session_state.get("play_board_mode", "number"),
+        image_tiles=st.session_state.get("image_tiles"),
+        current_step=idx,
+    )
     _render_solver_evidence(t, res)
 
 
@@ -439,6 +742,8 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     with solver_col:
         _render_ai_solver_panel(t, goal)
     _render_play_status_controls(t, goal, solvable)
+    _render_start_goal_reference(t, goal, solvable)
+    _render_challenge_panel(t, goal)
 
 
 def _render_play_workbench(t, goal, solvable: bool) -> None:
@@ -464,73 +769,6 @@ def _render_start_goal_reference(t, goal, solvable: bool) -> None:
             st.metric(t("play_manhattan"), start_h)
             st.metric(t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no"))
         render_exam_path("Play", t=t)
-
-
-def _render_optional_image_panel(t, goal) -> None:
-    with st.expander(t("play_optional_image_panel"), expanded=False):
-        st.caption(t("play_upload_desc"))
-        uploaded_img = st.file_uploader(
-            t("play_upload_label"),
-            type=["png", "jpg", "jpeg", "webp"],
-            key="puzzle_img",
-        )
-        if uploaded_img:
-            tiles = process_uploaded_image(uploaded_img)
-            if tiles:
-                st.session_state.image_tiles = tiles
-                st.session_state.image_active = True
-                st.success(t("play_img_loaded", count=len(tiles)))
-            else:
-                st.error(t("play_img_failed"))
-        if st.button(t("play_remove_img"), key="remove_img"):
-            st.session_state.image_tiles = {}
-            st.session_state.image_active = False
-
-        has_image = bool(st.session_state.get("image_tiles"))
-        if not has_image:
-            st.info(t("play_preview_none"))
-            return
-
-        col_board, col_preview = st.columns([1.18, 0.82], gap="large")
-        with col_board:
-            st.markdown('<div class="play-image-game-frame">', unsafe_allow_html=True)
-            render_image_board(
-                st.session_state.play_state,
-                st.session_state.image_tiles,
-                key_prefix="play_image",
-                highlight_correct=True,
-                on_click_fn=_handle_play_slide,
-                show_numbers=st.session_state.get("show_numbers", True),
-                action_labels={
-                    "L": t("slide_right"),
-                    "R": t("slide_left"),
-                    "U": t("slide_down"),
-                    "D": t("slide_up"),
-                },
-                goal=goal,
-            )
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col_preview:
-            st.markdown(
-                f'<div class="play-preview-card"><div class="image-preview-title">{escape(t("play_target_preview"))}</div>',
-                unsafe_allow_html=True,
-            )
-            if uploaded_img:
-                st.image(uploaded_img, width="stretch")
-            elif "sample_select" in st.session_state:
-                choice = st.session_state.sample_select
-                from ui.sample_images import get_full_sample_image
-                try:
-                    preview_img_data = get_full_sample_image(choice)
-                    if preview_img_data:
-                        st.image(preview_img_data, width="stretch")
-                    else:
-                        st.caption(t("play_preview_fail"))
-                except Exception as e:
-                    st.caption(t("play_preview_error", error=e))
-            else:
-                st.info(t("play_preview_none"))
-            st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _render_challenge_panel(t, goal) -> None:
@@ -622,8 +860,6 @@ def render_play_tab(t, solvable: bool, global_lang: str) -> None:
     )
 
     _ensure_play_state(goal)
+    _ensure_play_board_mode()
     _ensure_ai_replay_state()
     _render_play_workbench(t, goal, solvable)
-    _render_start_goal_reference(t, goal, solvable)
-    _render_optional_image_panel(t, goal)
-    _render_challenge_panel(t, goal)

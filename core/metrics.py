@@ -81,6 +81,10 @@ class SearchResult:
     reached_size: int = 0
     runtime: float = 0.0
     random_seed: Optional[int] = None
+    variation_action_order: Optional[str] = None
+    variation_tie_breaker: Optional[str] = None
+    variation_solver_seed: Optional[int] = None
+    variation_randomizes_path: bool = True
     message: str = ""
     trace: list[TraceStep] = field(default_factory=list)
     search_tree_nodes: list[SearchTreeNode] = field(default_factory=list)
@@ -282,13 +286,15 @@ def search_tree_to_dot(result: SearchResult, max_nodes: int = 40) -> str:
     """Serialize bounded, explicit search-tree evidence to Graphviz DOT."""
     visible = {node.node_id: node for node in result.search_tree_nodes[:max_nodes]}
     lines = [
-        "digraph SearchTree {", "rankdir=TB;", "graph [bgcolor=transparent];",
-        'node [shape=box style="rounded,filled" fontname="Arial" fontsize=9];',
-        'edge [fontname="Arial" fontsize=9];',
+        "digraph SearchTree {",
+        "rankdir=TB;",
+        'graph [bgcolor=transparent ranksep=0.85 nodesep=0.5 pad=0.25];',
+        'node [shape=box style="rounded,filled" fontname="Courier" fontsize=14 margin="0.12,0.08" penwidth=1.8];',
+        'edge [fontname="Arial" fontsize=12 arrowsize=0.8];',
     ]
     for node in visible.values():
         rows = [node.state[i:i + 4] for i in range(0, 16, 4)]
-        grid = "\\n".join(" ".join("_" if value == 0 else str(value) for value in row) for row in rows)
+        grid = "\\n".join(" ".join(" _" if val == 0 else f"{val:2d}" for val in row) for row in rows)
         h_text = "-" if node.h is None else f"{node.h:g}"
         f_text = "-" if node.f is None else f"{node.f:g}"
         label = f"{node.node_id} | d={node.depth} g={node.g:g} h={h_text} f={f_text}\\n{grid}"

@@ -133,7 +133,7 @@ def make_run_variation(
 
 
 def apply_run_variation(result: object, variation: RunVariation) -> None:
-    """Attach UI variation metadata to a result without changing SearchResult schema."""
+    """Attach the per-click UI variation metadata to a SearchResult-like object."""
     result.random_seed = variation.seed
     result.variation_action_order = variation.action_order
     result.variation_tie_breaker = variation.tie_breaker

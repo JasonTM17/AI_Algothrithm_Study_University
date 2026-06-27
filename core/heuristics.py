@@ -68,7 +68,7 @@ def linear_conflict(state: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE) 
             if val == 0:
                 continue
             goal_r, goal_c = goal_positions[val]
-            if goal_r == row:
+            if goal_r == row and goal_c != col:
                 row_tiles.append((val, goal_c))
         for left in range(len(row_tiles)):
             for right in range(left + 1, len(row_tiles)):
@@ -83,7 +83,7 @@ def linear_conflict(state: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE) 
             if val == 0:
                 continue
             goal_r, goal_c = goal_positions[val]
-            if goal_c == col:
+            if goal_c == col and goal_r != row:
                 column_tiles.append((val, goal_r))
         for top in range(len(column_tiles)):
             for bottom in range(top + 1, len(column_tiles)):

@@ -80,7 +80,7 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
     """Render interactive 4x4 puzzle board with game-like 3D tile design.
 
     Uses HTML grid for visuals + Streamlit columns/buttons for interaction.
-    Tiles have row-based gradients, 3D shadows, checkerboard blank, hover lift.
+    Tiles have value-stable gradients, 3D shadows, checkerboard blank, hover lift.
 
     Args:
         state: 16-element tuple
@@ -89,10 +89,9 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
         on_click_fn: callback function(direction) when a tile is clicked
     """
     goal_state = _active_goal_state(goal)
-    with st.container():
-        st.markdown('<div class="interactive-board-container-number"></div>', unsafe_allow_html=True)
+    dynamic_styles = []
+    with st.container(key=f"{key_prefix}_number_board"):
         for r in range(4):
-            st.markdown('<div class="number-board-row"></div>', unsafe_allow_html=True)
             cols = st.columns(4, gap="small")
             for c in range(4):
                 idx = r * 4 + c
@@ -104,15 +103,17 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
                             unsafe_allow_html=True,
                         )
                     else:
-                        cls_list = ["puzzle-tile", f"row-{r}"]
+                        cls_list = ["puzzle-tile", f"tile-band-{(val - 1) // 4}"]
                         if highlight_correct and val == goal_state[idx]:
                             cls_list.append("correct")
                         cls_str = " ".join(cls_list)
 
                         if _is_adjacent_to_blank(state, idx) and on_click_fn:
                             direction = _get_slide_direction(state, idx)
+                            button_key = f"{key_prefix}_hit_{r}_{c}"
+                            dynamic_styles.append(_number_tile_button_style(button_key))
                             st.button(
-                                str(val), key=f"{key_prefix}_hit_{r}_{c}",
+                                str(val), key=button_key,
                                 on_click=on_click_fn, args=(direction,),
                                 type="primary", width="stretch",
                             )
@@ -121,6 +122,25 @@ def render_clickable_board(state: tuple, key_prefix: str = "board",
                                 f'<div class="{cls_str}">{val}</div>',
                                 unsafe_allow_html=True,
                             )
+    if dynamic_styles:
+        st.markdown(f"<style>{''.join(dynamic_styles)}</style>", unsafe_allow_html=True)
+
+
+def _number_tile_button_style(button_key: str) -> str:
+    top, bottom, text, border = ("#d9c6a6", "#9b8466", "#17130f", "#51402f")
+    button_scope = f"div.st-key-{button_key} button"
+    return f"""
+    {button_scope} {{
+        background: linear-gradient(145deg, {top}, {bottom}) !important;
+        color: {text} !important;
+        border-bottom-color: {border} !important;
+        border-right-color: {border} !important;
+    }}
+    {button_scope}:hover:not(:disabled) {{
+        background: linear-gradient(145deg, {top}, {bottom}) !important;
+        filter: saturate(1.08) brightness(1.04) !important;
+    }}
+    """
 
 
 def _image_tile_button_style(button_key: str, image_src: str, show_numbers: bool) -> str:
@@ -332,41 +352,6 @@ def render_puzzle_board(
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_puzzle_with_image(
-    state: tuple,
-    image_tiles: dict,
-    highlight_correct: bool = True,
-    goal: tuple | None = None,
-):
-    """Render 4x4 puzzle board with image tiles overlaid on numbers.
-
-    Args:
-        state: 16-element tuple representing the puzzle state
-        image_tiles: dict mapping tile value (1-15) to base64-encoded image data URL
-        highlight_correct: Whether to highlight tiles in goal position
-    """
-    goal_state = _active_goal_state(goal)
-    cells = []
-    for i, val in enumerate(state):
-        if val == 0:
-            cells.append(
-                '<div class="puzzle-cell blank" style="width:70px;height:70px;font-size:22px;">_</div>'
-            )
-        else:
-            correct = (val == goal_state[i]) if highlight_correct else False
-            cls = "correct" if correct else "filled"
-            img_html = ""
-            if val in image_tiles:
-                img_html = f'<img class="tile-img" src="{image_tiles[val]}" alt="{val}">'
-            cells.append(
-                f'<div class="puzzle-cell {cls}" style="width:70px;height:70px;font-size:22px;position:relative;">'
-                f'{img_html}<span class="tile-number" style="position:relative;z-index:2;">{val}</span></div>'
-            )
-
-    html = f'<div class="puzzle-grid">{"".join(cells)}</div>'
-    st.markdown(html, unsafe_allow_html=True)
-
-
 def render_puzzle_row(
     states: list[tuple],
     labels: list[str] = None,
@@ -517,7 +502,8 @@ def render_result_metrics(result):
 
     if result.message:
         msg_cls = "result-success" if success else "result-failure"
-        st.markdown(f'<div class="{msg_cls}">{result.message}</div>', unsafe_allow_html=True)
+        safe_message = escape(str(result.message))
+        st.markdown(f'<div class="{msg_cls}">{safe_message}</div>', unsafe_allow_html=True)
 
 
 def render_trace_table(trace: list, max_rows: int = 100):
@@ -564,6 +550,9 @@ def render_trace_table(trace: list, max_rows: int = 100):
             row[t("tc_reached_size")] = step.reached_size
         if step.temperature is not None:
             row[t("tc_temp")] = f"{step.temperature:.4f}"
+        if step.candidate_h is not None:
+            row["h(current)"] = f"{step.current_h:.1f}"
+            row["h(candidate)"] = f"{step.candidate_h:.1f}"
         if step.probability is not None:
             row[t("tc_prob")] = f"{step.probability:.4f}"
         if step.accepted is not None:
@@ -705,6 +694,33 @@ def _state_to_mini_grid(state: tuple, goal: tuple | None = None) -> str:
     return f'<div class="puzzle-grid-mini">{"".join(cells)}</div>'
 
 
+def _state_to_mini_image_grid(
+    state: tuple,
+    image_tiles: dict | None,
+    goal: tuple | None = None,
+    *,
+    show_numbers: bool = True,
+) -> str:
+    """Return a compact HTML image mini-grid for a puzzle state."""
+    goal_state = _active_goal_state(goal)
+    tiles = image_tiles or {}
+    cells = []
+    for i, v in enumerate(state):
+        if v == 0:
+            cells.append('<span class="mc img blank">_</span>')
+            continue
+        classes = ["mc", "img", "solution-mini-image-tile", "correct" if v == goal_state[i] else "off"]
+        if v in tiles:
+            number_badge = f"<em>{v}</em>" if show_numbers else ""
+            cells.append(
+                f'<span class="{" ".join(classes)}">'
+                f'<img src="{escape(str(tiles[v]))}" alt="tile {v}">{number_badge}</span>'
+            )
+        else:
+            cells.append(f'<span class="{" ".join(classes)} missing">{v}</span>')
+    return f'<div class="puzzle-grid-mini puzzle-grid-mini-image">{"".join(cells)}</div>'
+
+
 def _state_to_grid_str(state: tuple) -> str:
     """Format a 4x4 puzzle state as a compact grid string for code blocks."""
     lines = []
@@ -742,8 +758,9 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
         current_step = max(0, min(current_step, max_step_index))
         st.session_state[key] = current_step
 
-        nav_cols = st.columns([1, 1, 1, 4])
-        with nav_cols[0]:
+        # Navigation buttons in their own row to prevent truncation in narrow containers
+        btn_cols = st.columns(3)
+        with btn_cols[0]:
             st.button(
                 t("anim_prev"),
                 key=f"{key}_prev",
@@ -752,7 +769,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
                 args=(key, current_step - 1, max_step_index),
                 width="stretch",
             )
-        with nav_cols[1]:
+        with btn_cols[1]:
             st.button(
                 t("anim_next"),
                 key=f"{key}_next",
@@ -761,7 +778,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
                 args=(key, current_step + 1, max_step_index),
                 width="stretch",
             )
-        with nav_cols[2]:
+        with btn_cols[2]:
             st.button(
                 t("anim_reset"),
                 key=f"{key}_reset",
@@ -770,6 +787,8 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
                 args=(key, 0, max_step_index),
                 width="stretch",
             )
+
+        # Step slider in its own row
         step_idx = st.slider(
             t("det_slider"), 0, max_step_index, current_step,
             key=key
@@ -822,6 +841,76 @@ def _set_slider_step(slider_key: str, step: int, max_step: int) -> None:
     st.session_state[slider_key] = max(0, min(step, max_step))
 
 
+def render_solution_steps(
+    path: list[tuple],
+    actions: list[str],
+    *,
+    board_mode: str = "number",
+    image_tiles: dict | None = None,
+    current_step: int | None = None,
+) -> None:
+    """Show the actual certified trajectory as ordered, readable steps."""
+    if not path or len(path) != len(actions) + 1:
+        return
+
+    direction_map = {
+        "L": t("dir_L").split(" ")[0],
+        "R": t("dir_R").split(" ")[0],
+        "U": t("dir_U").split(" ")[0],
+        "D": t("dir_D").split(" ")[0],
+    }
+
+    # Retrieve goal state for coloring
+    goal = _active_goal_state()
+
+    use_image_board = board_mode == "image" and bool(image_tiles)
+    mode_class = "solution-step-mode-image" if use_image_board else "solution-step-mode-number"
+
+    def board_for(state: tuple) -> str:
+        if use_image_board:
+            return _state_to_mini_image_grid(state, image_tiles, goal=goal)
+        return _state_to_mini_grid(state, goal=goal)
+
+    html_rows = []
+
+    start_grid = board_for(path[0])
+    current_class = " is-current" if current_step == 0 else ""
+    html_rows.append(
+        f'<div class="solution-step-card{current_class}">'
+        '<div class="solution-step-meta">'
+        '<span class="solution-step-index-pill">0</span>'
+        f'<strong class="solution-step-action-name">{escape(t("dir_start_short"))}</strong>'
+        "</div>"
+        f'<div class="solution-step-board">{start_grid}</div>'
+        "</div>"
+    )
+
+    for step, (action, state) in enumerate(zip(actions, path[1:]), start=1):
+        action_lbl = direction_map.get(action, action)
+        state_grid = board_for(state)
+        current_class = " is-current" if current_step == step else ""
+        html_rows.append(
+            f'<div class="solution-step-card{current_class}">'
+            '<div class="solution-step-meta">'
+            f'<span class="solution-step-index-pill">{step}</span>'
+            f'<strong class="solution-step-action-name">{escape(action_lbl)}</strong>'
+            "</div>"
+            f'<div class="solution-step-board">{state_grid}</div>'
+            "</div>"
+        )
+
+    table_html = (
+        f'<div class="solution-step-table-wrap {mode_class}">'
+        '<div class="solution-step-list">'
+        f'{"".join(html_rows)}'
+        "</div>"
+        "</div>"
+    )
+
+    st.markdown(f"#### {t('path_steps_title')}")
+    st.markdown(table_html, unsafe_allow_html=True)
+
+
 def render_path_animation(
     path: list[tuple], actions: list[str], key: str = "path", *, reaches_goal: bool = True,
 ):
@@ -834,6 +923,7 @@ def render_path_animation(
 
     st.markdown("---")
     st.subheader(t("anim_title"))
+    render_solution_steps(path, actions)
 
     slider_key = f"{key}_slider"
     speed_key = f"{key}_speed"
@@ -853,7 +943,8 @@ def render_path_animation(
 
     def render_frame(step: int, board_slot, caption_slot) -> None:
         with board_slot.container():
-            render_puzzle_board(path[step])
+            previous_state = path[step - 1] if step > 0 else None
+            render_puzzle_board(path[step], previous_state=previous_state)
         if step == 0:
             action_display = t("dir_start_short")
         else:
@@ -899,13 +990,11 @@ def render_path_animation(
     caption_slot = st.empty()
 
     if auto_clicked:
-        import time
-        for frame_step in range(current_step, max_step + 1):
-            render_frame(frame_step, board_slot, caption_slot)
-            time.sleep(speed)
-        st.session_state[slider_key] = max_step
-        current_step = max_step
-        st.success(t("anim_complete"))
+        next_step = min(current_step + 1, max_step)
+        st.session_state[slider_key] = next_step
+        current_step = next_step
+        if current_step >= max_step:
+            st.success(t("anim_complete"))
 
     current_step = st.slider(
         t("play_curr_step"), 0, max_step, current_step, key=slider_key
@@ -1032,6 +1121,7 @@ def render_algorithm_info(algo_name: str, theory: dict):
     sections = [
         (t("alg_goal"), "goal"),
         (t("alg_idea"), "idea"),
+        (t("alg_transferable_concept"), "transferable_concept"),
         (t("alg_data_structure"), "data_structure"),
         (t("alg_formula"), "formula"),
         (t("alg_application"), "application"),
@@ -1059,7 +1149,154 @@ def render_algorithm_info(algo_name: str, theory: dict):
         st.code(pseudocode, language="python")
 
 
-def render_search_tree(result, max_nodes: int = 40):
+def _render_readable_search_tree(
+    result,
+    max_nodes: int,
+    *,
+    board_mode: str = "number",
+    image_tiles: dict | None = None,
+    view_mode: str = "solution",
+) -> None:
+    """Render readable cards before the dense Graphviz evidence."""
+    if not result.search_tree_nodes:
+        st.info(t("tc_no_trace"))
+        return
+
+    goal = result.goal_state or _active_goal_state()
+    use_image_board = board_mode == "image" and bool(image_tiles)
+    node_by_state = {node.state: node for node in result.search_tree_nodes}
+    node_by_id = {node.node_id: node for node in result.search_tree_nodes}
+    solution_states = list(result.path) if result.path_verified else []
+
+    def board_for(state: tuple) -> str:
+        if use_image_board:
+            return _state_to_mini_image_grid(state, image_tiles, goal=goal)
+        return _state_to_mini_grid(state, goal=goal)
+
+    def node_label(node) -> str:
+        h_text = "-" if node.h is None else f"{node.h:g}"
+        f_text = "-" if node.f is None else f"{node.f:g}"
+        return f"d={node.depth} g={node.g:g} h={h_text} f={f_text}"
+
+    def solution_view() -> list:
+        return [node_by_state[state] for state in solution_states if state in node_by_state]
+
+    def neighborhood_view() -> list:
+        selected: list = []
+        selected_ids: set[str] = set()
+
+        def add(node) -> None:
+            if node.node_id not in selected_ids and len(selected) < max_nodes:
+                selected.append(node)
+                selected_ids.add(node.node_id)
+
+        for node in solution_view():
+            add(node)
+            for edge in result.search_tree_edges:
+                if edge.parent_id == node.node_id and edge.child_id in node_by_id:
+                    add(node_by_id[edge.child_id])
+                elif edge.child_id == node.node_id and edge.parent_id in node_by_id:
+                    add(node_by_id[edge.parent_id])
+        return selected
+
+    if view_mode == "first":
+        visible_nodes = result.search_tree_nodes[:max_nodes]
+    elif view_mode == "neighborhood":
+        visible_nodes = neighborhood_view()
+    else:
+        visible_nodes = solution_view()[:max_nodes]
+
+    if not visible_nodes:
+        visible_nodes = result.search_tree_nodes[:max_nodes]
+
+    cards = []
+    for index, node in enumerate(visible_nodes):
+        role_cls = "is-solution" if node.on_solution_path else "is-explored"
+        role = t("search_tree_solution_node") if node.on_solution_path else t("search_tree_explored_node")
+        cards.append(
+            f'<div class="search-tree-readable-card {role_cls}">'
+            '<div class="search-tree-readable-meta">'
+            f'<span>{escape(node.node_id)} · {escape(role)}</span><strong>{escape(node_label(node))}</strong>'
+            "</div>"
+            f'<div class="search-tree-readable-board">{board_for(node.state)}</div>'
+            "</div>"
+        )
+    omitted = max(0, len(result.search_tree_nodes) - len(visible_nodes))
+    if omitted:
+        cards.append(
+            '<div class="search-tree-readable-card is-more">'
+            f'<strong>+{omitted}</strong><span>{escape(t("det_more", count=omitted))}</span>'
+            "</div>"
+        )
+
+    snapshot_step = next(
+        (
+            step
+            for step in reversed(result.trace)
+            if step.node_state or step.frontier_states or step.reached_states
+        ),
+        None,
+    )
+
+    def snapshot_panel(title: str, states: list[tuple], count: int | None) -> str:
+        shown_states = states[:3]
+        boards = "".join(f'<div class="search-tree-snapshot-board">{board_for(state)}</div>' for state in shown_states)
+        total = count if count is not None else len(states)
+        if not boards:
+            boards = f'<span class="search-tree-snapshot-empty">{escape(t("det_not_captured"))}</span>'
+        return (
+            '<div class="search-tree-snapshot-panel">'
+            f'<strong>{escape(title)}</strong><span>{escape(t("search_tree_snapshot_count", count=total))}</span>'
+            f'<div class="search-tree-snapshot-boards">{boards}</div>'
+            "</div>"
+        )
+
+    snapshot_markup = ""
+    if snapshot_step is not None:
+        current_states = [snapshot_step.node_state or snapshot_step.state] if (snapshot_step.node_state or snapshot_step.state) else []
+        snapshot_markup = (
+            '<div class="search-tree-readable-context">'
+            + snapshot_panel(t("search_tree_current_node"), current_states, 1 if current_states else 0)
+            + snapshot_panel(t("tc_frontier"), snapshot_step.frontier_states or [], snapshot_step.frontier_size)
+            + snapshot_panel(t("tc_reached"), snapshot_step.reached_states or [], snapshot_step.reached_size)
+            + "</div>"
+        )
+
+    mode_class = "is-image" if use_image_board else "is-number"
+    markup = (
+        f'<div class="search-tree-readable {mode_class}">'
+        '<div class="search-tree-legend">'
+        f'<span><i class="legend-solution"></i>{escape(t("search_tree_solution_legend"))}</span>'
+        f'<span><i class="legend-explored"></i>{escape(t("search_tree_explored_legend"))}</span>'
+        f'<span><i class="legend-frontier"></i>{escape(t("search_tree_frontier_legend"))}</span>'
+        "</div>"
+        '<div class="search-tree-readable-summary">'
+        f'<span>{escape(t("search_tree_path_metric"))}: <strong>{len(result.actions)}</strong></span>'
+        f'<span>{escape(t("mc_expanded"))}: <strong>{result.nodes_expanded}</strong></span>'
+        f'<span>{escape(t("mc_max_f"))}: <strong>{result.max_frontier_size}</strong></span>'
+        f'<span>{escape(t("mc_reached_size"))}: <strong>{result.reached_size}</strong></span>'
+        "</div>"
+        f"{snapshot_markup}"
+        '<div class="search-tree-readable-spine">'
+        f'{"".join(cards)}'
+        "</div>"
+        "</div>"
+    )
+    st.markdown(markup, unsafe_allow_html=True)
+    if len(result.search_tree_nodes) > max_nodes:
+        st.caption(t("search_tree_showing", shown=max_nodes, total=len(result.search_tree_nodes)))
+    if result.trace_truncated:
+        st.warning(t("trace_capture_limit_warning"))
+
+
+def render_search_tree(
+    result,
+    max_nodes: int = 40,
+    *,
+    compact: bool = False,
+    board_mode: str = "number",
+    image_tiles: dict | None = None,
+):
     """Render only verified parent-child transitions as a directed graph."""
     from core.metrics import search_tree_to_dot
 
@@ -1069,7 +1306,39 @@ def render_search_tree(result, max_nodes: int = 40):
 
     st.markdown(f"### {t('run_search_tree')}")
     st.caption(t("search_tree_caption"))
-    st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
+    if compact:
+        _render_readable_search_tree(
+            result,
+            max_nodes,
+            board_mode=board_mode,
+            image_tiles=image_tiles,
+            view_mode="solution",
+        )
+        return
+
+    view_options = {
+        t("search_tree_view_solution"): "solution",
+        t("search_tree_view_neighborhood"): "neighborhood",
+        t("search_tree_view_first"): "first",
+    }
+    selected_view = st.radio(
+        t("search_tree_view_label"),
+        options=list(view_options.keys()),
+        index=0,
+        horizontal=True,
+        key=f"search_tree_view_{result.algorithm}_{max_nodes}",
+    )
+    view_mode = view_options.get(selected_view, "solution")
+    _render_readable_search_tree(
+        result,
+        max_nodes,
+        board_mode=board_mode,
+        image_tiles=image_tiles,
+        view_mode=view_mode,
+    )
+
+    with st.expander(t("search_tree_graphviz_evidence"), expanded=False):
+        st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
     if len(result.search_tree_nodes) > max_nodes:
         st.caption(
             t("search_tree_showing", shown=max_nodes, total=len(result.search_tree_nodes))
@@ -1142,7 +1411,7 @@ def render_algorithm_evaluation(algo_name: str):
     from core.theory import THEORY
     import pandas as pd
 
-    global_lang = st.session_state.get("global_lang_select", "Tiếng Việt")
+    global_lang = st.session_state.get("global_lang_select", VIETNAMESE)
     is_eng = (global_lang == "English")
 
     theory_key = THEORY_KEY_MAP.get(algo_name, algo_name)
@@ -1170,7 +1439,7 @@ def render_algorithm_evaluation(algo_name: str):
             time_comp = comp_str
 
         def translate_comp_val(val, lang):
-            if lang == "Tiếng Việt":
+            if lang == VIETNAMESE:
                 trans = {
                     "Yes": "Có",
                     "No": "Không",

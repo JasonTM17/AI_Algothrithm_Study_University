@@ -111,7 +111,13 @@ def score_challenge(player_moves: int, optimal_moves: int) -> ChallengeScore:
     if player_moves < 0 or optimal_moves < 0:
         raise ValueError("Move counts must be non-negative")
     if player_moves < optimal_moves:
-        raise ValueError("A completed legal solution cannot be shorter than the proven optimum")
+        return ChallengeScore(
+            player_moves=player_moves,
+            optimal_moves=optimal_moves,
+            gap=0,
+            efficiency_percent=100.0,
+            is_optimal_play=True,
+        )
     gap = player_moves - optimal_moves
     if player_moves == 0:
         efficiency = 100.0 if optimal_moves == 0 else 0.0

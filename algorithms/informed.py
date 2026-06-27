@@ -8,6 +8,19 @@ from core.node import Node, reconstruct_path, reconstruct_actions
 from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 
+TRACE_STATE_LIMIT = 12
+TRACE_SNAPSHOT_LIMIT = 50
+
+
+def _heap_frontier_snapshot(frontier, limit: int = TRACE_STATE_LIMIT) -> list[tuple[int, ...]]:
+    if not frontier:
+        return []
+    return [entry[-1].state for entry in heapq.nsmallest(min(limit, len(frontier)), frontier)]
+
+
+def _state_snapshot(states, limit: int = TRACE_STATE_LIMIT) -> list[tuple[int, ...]]:
+    return list(states)[:limit]
+
 
 def _unsolvable_result(
     algorithm: str,
@@ -65,10 +78,11 @@ def greedy_best_first(
         else: # FIFO
             return (cost, 0, c, n)
 
-    root = Node(state=start, g=0, depth=0, h=h_fn(start))
+    start_h = h_fn(start)
+    root = Node(state=start, g=0, depth=0, h=start_h)
     counter = 0
     frontier = [make_item(root.h, root, counter)]
-    reached = {start: 0}
+    best_h: dict[tuple[int, ...], float] = {start: start_h}
     nodes_expanded = 0
     nodes_generated = 1
     max_frontier = 1
@@ -79,20 +93,22 @@ def greedy_best_first(
             return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
                                 goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                                max_frontier_size=max_frontier, reached_size=len(reached),
+                                max_frontier_size=max_frontier, reached_size=len(best_h),
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 is_complete=False, is_optimal=False, uses_heuristic=True)
-        if len(reached) > max_nodes:
+        if len(best_h) > max_nodes:
             return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
                                 goal_state=goal,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                                max_frontier_size=max_frontier, reached_size=len(reached),
+                                max_frontier_size=max_frontier, reached_size=len(best_h),
                                 runtime=time.perf_counter() - t0,
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
                                 is_complete=False, is_optimal=False, uses_heuristic=True)
 
         item = heapq.heappop(frontier)
         node = item[-1]
+        if node.h > best_h.get(node.state, float('inf')):
+            continue
         nodes_expanded += 1
 
         if node.state == goal:
@@ -101,7 +117,7 @@ def greedy_best_first(
                                 goal_state=goal,
                                 cost=node.g, depth=node.depth,
                                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                                max_frontier_size=max_frontier, reached_size=len(reached),
+                                max_frontier_size=max_frontier, reached_size=len(best_h),
                                 runtime=time.perf_counter() - t0, message="Solution found", trace=trace,
                                 is_complete=False, is_optimal=False, uses_heuristic=True)
 
@@ -111,33 +127,39 @@ def greedy_best_first(
                 return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
                                     goal_state=goal,
                                     nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                                    max_frontier_size=max_frontier, reached_size=len(reached),
+                                    max_frontier_size=max_frontier, reached_size=len(best_h),
                                     runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                     is_complete=False, is_optimal=False, uses_heuristic=True)
 
             h = h_fn(ns)
+            prev_h = best_h.get(ns)
+            if prev_h is not None and h >= prev_h:
+                continue
+            best_h[ns] = h
+
             child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1, h=h)
             nodes_generated += 1
 
-            if ns not in reached or child.g < reached[ns]:
-                reached[ns] = child.g
-                counter += 1
-                heapq.heappush(frontier, make_item(h, child, counter))
-                max_frontier = max(max_frontier, len(frontier))
+            counter += 1
+            heapq.heappush(frontier, make_item(h, child, counter))
+            max_frontier = max(max_frontier, len(frontier))
 
-                if len(trace) < 200:
-                    trace.append(TraceStep(
-                        step=nodes_expanded, state=ns, action=action,
-                        g=child.g, h=h, f=child.g + h, depth=child.depth, event="generate",
-                        frontier_size=len(frontier), reached_size=len(reached),
-                        node_state=node.state, frontier_states=[entry[-1].state for entry in sorted(frontier)], reached_states=list(reached.keys()),
-                        reason=f"Greedy: expand h={h:.1f}",
-                    ))
+            if len(trace) < 200:
+                collect_snapshots = len(trace) < TRACE_SNAPSHOT_LIMIT
+                trace.append(TraceStep(
+                    step=nodes_expanded, state=ns, action=action,
+                    g=child.g, h=h, f=child.g + h, depth=child.depth, event="generate",
+                    frontier_size=len(frontier), reached_size=len(best_h),
+                    node_state=node.state,
+                    frontier_states=_heap_frontier_snapshot(frontier) if collect_snapshots else [],
+                    reached_states=_state_snapshot(best_h) if collect_snapshots else [],
+                    reason=f"Greedy: enqueue by h={h:.1f}",
+                ))
 
     return SearchResult(success=False, algorithm="Greedy Best-First", group="Informed Search",
                         goal_state=goal,
                         nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
-                        max_frontier_size=max_frontier, reached_size=len(reached),
+                        max_frontier_size=max_frontier, reached_size=len(best_h),
                         runtime=time.perf_counter() - t0, message="No solution found", trace=trace,
                         is_complete=False, is_optimal=False, uses_heuristic=True)
 
@@ -237,11 +259,14 @@ def a_star(
                 max_frontier = max(max_frontier, len(frontier))
 
                 if len(trace) < 200:
+                    collect_snapshots = len(trace) < TRACE_SNAPSHOT_LIMIT
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
                         g=new_g, h=h, f=new_g + h, depth=child.depth, event="generate",
                         frontier_size=len(frontier), reached_size=len(best_g),
-                        node_state=node.state, frontier_states=[entry[-1].state for entry in sorted(frontier)], reached_states=list(best_g.keys()),
+                        node_state=node.state,
+                        frontier_states=_heap_frontier_snapshot(frontier) if collect_snapshots else [],
+                        reached_states=_state_snapshot(best_g.keys()) if collect_snapshots else [],
                         reason=f"A*: g={new_g}, h={h:.1f}, f={new_g+h:.1f}",
                     ))
 
@@ -265,6 +290,7 @@ def ida_star(
     if start == goal:
         return SearchResult(success=True, algorithm="IDA*", group="Informed Search",
                             path=[start], actions=[], goal_state=goal, cost=0, depth=0,
+                            reached_size=1,
                             runtime=time.perf_counter() - t0, message="Already at goal",
                             is_complete=True, is_optimal=True, uses_heuristic=True)
     if not is_solvable(start, goal):
@@ -276,6 +302,7 @@ def ida_star(
     total_expanded = 0
     total_generated = 0
     max_frontier = 0
+    max_reached_size = 1
     trace: list[TraceStep] = []
 
     while True:
@@ -284,6 +311,7 @@ def ida_star(
                                 goal_state=goal,
                                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                                 max_frontier_size=max_frontier,
+                                reached_size=max_reached_size,
                                 runtime=time.perf_counter() - t0, message="Timeout", trace=trace,
                                 is_complete=True, is_optimal=True, uses_heuristic=True)
         if total_expanded > max_nodes:
@@ -291,6 +319,7 @@ def ida_star(
                                 goal_state=goal,
                                 nodes_expanded=total_expanded, nodes_generated=total_generated,
                                 max_frontier_size=max_frontier,
+                                reached_size=max_reached_size,
                                 runtime=time.perf_counter() - t0,
                                 message=f"Node limit exceeded ({max_nodes})", trace=trace,
                                 is_complete=True, is_optimal=True, uses_heuristic=True)
@@ -304,6 +333,7 @@ def ida_star(
         total_expanded = result.nodes_expanded
         total_generated = result.nodes_generated
         max_frontier = max(max_frontier, result.max_frontier_size)
+        max_reached_size = max(max_reached_size, result.reached_size)
         trace = result.trace
 
         if result.success:
@@ -313,6 +343,7 @@ def ida_star(
             result.is_optimal = True
             result.uses_heuristic = True
             result.goal_state = goal
+            result.reached_size = max(max_reached_size, result.reached_size)
             result.runtime = time.perf_counter() - t0
             result.refresh_certificate()
             return result
@@ -324,6 +355,7 @@ def ida_star(
             result.is_optimal = True
             result.uses_heuristic = True
             result.goal_state = goal
+            result.reached_size = max(max_reached_size, result.reached_size)
             result.runtime = time.perf_counter() - t0
             return result
 
@@ -336,6 +368,7 @@ def ida_star(
                         goal_state=goal,
                         nodes_expanded=total_expanded, nodes_generated=total_generated,
                         max_frontier_size=max_frontier,
+                        reached_size=max_reached_size,
                         runtime=time.perf_counter() - t0, message="No solution found", trace=trace,
                         is_complete=True, is_optimal=True, uses_heuristic=True)
 
@@ -351,6 +384,7 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
     result_holder = [None]
     timed_out = [False]
     resource_limited = [False]
+    best_g: dict[tuple[int, ...], int] = {start: 0}
 
     def recursive_search(node, path_set):
         if result_holder[0] is not None or timed_out[0] or resource_limited[0]:
@@ -370,7 +404,7 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
                 success=True, path=path, actions=actions,
                 cost=node.g, depth=node.depth,
                 nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
-                max_frontier_size=max_frontier[0], trace=global_trace,
+                max_frontier_size=max_frontier[0], reached_size=len(best_g), trace=global_trace,
                 message=f"Found with threshold={threshold}",
             )
             return
@@ -385,8 +419,13 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
         for ns, action, cost in ps.get_neighbors(action_order):
             if ns in path_set:
                 continue
+            child_g = node.g + cost
+            prev_g = best_g.get(ns)
+            if prev_g is not None and child_g >= prev_g:
+                continue
+            best_g[ns] = child_g
             h = h_fn(ns)
-            child = Node(state=ns, parent=node, action=action, g=node.g + cost, depth=node.depth + 1, h=h)
+            child = Node(state=ns, parent=node, action=action, g=child_g, depth=node.depth + 1, h=h)
             nodes_generated[0] += 1
 
             if len(global_trace) < 200:
@@ -394,13 +433,13 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
                     step=nodes_expanded[0], state=ns, action=action,
                     g=child.g, h=h, f=child.f,
                     threshold=threshold,
-                    frontier_size=0, reached_size=len(path_set),
+                    frontier_size=0, reached_size=len(best_g),
                     reason=f"IDA*: threshold={threshold}, f={child.f:.1f}",
                 ))
 
             path_set.add(ns)
             recursive_search(child, path_set)
-            path_set.discard(ns)  # Correct backtracking in recursion
+            path_set.discard(ns)
             if result_holder[0] is not None:
                 return
 
@@ -415,16 +454,16 @@ def _ida_dfs(start, goal, threshold, h_fn, action_order,
         return SearchResult(
             success=False, message="Timeout",
             nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
-            max_frontier_size=max_frontier[0], trace=global_trace,
+            max_frontier_size=max_frontier[0], reached_size=len(best_g), trace=global_trace,
         ), next_threshold[0]
     if resource_limited[0]:
         return SearchResult(
             success=False, message=f"Node limit exceeded ({max_nodes})",
             nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
-            max_frontier_size=max_frontier[0], trace=global_trace,
+            max_frontier_size=max_frontier[0], reached_size=len(best_g), trace=global_trace,
         ), next_threshold[0]
     return SearchResult(
         success=False, message=f"cutoff at threshold {threshold}",
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
-        max_frontier_size=max_frontier[0], trace=global_trace,
+        max_frontier_size=max_frontier[0], reached_size=len(best_g), trace=global_trace,
     ), next_threshold[0]

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from html import escape
+
 import streamlit as st
 
 from core.puzzle import GOAL_STATE, TEACHING_PRESETS, parse_state, scramble
@@ -34,6 +36,23 @@ def _render_pending_notice(key_prefix: str) -> None:
         return
     level, message = notice
     getattr(st, level)(message)
+
+
+def _state_matrix_preview_html(state: tuple[int, ...], role: str, title: str) -> str:
+    cells = "".join(
+        (
+            '<span class="state-matrix-preview-cell blank" aria-label="blank"></span>'
+            if value == 0
+            else f'<span class="state-matrix-preview-cell">{value}</span>'
+        )
+        for value in state
+    )
+    return (
+        f'<div class="start-goal-matrix-preview" data-state-role="{escape(role)}">'
+        f'<span class="state-matrix-preview-label">{escape(title)}</span>'
+        f'<div class="state-matrix-preview-grid">{cells}</div>'
+        '</div>'
+    )
 
 
 def render_start_goal_editor(
@@ -79,11 +98,22 @@ def render_start_goal_editor(
 
             start_input_key = f"{key_prefix}_start_manual_input"
             sync_state_input(start_input_key, st.session_state.start_state)
-            start_input = st.text_area(
-                _t("sb_manual_desc"),
-                key=start_input_key,
-                height=88,
-            )
+            start_input_col, start_preview_col = st.columns([3, 2])
+            with start_input_col:
+                start_input = st.text_area(
+                    _t("sb_manual_desc"),
+                    key=start_input_key,
+                    height=132,
+                )
+            with start_preview_col:
+                st.markdown(
+                    _state_matrix_preview_html(
+                        tuple(st.session_state.start_state),
+                        "start",
+                        _t("active_start_preview"),
+                    ),
+                    unsafe_allow_html=True,
+                )
             if st.button(_t("sb_parse"), key=f"{key_prefix}_apply_start", width="stretch"):
                 try:
                     apply_start_state(parse_state(start_input))
@@ -98,11 +128,22 @@ def render_start_goal_editor(
             st.markdown(f"**{_t('active_goal')}**")
             goal_input_key = f"{key_prefix}_goal_manual_input"
             sync_state_input(goal_input_key, st.session_state.goal_state)
-            goal_input = st.text_area(
-                _t("sb_goal_manual_desc"),
-                key=goal_input_key,
-                height=88,
-            )
+            goal_input_col, goal_preview_col = st.columns([3, 2])
+            with goal_input_col:
+                goal_input = st.text_area(
+                    _t("sb_goal_manual_desc"),
+                    key=goal_input_key,
+                    height=132,
+                )
+            with goal_preview_col:
+                st.markdown(
+                    _state_matrix_preview_html(
+                        tuple(st.session_state.goal_state),
+                        "goal",
+                        _t("active_goal_preview"),
+                    ),
+                    unsafe_allow_html=True,
+                )
             goal_button_col, standard_button_col = st.columns(2)
             with goal_button_col:
                 if st.button(_t("sb_parse_goal"), key=f"{key_prefix}_apply_goal", width="stretch"):
@@ -144,7 +185,7 @@ def render_sidebar_start_goal_controls(t) -> None:
             manual_input = st.text_area(
                 t("sb_manual_desc"),
                 key="manual_input",
-                height=80,
+                height=120,
             )
             if st.button(t("sb_parse"), key="btn_parse"):
                 try:
@@ -158,7 +199,7 @@ def render_sidebar_start_goal_controls(t) -> None:
         goal_input = st.text_area(
             t("sb_goal_manual_desc"),
             key="goal_manual_input",
-            height=80,
+            height=120,
         )
         goal_col1, goal_col2 = st.columns(2)
         with goal_col1:

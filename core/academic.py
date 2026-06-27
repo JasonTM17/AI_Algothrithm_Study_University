@@ -52,8 +52,8 @@ ALGORITHM_TAXONOMY: dict[str, AlgorithmTaxonomy] = {
     "Min-Conflicts": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete or optimal here.", "Better for N-Queens than transition-heavy 15-puzzle."),
     "Constraint Graphs": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Analysis artifact.", "Use to visualize why CSP planning grows quickly."),
     "AI-vs-AI Tournament": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "scored_competition", "Scores two solver agents against an A* reference.", "Use to compare AI outputs without claiming 15-puzzle has an opponent."),
-    "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial_extension", "Game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MAX/MIN is an educational extension."),
-    "Alpha-Beta Pruning": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "adversarial_extension", "Same minimax value with pruning when model applies.", "Use to explain pruning, not puzzle optimality."),
+    "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Worst-case game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MIN is a robustness branch over legal moves."),
+    "Alpha-Beta Pruning": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Same minimax value with pruning when the worst-case tree is fully searched.", "Use to explain pruning, not puzzle optimality."),
     "Expectimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "stochastic", "Expected-utility demo under chance outcomes.", "Use only for stochastic action extensions."),
 }
 

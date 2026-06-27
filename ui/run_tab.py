@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from algorithms.complex_env import BELIEF_PLANNERS
 from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable
@@ -18,6 +19,7 @@ from ui.components import (
     render_start_goal_contract,
     render_trace_table,
 )
+from ui.belief_controls import render_known_positions_editor
 from ui.run_and_or_panel import (
     AND_OR_ALGORITHM,
     NO_OBSERVATION_ALGORITHM,
@@ -60,6 +62,8 @@ def render_run_algorithm_tab(t=None) -> None:
     tx = t or (lambda key, **kwargs: key.format(**kwargs) if kwargs else key)
     goal = st.session_state.get("goal_state", GOAL_STATE)
     st.title(tx("run_title"))
+
+    # Render intro header first
     render_academic_header(
         tx("run_hero_title"),
         tx("run_hero_desc"),
@@ -72,37 +76,53 @@ def render_run_algorithm_tab(t=None) -> None:
         is_solvable(st.session_state.start_state, goal),
     )
 
-    col_algo, col_params = st.columns([1, 1])
-    available_groups = run_algorithm_groups(tx)
+    st.markdown("---")
 
-    with col_algo:
+    # Define and render selectboxes in the flow of the page
+    available_groups = run_algorithm_groups(tx)
+    selector_cols = st.columns([1, 1])
+    with selector_cols[0]:
         if st.session_state.get("algo_group") not in available_groups:
             st.session_state["algo_group"] = next(iter(available_groups))
         group = st.selectbox(tx("run_group"), list(available_groups.keys()), key="algo_group")
+    with selector_cols[1]:
         algorithms = available_groups[group]
         if st.session_state.get("algo_name") not in algorithms:
             st.session_state["algo_name"] = algorithms[0]
         algo_name = st.selectbox(tx("run_algo"), algorithms, key="algo_name")
-        selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
-        render_algorithm_role_card(algo_name)
 
+    selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
+    render_algorithm_role_card(algo_name)
+
+    belief_input_error = None
+    col_algo, col_params = st.columns([1, 1])
+
+    with col_algo:
         # Only show heuristic for algorithms that use it
         heuristic_options = list(HEURISTICS.keys())
-        no_heuristic_select_algos = {
-            "BFS",
-            "DFS",
-            "UCS",
-            "IDS",
-            AND_OR_ALGORITHM,
-            NO_OBSERVATION_ALGORITHM,
-            PARTIALLY_OBSERVABLE_ALGORITHM,
+        heuristic_fn_names = {
+            "greedy_best_first",
+            "a_star",
+            "ida_star",
+            "simple_hill_climbing",
+            "steepest_ascent_hill_climbing",
+            "stochastic_hill_climbing",
+            "random_restart_hill_climbing",
+            "local_beam_search",
+            "simulated_annealing",
+            "online_search_lrta",
+            "minimax",
+            "alpha_beta_pruning",
+            "expectimax",
         }
-        if algo_name not in no_heuristic_select_algos:
+        if selected_fn_name in heuristic_fn_names:
             heuristic = st.selectbox(tx("run_heuristic"), heuristic_options, key="heuristic_select")
         else:
             heuristic = "Manhattan Distance"  # default, won't be used
             if algo_name == AND_OR_ALGORITHM:
                 st.caption(tx("run_andor_heuristic_caption"))
+            elif algo_name == "AI-vs-AI Tournament":
+                st.warning(tx("run_tournament_redirect"))
 
         tie_breaker = "FIFO"
 
@@ -136,6 +156,8 @@ def render_run_algorithm_tab(t=None) -> None:
                 tree=RUN_TREE_NODES,
             )
         )
+        if algo_name == "LRTA*":
+            st.caption(tx("run_lrta_max_steps_caption"))
 
         # Extra params for specific algorithms
         extra_params = {}
@@ -157,6 +179,23 @@ def render_run_algorithm_tab(t=None) -> None:
             extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
         if algo_name == AND_OR_ALGORITHM:
             extra_params["nondet_prob"] = render_and_or_controls(tx)
+        if algo_name in {"No Observation Search", "Partially Observable Search"}:
+            default_known = 0 if algo_name == "No Observation Search" else 2
+            known_positions, belief_input_error = render_known_positions_editor(
+                tx,
+                key=f"{selected_fn_name}_known_matrix",
+                start=tuple(st.session_state.start_state),
+                default_count=default_known,
+            )
+            planner = st.selectbox(
+                tx("run_belief_planner"),
+                list(BELIEF_PLANNERS),
+                index=1,
+                key=f"{selected_fn_name}_belief_planner",
+                help=tx("run_belief_planner_help"),
+            )
+            extra_params["belief_planner"] = planner
+            extra_params["known_positions"] = known_positions
 
     run_signature = (
         tuple(st.session_state.start_state), tuple(goal), selected_fn_name, algo_name, heuristic,
@@ -165,7 +204,10 @@ def render_run_algorithm_tab(t=None) -> None:
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
 
-    if st.button(tx("run_btn"), key="btn_run", type="primary"):
+    if st.button(
+        tx("run_btn"), key="btn_run", type="primary",
+        disabled=belief_input_error is not None,
+    ):
         start = st.session_state.start_state
         if not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
@@ -173,6 +215,8 @@ def render_run_algorithm_tab(t=None) -> None:
             fn_name = selected_fn_name
             if not fn_name:
                 st.error(tx("run_error_not_found", algo=algo_name))
+            elif fn_name == "ai_vs_ai_tournament":
+                st.warning(tx("run_tournament_redirect"))
             else:
                 import algorithms.uninformed as u
                 import algorithms.informed as inf

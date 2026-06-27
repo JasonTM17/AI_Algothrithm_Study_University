@@ -49,8 +49,8 @@ ALGORITHM_COMPARISON_ROWS = [
     _row("CSP", "Min-Conflicts", "Repair a conflicting position", "O(I n)", "O(n)", "Assignment repair, not blank-move path", "Not a legal 15-puzzle planner"),
     _row("CSP", "Constraint Graphs", "Build variable/constraint edges", "O(V+E)", "O(V+E)", "Graph artifact", "Analysis only"),
     _row("AI-vs-AI Tournament", "AI-vs-AI Tournament", "A* oracle then two solver runs", "O(R(ref+A+B))", "Sum of three runs", "Shared replay max(|path A|, |path B|)", "Valid only with proven reference"),
-    _row("AI-vs-AI Tournament", "Minimax", "Alternate MAX/MIN", "O(b^m)", "O(bm)", "Principal variation length <= m", "Artificial adversarial extension"),
-    _row("AI-vs-AI Tournament", "Alpha-Beta Pruning", "Minimax with alpha/beta cutoffs", "Worst O(b^m), best O(b^(m/2))", "O(bm)", "Same root choice when fully searched", "Preserves Minimax value under assumptions"),
+    _row("AI-vs-AI Tournament", "Minimax", "MAX then worst-case MIN branch", "O(b^m)", "O(bm)", "Principal variation length <= m", "Worst-case robustness extension"),
+    _row("AI-vs-AI Tournament", "Alpha-Beta Pruning", "Worst-case tree with alpha/beta cutoffs", "Worst O(b^m), best O(b^(m/2))", "O(bm)", "Same root choice when fully searched", "Preserves Minimax value under assumptions"),
     _row("AI-vs-AI Tournament", "Expectimax", "MAX plus probability-weighted CHANCE", "O((bo)^m)", "O(bom)", "Seeded sample path length <= m", "Expected utility under stated probabilities"),
 ]
 
@@ -58,3 +58,48 @@ ALGORITHM_COMPARISON_ROWS = [
 def comparison_rows_for_group(group: str) -> list[dict[str, str]]:
     """Return all comparison rows for one displayed algorithm group."""
     return [row for row in ALGORITHM_COMPARISON_ROWS if row["Group"] == group]
+
+
+GROUP6_ROBUSTNESS_COMPARISON_ROWS = [
+    {
+        "Dimension": "MIN / chance assumption",
+        "Minimax": "Worst-case MIN branch",
+        "Alpha-Beta": "Worst-case MIN branch",
+        "Expectimax": "No MIN; CHANCE outcomes",
+    },
+    {
+        "Dimension": "Mechanism",
+        "Minimax": "Evaluate the full depth-limited tree",
+        "Alpha-Beta": "Prune branches that cannot affect the root value",
+        "Expectimax": "Compute probability-weighted expected value",
+    },
+    {
+        "Dimension": "Root result",
+        "Minimax": "Worst-case value at depth m",
+        "Alpha-Beta": "Same as Minimax when fully searched",
+        "Expectimax": "Expected value, often different from Minimax",
+    },
+    {
+        "Dimension": "Node visited",
+        "Minimax": "O(b^m)",
+        "Alpha-Beta": "Best O(b^(m/2)), worst O(b^m)",
+        "Expectimax": "O(b^m) or more with outcome branching",
+    },
+    {
+        "Dimension": "Can prune?",
+        "Minimax": "No",
+        "Alpha-Beta": "Yes",
+        "Expectimax": "No; all outcomes affect expectation",
+    },
+    {
+        "Dimension": "Best fit",
+        "Minimax": "Two-player games / robustness analysis",
+        "Alpha-Beta": "Two-player games with searchable bounds",
+        "Expectimax": "MDP-style stochastic decisions",
+    },
+]
+
+
+def group6_robustness_comparison_rows() -> list[dict[str, str]]:
+    """Return the dedicated Minimax / Alpha-Beta / Expectimax comparison."""
+    return GROUP6_ROBUSTNESS_COMPARISON_ROWS

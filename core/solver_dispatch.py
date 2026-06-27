@@ -84,6 +84,10 @@ def build_solver_kwargs(
         "random_restart_hill_climbing",
         "local_beam_search",
         "simulated_annealing",
+    ):
+        kwargs["heuristic"] = heuristic
+        kwargs["max_iterations"] = max_nodes
+    elif fn_name in (
         "minimax",
         "alpha_beta_pruning",
         "expectimax",

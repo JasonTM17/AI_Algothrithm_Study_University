@@ -7,7 +7,7 @@ from collections.abc import Callable
 import streamlit as st
 
 from core.metrics import SearchResult
-from ui.styles import SOLVER_GROUPS
+from ui.styles import ALGORITHM_GROUPS
 
 
 AND_OR_ALGORITHM = "AND-OR Search"
@@ -21,25 +21,27 @@ COMPLEX_ENVIRONMENT_ALGORITHMS = [
 
 
 def run_algorithm_groups(t: Callable[[str], str]) -> dict[str, list[str]]:
-    """Return Run-tab groups, keeping Compare's standard solver groups separate."""
-    groups = {name: list(algorithms) for name, algorithms in SOLVER_GROUPS.items()}
-    groups[t("run_group_complex_alias")] = list(COMPLEX_ENVIRONMENT_ALGORITHMS)
-    return groups
+    """Return the canonical academic taxonomy for the Run tab."""
+    return {name: list(algorithms) for name, algorithms in ALGORITHM_GROUPS.items()}
 
 
-def render_and_or_controls(t: Callable[[str], str]) -> float:
+def render_and_or_controls(
+    t: Callable[[str], str],
+    *,
+    key: str = "run_andor_deflection_mode",
+) -> float:
     """Render AND-OR-specific parameters and return deflection support."""
     st.warning(t("run_andor_extension_warning"))
-    support = st.slider(
+    mode = st.radio(
         t("adv_deflection_support"),
-        0.0,
-        1.0,
-        0.3,
-        key="run_andor_prob",
+        [t("run_andor_intended_only"), t("run_andor_include_deflections")],
+        index=1,
+        key=key,
+        horizontal=True,
     )
     st.caption(t("adv_andor_support_caption"))
     st.caption(t("run_andor_controls_caption"))
-    return float(support)
+    return 0.0 if mode == t("run_andor_intended_only") else 1.0
 
 
 def render_and_or_result_explanation(result: SearchResult, t: Callable[[str], str]) -> None:

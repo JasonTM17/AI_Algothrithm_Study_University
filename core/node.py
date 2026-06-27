@@ -28,7 +28,7 @@ class Node:
     def __lt__(self, other: "Node") -> bool:
         if self.f != other.f:
             return self.f < other.f
-        return self.depth < other.depth
+        return self.g < other.g
 
     def __repr__(self) -> str:
         return f"Node(g={self.g}, h={self.h:.1f}, f={self.f:.1f}, depth={self.depth})"
