@@ -6,7 +6,7 @@ from html import escape
 
 import streamlit as st
 
-from core.puzzle import GOAL_STATE, TEACHING_PRESETS, parse_state, scramble
+from core.puzzle import GOAL_STATE, parse_state, scramble
 from ui.localization import VIETNAMESE, translate
 from ui.start_goal_state import (
     apply_goal_state,
@@ -216,15 +216,3 @@ def render_sidebar_start_goal_controls(t) -> None:
                 st.rerun()
         if st.button(t("sb_reset_goal"), key="btn_reset"):
             apply_start_state(st.session_state.goal_state)
-
-    with st.sidebar.expander(t("sidebar_teaching_presets"), expanded=False):
-        teaching_preset_name = st.selectbox(
-            t("teaching_preset"),
-            list(TEACHING_PRESETS.keys()),
-            key="teaching_preset_select",
-            help=t("teaching_preset_help"),
-        )
-        if st.button(t("load_teaching_preset"), key="btn_load_teaching_preset"):
-            preset = TEACHING_PRESETS[teaching_preset_name]
-            apply_start_state(preset["state"])
-            st.info(str(preset["purpose"]))

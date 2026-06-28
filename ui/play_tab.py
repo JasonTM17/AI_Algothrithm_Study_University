@@ -6,7 +6,6 @@ import random
 import streamlit as st
 
 from algorithms.informed import a_star
-from core.gameplay import score_challenge, validate_player_run
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable, _move_blank
 from ui.academic_panels import render_exam_path
@@ -200,7 +199,6 @@ def _ensure_play_state(goal) -> None:
         st.session_state.play_goal_ref = goal
         _clear_ai_replay()
         _clear_victory_state()
-        st.session_state.pop("play_optimal_result", None)
 
 
 def _ensure_play_board_mode() -> None:
@@ -377,7 +375,6 @@ def _render_play_board_panel(t, goal, solvable: bool) -> None:
 
 def _render_image_mode_board(t, goal) -> None:
     """Keep uploaded imagery in the primary play surface instead of a hidden panel."""
-    board_slot = st.empty()
     status_messages: list[tuple[str, str]] = []
 
     if not st.session_state.get("image_tiles"):
@@ -436,34 +433,33 @@ def _render_image_mode_board(t, goal) -> None:
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    with board_slot.container():
-        for message_type, message in status_messages:
-            if message_type == "success":
-                st.success(message)
-            elif message_type == "error":
-                st.error(message)
-            else:
-                st.caption(message)
+    for message_type, message in status_messages:
+        if message_type == "success":
+            st.success(message)
+        elif message_type == "error":
+            st.error(message)
+        else:
+            st.caption(message)
 
-        if not image_available:
-            st.info(t("play_image_missing"))
-            return
+    if not image_available:
+        st.info(t("play_image_missing"))
+        return
 
-        render_image_board(
-            st.session_state.play_state,
-            st.session_state.image_tiles,
-            key_prefix="play_main_image",
-            highlight_correct=True,
-            on_click_fn=_handle_play_slide,
-            show_numbers=st.session_state.get("show_numbers", False),
-            action_labels={
-                "L": t("slide_right"),
-                "R": t("slide_left"),
-                "U": t("slide_down"),
-                "D": t("slide_up"),
-            },
-            goal=goal,
-        )
+    render_image_board(
+        st.session_state.play_state,
+        st.session_state.image_tiles,
+        key_prefix="play_main_image",
+        highlight_correct=True,
+        on_click_fn=_handle_play_slide,
+        show_numbers=st.session_state.get("show_numbers", False),
+        action_labels={
+            "L": t("slide_right"),
+            "R": t("slide_left"),
+            "U": t("slide_down"),
+            "D": t("slide_up"),
+        },
+        goal=goal,
+    )
 
 
 def _render_play_status_controls(t, goal, solvable: bool) -> None:
@@ -775,7 +771,6 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     _render_full_width_solver_evidence(t)
     _render_play_status_controls(t, goal, solvable)
     _render_start_goal_reference(t, goal, solvable)
-    _render_challenge_panel(t, goal)
 
 
 def _render_play_workbench(t, goal, solvable: bool) -> None:
@@ -801,77 +796,6 @@ def _render_start_goal_reference(t, goal, solvable: bool) -> None:
             st.metric(t("play_manhattan"), start_h)
             st.metric(t("play_solvable_label"), t("tc_yes") if solvable else t("tc_no"))
         render_exam_path("Play", t=t)
-
-
-def _render_challenge_panel(t, goal) -> None:
-    with st.expander(t("play_challenge_title"), expanded=False):
-        st.caption(t("play_challenge_desc"))
-        if st.button(t("play_prove_optimal"), key="btn_prove_optimal"):
-            with st.spinner(t("play_computing_certificate")):
-                proof_result = a_star(
-                    start=st.session_state.play_start_ref,
-                    goal=goal,
-                    heuristic="Linear Conflict",
-                    timeout=30.0,
-                    max_nodes=300000,
-                )
-            st.session_state.play_optimal_result = proof_result
-
-        proof_result = st.session_state.get("play_optimal_result")
-        if proof_result:
-            if proof_result.success and proof_result.optimality_proven:
-                try:
-                    player_cert = validate_player_run(st.session_state.play_history, goal)
-                except Exception as e:
-                    st.error(t("play_cert_validation_failed", error=e))
-                    player_cert = None
-                assisted = st.session_state.get("play_assisted", False)
-                if player_cert is None:
-                    return
-                cert_cols = st.columns(4)
-                cert_cols[0].metric(
-                    t("play_cert_player_run"),
-                    t("play_cert_legal") if player_cert.is_legal else t("play_cert_invalid"),
-                )
-                cert_cols[1].metric(t("play_cert_recorded_moves"), player_cert.move_count)
-                cert_cols[2].metric(t("play_cert_reached_goal"), t("tc_yes") if player_cert.reaches_goal else t("tc_no"))
-                cert_cols[3].metric(
-                    t("play_cert_assistance"),
-                    t("play_cert_ai_assisted") if assisted else t("play_cert_unassisted"),
-                )
-                if not player_cert.is_legal:
-                    st.error(t("play_cert_failed", message=player_cert.message))
-                else:
-                    st.success(t("play_cert_verified", cost=proof_result.cost))
-                    if not player_cert.reaches_goal:
-                        st.info(t("play_cert_in_progress"))
-                        return
-                    try:
-                        score = score_challenge(player_cert.move_count, len(proof_result.actions))
-                    except Exception as e:
-                        st.error(t("play_score_failed", error=e))
-                        return
-                    score_cols = st.columns(4)
-                    score_cols[0].metric(t("play_score_optimal_moves"), score.optimal_moves)
-                    score_cols[1].metric(t("play_score_your_moves"), score.player_moves)
-                    score_cols[2].metric(t("play_score_gap"), f"{score.gap:+d}")
-                    score_cols[3].metric(t("play_score_efficiency"), f"{score.efficiency_percent:.1f}%")
-                    if score.is_optimal_play and not assisted:
-                        st.success(t("play_score_optimal_unassisted"))
-                    elif score.is_optimal_play:
-                        st.info(
-                            t("play_score_optimal_assisted")
-                        )
-                    else:
-                        st.warning(
-                            t(
-                                "play_score_longer",
-                                mode=t("play_cert_ai_assisted") if assisted else t("play_cert_unassisted"),
-                                gap=score.gap,
-                            )
-                        )
-            else:
-                st.warning(t("play_no_opt_cert", message=proof_result.message))
 
 
 def render_play_tab(t, solvable: bool, global_lang: str) -> None:

@@ -14,6 +14,7 @@ from core.metrics import SearchResult, TraceStep
 
 
 BELIEF_PLANNERS = ("BFS", "A* Search", "Stochastic Hill Climbing")
+AND_OR_EXPANSION_CAP = 100_000
 
 
 @dataclass(frozen=True)
@@ -294,6 +295,18 @@ def and_or_search(
     h_fn = get_heuristic("Manhattan Distance", goal)
     nodes_expanded = [0]
     nodes_generated = [1]
+    stop_reason: list[str | None] = [None]
+
+    class _SearchStopped(RuntimeError):
+        pass
+
+    def check_budget() -> None:
+        if time.perf_counter() - t0 >= timeout:
+            stop_reason[0] = "timeout"
+            raise _SearchStopped
+        if nodes_expanded[0] >= AND_OR_EXPANSION_CAP:
+            stop_reason[0] = "resource_limit"
+            raise _SearchStopped
 
     def get_outcomes(state: tuple, action: str) -> list[tuple[tuple, str, str]]:
         """Return (new_state, actual_action, type) for action + possible deflections."""
@@ -315,16 +328,23 @@ def and_or_search(
         return results
 
     def or_search(state: tuple, depth: int, visited: set) -> Optional[dict]:
+        check_budget()
         nodes_expanded[0] += 1
         if state == goal:
             return {"type": "goal"}
         if depth <= 0 or state in visited:
             return None
-        if time.perf_counter() - t0 > timeout:
-            return None
 
         visited.add(state)
-        for action in action_order:
+        ordered_actions = sorted(
+            (
+                (h_fn(next_state), order_index, action)
+                for order_index, action in enumerate(action_order)
+                if (next_state := _move_blank(state, action)) is not None
+            ),
+            key=lambda item: (item[0], item[1]),
+        )
+        for _, _, action in ordered_actions:
             outcomes = get_outcomes(state, action)
             nodes_generated[0] += len(outcomes)
             if not outcomes:
@@ -361,7 +381,10 @@ def and_or_search(
         ),
     ))
 
-    result = or_search(start, max_depth, set())
+    try:
+        result = or_search(start, max_depth, set())
+    except _SearchStopped:
+        result = None
 
     if result is not None:
         def format_plan(plan, indent=0):
@@ -393,17 +416,38 @@ def and_or_search(
             is_complete=False, is_optimal=False, suitable_for_puzzle=False,
         )
 
+    if stop_reason[0] == "timeout":
+        failure_message = (
+            f"AND-OR stopped after the {timeout:g}s timeout before proving or disproving a "
+            f"conditional plan at depth {max_depth}. Deflection support={support_mode}."
+        )
+    elif stop_reason[0] == "resource_limit":
+        failure_message = (
+            f"AND-OR stopped at the {AND_OR_EXPANSION_CAP:,}-node safety cap before proving or "
+            f"disproving a conditional plan at depth {max_depth}. "
+            f"Deflection support={support_mode}."
+        )
+    else:
+        failure_message = (
+            f"No conditional plan found within depth {max_depth}. "
+            f"Deflection support={support_mode}; AND-OR requires a subplan for every supported outcome."
+        )
+    trace.append(TraceStep(
+        step=1,
+        state=start,
+        reason=failure_message,
+        frontier_size=0,
+        reached_size=nodes_expanded[0],
+    ))
     return SearchResult(
         success=False, algorithm="AND-OR Search", group="Complex Environments",
         goal_state=goal,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0,
-        message=(
-            f"No conditional plan found within depth {max_depth}. "
-            f"Deflection support={support_mode}; AND-OR requires a subplan for every supported outcome."
-        ),
+        message=failure_message,
         trace=trace, uses_heuristic=True, uses_probability=False,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
+        termination_reason=stop_reason[0] or "depth_limit",
     )
 
 

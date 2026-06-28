@@ -3,6 +3,7 @@
 import pytest
 
 from algorithms.complex_env import (
+    AND_OR_EXPANSION_CAP,
     and_or_search,
     default_known_positions,
     format_known_positions_matrix,
@@ -11,7 +12,7 @@ from algorithms.complex_env import (
     parse_known_positions_matrix,
     partially_observable_search,
 )
-from core.puzzle import GOAL_STATE
+from core.puzzle import GOAL_STATE, scramble
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
@@ -71,6 +72,42 @@ def test_and_or_trace_treats_nondet_prob_as_support_switch():
     trace_text = " ".join(step.reason for step in result.trace)
     assert "binary support switch" in trace_text
     assert "not a probability weight" in trace_text
+
+
+def test_and_or_orders_intended_actions_by_heuristic():
+    start = scramble(GOAL_STATE, depth=10, seed=42)
+    result = and_or_search(
+        start, GOAL_STATE, max_depth=20, nondet_prob=0.0,
+        timeout=5, action_order="LRUD",
+    )
+
+    assert result.success
+    assert result.nodes_expanded <= 20
+    assert result.termination_reason == "model_success"
+
+
+def test_and_or_all_deflections_stops_without_false_failure_proof():
+    start = scramble(GOAL_STATE, depth=10, seed=42)
+    result = and_or_search(
+        start, GOAL_STATE, max_depth=20, nondet_prob=1.0, timeout=30,
+    )
+
+    assert not result.success
+    assert result.nodes_expanded == AND_OR_EXPANSION_CAP
+    assert result.termination_reason == "resource_limit"
+    assert "before proving or disproving" in result.message
+    assert "No conditional plan found" not in result.message
+
+
+def test_and_or_timeout_is_not_reported_as_depth_exhaustion():
+    result = and_or_search(
+        ONE_MOVE, GOAL_STATE, max_depth=20, nondet_prob=1.0, timeout=0.0,
+    )
+
+    assert not result.success
+    assert result.termination_reason == "timeout"
+    assert "before proving or disproving" in result.message
+    assert "No conditional plan found" not in result.message
 
 
 @pytest.mark.parametrize("probability", [-0.1, 1.1])

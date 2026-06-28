@@ -13,7 +13,6 @@ from ui.components import (
     render_algorithm_evaluation,
     render_path_animation,
     render_result_metrics,
-    render_run_variation_metadata,
     render_search_detail_table,
     render_search_tree,
     render_start_goal_contract,
@@ -315,7 +314,6 @@ def render_run_algorithm_tab(t=None) -> None:
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
-        render_run_variation_metadata(result)
         render_and_or_result_explanation(result, tx)
 
         with st.expander(tx("run_eval_section"), expanded=False):

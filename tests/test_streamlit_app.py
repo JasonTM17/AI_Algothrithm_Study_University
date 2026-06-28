@@ -4,10 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from core.academic_proofs import BENCHMARK_PRESETS
 from algorithms.uninformed import bfs
-from core.gameplay import validate_player_run
-from core.metrics import TraceStep
-from core.puzzle import GOAL_STATE
-from ui.trace_tab import trace_rows
+from core.puzzle import GOAL_STATE, validate_solution_path
 from ui.play_tab import VICTORY_MESSAGE_KEYS
 
 
@@ -39,7 +36,12 @@ def test_web_app_initial_playground_renders_without_exception():
     assert app.button(key="btn_play_undo")
     assert "play-status-grid" in markdown_text
     assert '\n    <div class="play-status-card">' not in markdown_text
-    assert app.button(key="btn_prove_optimal")
+    assert "btn_prove_optimal" not in {button.key for button in app.button}
+    assert "btn_load_teaching_preset" not in {button.key for button in app.button}
+    assert "teaching_preset_select" not in {selectbox.key for selectbox in app.selectbox}
+    assert "sidebar-active-contract-grid" not in markdown_text
+    assert "Trace từng bước" not in app.radio(key="main_tab_label").options
+    assert "Step Trace" not in app.radio(key="main_tab_label").options
 
 
 def test_vietnamese_navigation_and_advanced_labels_render():
@@ -63,27 +65,8 @@ def test_navigation_recovers_from_legacy_string_widget_state():
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     assert app.session_state["main_tab_value"] == "Run Algorithm"
     assert app.radio(key="main_tab_label").value == "Run Algorithm"
-    assert "sidebar-active-contract-grid" in markdown_text
-    assert "puzzle-grid-mini" in markdown_text
+    assert "sidebar-active-contract-grid" not in markdown_text
     assert not app.exception
-
-
-def test_trace_rows_accept_missing_frontier_and_reached_sizes():
-    rows = trace_rows([
-        TraceStep(
-            step=0,
-            state=GOAL_STATE,
-            frontier_size=None,
-            reached_size=None,
-            h=0,
-            f=0,
-            reason="missing optional metrics",
-        )
-    ])
-
-    assert rows[0]["Step"] == 0
-    assert "Frontier" not in rows[0]
-    assert "Reached" not in rows[0]
 
 
 def test_play_image_mode_uses_image_tiles_for_manual_board():
@@ -116,28 +99,15 @@ def test_play_image_tile_click_moves_without_query_link_reload():
 
     markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
     style_blob = "\n".join(markdown_values)
-    assert ".st-key-play_main_image_hit_15_3_3 button" in style_blob
+    assert ".st-key-play_main_image_hit_15 button" in style_blob
+    assert ".st-key-play_main_image_hit_15_3_3 button" not in style_blob
     assert ":has(.play-image-button-play_main_image" not in style_blob
 
-    app.button(key="play_main_image_hit_15_3_3").click().run()
+    app.button(key="play_main_image_hit_15").click().run()
 
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_moves == 1
     assert "play_slide" not in app.query_params
-    assert not app.exception
-
-
-def test_challenge_mode_produces_verified_optimal_certificate():
-    app = AppTest.from_file("app.py", default_timeout=10).run()
-    app.session_state.start_state = ONE_MOVE
-    app.run()
-    app.button(key="btn_prove_optimal").click().run()
-
-    proof = app.session_state.play_optimal_result
-    assert proof.success
-    assert proof.path_verified
-    assert proof.optimality_proven
-    assert proof.cost == 1
     assert not app.exception
 
 
@@ -149,15 +119,17 @@ def test_ai_solver_replay_keeps_play_history_certifiable():
     app.button(key="btn_ai_solve").click().run()
     app.button(key="btn_play_next").click().run()
 
-    cert = validate_player_run(app.session_state.play_history, GOAL_STATE)
+    valid, message = validate_solution_path(
+        app.session_state.play_history,
+        list(app.session_state.play_solution_actions[: len(app.session_state.play_history) - 1]),
+        GOAL_STATE,
+    )
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_moves == 1
     assert app.session_state.play_assisted is True
     assert app.session_state.play_victory_message_key in VICTORY_MESSAGE_KEYS
     assert app.session_state.play_victory_balloons_pending is False
-    assert cert.is_legal
-    assert cert.reaches_goal
-    assert cert.actions == ("R",)
+    assert valid, message
     assert not app.exception
 
 
@@ -243,6 +215,9 @@ def test_play_ai_replay_updates_the_main_image_board_step_by_step():
     assert "solution-step-mode-image" in markdown_text
     assert "puzzle-grid-mini-image" in markdown_text
     assert "solution-mini-image-tile" in markdown_text
+    assert '<img src="data:image' not in markdown_text
+    assert "--play-image-tile-solution-step-1" in markdown_text
+    assert "--play-image-tile-search-tree-1" in markdown_text
     assert app.session_state.play_solution_idx == 0
     assert app.session_state.play_state == app.session_state.play_solution_path[0]
 
@@ -314,7 +289,8 @@ def test_play_ai_solution_exposes_the_verified_step_order():
     assert "solution-step-mode-number" in markdown_text
     assert "solution-step-list" in markdown_text
     assert "solution-step-board" in markdown_text
-    assert "solution-mini-image-tile" not in markdown_text
+    assert '<div class="puzzle-grid-mini puzzle-grid-mini-image">' not in markdown_text
+    assert "--play-image-tile-solution-step-1" not in markdown_text
     assert "&lt;tr" not in markdown_text
     assert 'style="border-bottom' not in markdown_text
     assert not app.exception
@@ -330,7 +306,10 @@ def test_play_ai_search_detail_controls_advance_step():
     app.button(key="btn_ai_solve").click().run()
     app.button(key="play_ai_detail_step_slider_next").click().run()
 
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     assert app.session_state["play_ai_detail_step_slider"] == 1
+    assert "Trace row: 1/" in markdown_text
+    assert "Algorithm step:" in markdown_text
     assert app.session_state.play_solution_res.trace
     assert app.session_state.play_solution_res.search_tree_edges
     assert not app.exception
@@ -422,6 +401,19 @@ def test_standard_solver_run_renders_verified_search_evidence():
     assert "Live Node / Frontier / Reached Replay" in subheaders
     assert "Search Tree Visualization" in markdown_values
     assert "current node, frontier, reached set, and search tree visible" in caption_values
+    zoom_key = "search_tree_graphviz_zoom_BFS-24"
+    assert app.slider(key=zoom_key).value == 150
+    assert app.button(key=f"{zoom_key}_out")
+    assert app.button(key=f"{zoom_key}_in")
+    assert app.button(key=f"{zoom_key}_fit")
+
+    app.button(key=f"{zoom_key}_in").click().run()
+    assert app.session_state[zoom_key] == 175
+    zoom_markup = "\n".join(getattr(item, "value", "") for item in app.markdown)
+    assert "width: 175% !important" in zoom_markup
+
+    app.button(key=f"{zoom_key}_fit").click().run()
+    assert app.session_state[zoom_key] == 100
     assert not app.exception
 
 
@@ -497,7 +489,7 @@ def test_run_tab_exposes_canonical_complex_environment_group():
         "Intended outcome only",
         "Include all legal deflections",
     ]
-    assert app.radio(key="run_andor_deflection_mode").value == "Include all legal deflections"
+    assert app.radio(key="run_andor_deflection_mode").value == "Intended outcome only"
     assert not app.exception
 
 
@@ -723,16 +715,6 @@ def test_solver_run_uses_custom_goal_state():
     assert not app.exception
 
 
-def test_trace_rows_show_frontier_nodes_not_only_counts():
-    result = bfs(TWO_MOVE, timeout=5)
-
-    rows = trace_rows(result.trace)
-
-    frontier_values = [str(row.get("Frontier", "")) for row in rows if row.get("Frontier")]
-    assert frontier_values
-    assert any(value.startswith("(") and "g=" in value for value in frontier_values)
-
-
 def test_run_solution_animation_controls_do_not_raise_streamlit_state_error():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
@@ -853,6 +835,9 @@ def test_stochastic_run_uses_fresh_variation_seed_each_time():
     assert first_solver_seed == first_seed
     assert second_seed is not None
     assert first_seed != second_seed
+    caption_text = "\n".join(getattr(item, "value", "") for item in app.caption)
+    assert "Run variation:" not in caption_text
+    assert "The same seed was passed into the stochastic solver" not in caption_text
     assert not app.exception
 
 
@@ -1151,27 +1136,19 @@ def test_advanced_csp_ac3_produces_replayable_exact_horizon_path():
     assert not app.exception
 
 
-def test_trace_tab_exposes_csv_download():
+def test_legacy_step_trace_label_redirects_to_run_algorithm():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Step Trace"
     app.session_state["last_result"] = bfs(ONE_MOVE, timeout=5)
     app.run()
-    rows = trace_rows(app.session_state["last_result"].trace)
-    assert rows and "Event" in rows[0]
+
+    assert app.session_state["main_tab_value"] == "Run Algorithm"
+    assert app.radio(key="main_tab_label").value == "Run Algorithm"
     assert not app.exception
 
 
 def test_empty_states_are_actionable_not_blank():
-    trace_app = AppTest.from_file("app.py", default_timeout=15)
-    trace_app.session_state["global_lang_select"] = "English"
-    trace_app.session_state["main_tab_label"] = "Step Trace"
-    trace_app.run()
-    trace_markdown = "\n".join(getattr(markdown, "value", "") for markdown in trace_app.markdown)
-    assert "No Trace has been produced yet" in trace_markdown
-    assert trace_app.button(key="trace_empty_go_run")
-    assert not trace_app.exception
-
     compare_app = AppTest.from_file("app.py", default_timeout=20)
     compare_app.session_state["global_lang_select"] = "English"
     compare_app.session_state["main_tab_label"] = "Compare"

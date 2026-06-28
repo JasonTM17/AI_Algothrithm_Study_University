@@ -35,7 +35,6 @@ STATE_DEPENDENT_KEYS = (
     "play_auto_done_pending",
     "play_slider_val",
     "play_slider_version",
-    "play_optimal_result",
     "play_victory_signature",
     "play_victory_message_key",
     "play_victory_balloons_pending",

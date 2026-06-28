@@ -81,7 +81,7 @@ PROOF_CARDS = {
     "Greedy/Hill Climbing failure": {
         "claim": "Greedy and Hill Climbing can fail or return suboptimal paths.",
         "reason": "They optimize h(n) locally and do not account for full path cost or future traps. Local minima, plateaus, and misleading heuristics can stop progress.",
-        "exam_use": "Use teaching presets to demonstrate suboptimality and local-optimum behavior.",
+        "exam_use": "Use audited comparison cases to demonstrate suboptimality and local-optimum behavior.",
     },
 }
 

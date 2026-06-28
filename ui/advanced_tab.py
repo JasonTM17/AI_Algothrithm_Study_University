@@ -29,7 +29,6 @@ from ui.ai_vs_ai_tournament import render_ai_vs_ai_tournament
 from ui.components import (
     render_result_metrics,
     render_path_animation,
-    render_run_variation_metadata,
     render_search_tree,
     render_start_goal_contract,
     render_trace_table,
@@ -134,7 +133,6 @@ def _render_advanced_outputs(outputs: list[dict]) -> None:
         if entry.get("note"):
             st.info(entry["note"])
         render_result_metrics(result)
-        render_run_variation_metadata(result)
         if result.message:
             with st.expander(t("adv_model_evidence"), expanded=not bool(result.path)):
                 st.text(result.message)

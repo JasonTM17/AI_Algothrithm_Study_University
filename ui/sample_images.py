@@ -2,6 +2,7 @@
 import io
 import os
 import base64
+from functools import lru_cache
 from PIL import Image
 
 def _img_to_tiles(img, grid_size=4, tile_px=100):
@@ -45,6 +46,7 @@ def load_real_image_raw(filename):
     return None
 
 
+@lru_cache(maxsize=16)
 def load_real_image(filename):
     """Load real image and return sliced tiles."""
     img = load_real_image_raw(filename)
@@ -97,11 +99,12 @@ SAMPLE_IMAGES = {
 }
 
 
+@lru_cache(maxsize=16)
 def generate_sample_tiles(name: str) -> dict:
     """Generate puzzle tiles for a named sample image."""
     fn = SAMPLE_IMAGES.get(name)
     if fn:
-        return fn()
+        return dict(fn())
     return {}
 
 

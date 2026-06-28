@@ -143,10 +143,40 @@ def _number_tile_button_style(button_key: str) -> str:
     """
 
 
-def _image_tile_button_style(button_key: str, image_src: str, show_numbers: bool) -> str:
+def _css_token(value: str) -> str:
+    """Return a CSS-safe token for locally generated class/variable names."""
+    return "".join(ch if ch.isalnum() else "-" for ch in value)
+
+
+def _image_tile_class(key_prefix: str, val: int) -> str:
+    return f"play-image-tile-{_css_token(key_prefix)}-{val}"
+
+
+def _image_tile_var(key_prefix: str, val: int) -> str:
+    return f"--{_image_tile_class(key_prefix, val)}"
+
+
+def _image_board_tile_styles(key_prefix: str, image_tiles: dict) -> str:
+    style_parts = []
+    for val, src in sorted(image_tiles.items()):
+        if not src:
+            continue
+        token = _image_tile_class(key_prefix, val)
+        var_name = _image_tile_var(key_prefix, val)
+        src_text = escape(str(src), quote=True)
+        style_parts.append(
+            f":root {{{var_name}: url(\"{src_text}\");}} "
+            f".{token} {{background-image: var({var_name}); background-position: center; "
+            "background-size: cover; background-repeat: no-repeat;}"
+        )
+    return "".join(style_parts)
+
+
+def _image_tile_button_style(button_key: str, key_prefix: str, val: int, show_numbers: bool) -> str:
     label_visibility = "flex" if show_numbers else "none"
     text_color = "#f4efe5" if show_numbers else "transparent"
     button_scope = f"div.st-key-{button_key} button"
+    bg_var = _image_tile_var(key_prefix, val)
     return f"""
     {button_scope} {{
         position: relative !important;
@@ -162,7 +192,7 @@ def _image_tile_button_style(button_key: str, image_src: str, show_numbers: bool
         background:
             linear-gradient(135deg, rgba(255,255,255,0.16), transparent 24%),
             linear-gradient(0deg, rgba(0,0,0,0.22), transparent 46%),
-            url("{image_src}") center / cover no-repeat !important;
+            var({bg_var}) center / cover no-repeat !important;
         box-shadow:
             0 14px 24px rgba(0,0,0,0.42),
             0 0 0 2px rgba(214,161,95,0.15),
@@ -232,7 +262,7 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
         show_numbers: overlay a small number indicator on top-left of each tile
     """
     goal_state = _active_goal_state(goal)
-    dynamic_styles = []
+    dynamic_styles = [_image_board_tile_styles(key_prefix, image_tiles)]
     st.markdown('<div class="interactive-board-container-image"></div>', unsafe_allow_html=True)
     st.markdown('<div id="play-board" class="play-board-anchor"></div>', unsafe_allow_html=True)
     with st.container(key=f"{key_prefix}_image_board"):
@@ -272,8 +302,8 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                             "U": "Slide down",
                             "D": "Slide up",
                         }
-                        button_key = f"{key_prefix}_hit_{val}_{r}_{c}"
-                        dynamic_styles.append(_image_tile_button_style(button_key, image_tiles[val], show_numbers))
+                        button_key = f"{key_prefix}_hit_{val}"
+                        dynamic_styles.append(_image_tile_button_style(button_key, key_prefix, val, show_numbers))
                         st.button(
                             str(val) if show_numbers else dir_labels.get(direction, "Slide"),
                             key=button_key,
@@ -285,9 +315,8 @@ def render_image_board(state: tuple, image_tiles: dict, key_prefix: str = "img",
                     else:
                         number_badge = f'<span class="play-tile-number">{val}</span>' if show_numbers else ""
                         st.markdown(
-                            f'<div class="{" ".join(classes)}">'
+                            f'<div class="{" ".join(classes)} {_image_tile_class(key_prefix, val)}">'
                             f'{number_badge}<span class="play-tile-shine"></span>'
-                            f'<img src="{image_tiles[val]}" alt="tile{val}" draggable="false">'
                             '</div>',
                             unsafe_allow_html=True,
                         )
@@ -399,31 +428,6 @@ def render_start_goal_contract(
         st.caption(t("active_solvability_caption"))
     if show_editor:
         render_start_goal_editor(key_prefix="active_contract", expanded=True)
-
-
-def render_run_variation_metadata(result) -> None:
-    """Show the randomized run controls that produced this result."""
-    seed = getattr(result, "random_seed", None)
-    action_order = getattr(result, "variation_action_order", None)
-    tie_breaker = getattr(result, "variation_tie_breaker", None)
-    solver_seed = getattr(result, "variation_solver_seed", None)
-    randomizes_path = getattr(result, "variation_randomizes_path", True)
-
-    if seed is None and action_order is None and tie_breaker is None:
-        return
-
-    st.caption(
-        t(
-            "run_variation_caption",
-            seed=seed if seed is not None else "-",
-            action_order=action_order or "-",
-            tie_breaker=tie_breaker or "-",
-        )
-    )
-    if solver_seed is not None:
-        st.caption(t("run_variation_solver_seed", seed=solver_seed))
-    if not randomizes_path:
-        st.info(t("run_variation_no_path"))
 
 
 def render_result_metrics(result):
@@ -704,6 +708,7 @@ def _state_to_mini_image_grid(
     goal: tuple | None = None,
     *,
     show_numbers: bool = True,
+    tile_prefix: str = "mini-image",
 ) -> str:
     """Return a compact HTML image mini-grid for a puzzle state."""
     goal_state = _active_goal_state(goal)
@@ -713,12 +718,18 @@ def _state_to_mini_image_grid(
         if v == 0:
             cells.append('<span class="mc img blank">_</span>')
             continue
-        classes = ["mc", "img", "solution-mini-image-tile", "correct" if v == goal_state[i] else "off"]
+        classes = [
+            "mc",
+            "img",
+            "solution-mini-image-tile",
+            "correct" if v == goal_state[i] else "off",
+            _image_tile_class(tile_prefix, v),
+        ]
         if v in tiles:
             number_badge = f"<em>{v}</em>" if show_numbers else ""
             cells.append(
-                f'<span class="{" ".join(classes)}">'
-                f'<img src="{escape(str(tiles[v]))}" alt="tile {v}">{number_badge}</span>'
+                f'<span class="{" ".join(classes)}" aria-label="tile {v}">'
+                f"{number_badge}</span>"
             )
         else:
             cells.append(f'<span class="{" ".join(classes)} missing">{v}</span>')
@@ -794,7 +805,7 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
                 width="stretch",
             )
 
-        # Step slider in its own row
+        # Trace rows are expansion events; several rows may share the same algorithm step.
         if key_exists:
             step_idx = st.slider(t("det_slider"), 0, max_step_index, key=key)
         else:
@@ -807,7 +818,9 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
     h_text = f"{step.h:.1f}" if step.h is not None else "-"
     f_text = f"{step.f:.1f}" if step.f is not None else "-"
     st.markdown(
-        f"**{t('tc_step')} {step.step}** | {t('tc_action')}: `{step.action or 'Start'}` | "
+        f"**{t('det_trace_row')}: {step_idx}/{max_step_index}** | "
+        f"**{t('det_algorithm_step')}: {step.step}** | "
+        f"{t('tc_action')}: `{step.action or 'Start'}` | "
         f"g={g_text} h={h_text} f={f_text}"
     )
 
@@ -853,6 +866,15 @@ def _set_slider_step(slider_key: str, step: int, max_step: int) -> None:
     st.session_state[slider_key] = max(0, min(step, max_step))
 
 
+def _adjust_graphviz_zoom(zoom_key: str, delta: int) -> None:
+    current = int(st.session_state.get(zoom_key, 150))
+    st.session_state[zoom_key] = max(75, min(300, current + delta))
+
+
+def _fit_graphviz_zoom(zoom_key: str) -> None:
+    st.session_state[zoom_key] = 100
+
+
 def render_solution_steps(
     path: list[tuple],
     actions: list[str],
@@ -880,7 +902,12 @@ def render_solution_steps(
 
     def board_for(state: tuple) -> str:
         if use_image_board:
-            return _state_to_mini_image_grid(state, image_tiles, goal=goal)
+            return _state_to_mini_image_grid(
+                state,
+                image_tiles,
+                goal=goal,
+                tile_prefix="solution-step",
+            )
         return _state_to_mini_grid(state, goal=goal)
 
     html_rows = []
@@ -911,8 +938,14 @@ def render_solution_steps(
             "</div>"
         )
 
+    shared_image_styles = (
+        f"<style>{_image_board_tile_styles('solution-step', image_tiles or {})}</style>"
+        if use_image_board
+        else ""
+    )
     table_html = (
-        f'<div class="solution-step-table-wrap {mode_class}">'
+        shared_image_styles
+        + f'<div class="solution-step-table-wrap {mode_class}">'
         '<div class="solution-step-list">'
         f'{"".join(html_rows)}'
         "</div>"
@@ -1193,7 +1226,12 @@ def _render_readable_search_tree(
 
     def board_for(state: tuple) -> str:
         if use_image_board:
-            return _state_to_mini_image_grid(state, image_tiles, goal=goal)
+            return _state_to_mini_image_grid(
+                state,
+                image_tiles,
+                goal=goal,
+                tile_prefix="search-tree",
+            )
         return _state_to_mini_grid(state, goal=goal)
 
     def node_label(node) -> str:
@@ -1309,8 +1347,14 @@ def _render_readable_search_tree(
         if path_kind == "solution"
         else t("search_tree_trajectory_metric")
     )
+    shared_image_styles = (
+        f"<style>{_image_board_tile_styles('search-tree', image_tiles or {})}</style>"
+        if use_image_board
+        else ""
+    )
     markup = (
-        f'<div class="search-tree-readable {mode_class}">'
+        shared_image_styles
+        + f'<div class="search-tree-readable {mode_class}">'
         '<div class="search-tree-legend">'
         f"{path_legend}"
         f'<span><i class="legend-explored"></i>{escape(t("search_tree_explored_legend"))}</span>'
@@ -1389,14 +1433,109 @@ def render_search_tree(
         view_mode=view_mode,
     )
 
-    with st.expander(t("search_tree_graphviz_evidence"), expanded=False):
-        st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
+    with st.expander(t("search_tree_graphviz_evidence"), expanded=True):
+        graph_token = _css_token(f"{result.algorithm}-{max_nodes}")
+        zoom_key = f"search_tree_graphviz_zoom_{graph_token}"
+        if zoom_key not in st.session_state:
+            st.session_state[zoom_key] = 150
+
+        controls = st.columns([1, 1, 1.35, 4.5])
+        with controls[0]:
+            st.button(
+                "−",
+                key=f"{zoom_key}_out",
+                help=t("search_tree_zoom_out_help"),
+                on_click=_adjust_graphviz_zoom,
+                args=(zoom_key, -25),
+                width="stretch",
+            )
+        with controls[1]:
+            st.button(
+                "+",
+                key=f"{zoom_key}_in",
+                help=t("search_tree_zoom_in_help"),
+                on_click=_adjust_graphviz_zoom,
+                args=(zoom_key, 25),
+                width="stretch",
+            )
+        with controls[2]:
+            st.button(
+                "↔",
+                key=f"{zoom_key}_fit",
+                help=t("search_tree_zoom_fit_help"),
+                on_click=_fit_graphviz_zoom,
+                args=(zoom_key,),
+                width="stretch",
+            )
+        with controls[3]:
+            zoom_percent = st.slider(
+                t("search_tree_zoom_label"),
+                min_value=75,
+                max_value=300,
+                step=25,
+                key=zoom_key,
+                format="%d%%",
+            )
+
+        st.caption(t("search_tree_zoom_caption"))
+        canvas_key = f"search_tree_graphviz_canvas_{graph_token}"
+        graph_style = f"""
+        <style>
+        div.st-key-{canvas_key} div[data-testid="stGraphVizChart"] {{
+            max-height: min(72vh, 760px);
+            overflow: auto;
+            border: 1px solid rgba(214,196,166,0.14);
+            border-radius: 6px;
+            background: rgba(8,11,10,0.46);
+        }}
+        div.st-key-{canvas_key} div[data-testid="stGraphVizChart"] svg {{
+            width: {zoom_percent}% !important;
+            max-width: none !important;
+            height: auto !important;
+        }}
+        </style>
+        """
+        with st.container(key=canvas_key):
+            st.markdown(graph_style, unsafe_allow_html=True)
+            st.graphviz_chart(search_tree_to_dot(result, max_nodes), width="stretch")
     if len(result.search_tree_nodes) > max_nodes:
         st.caption(
             t("search_tree_showing", shown=max_nodes, total=len(result.search_tree_nodes))
         )
     if result.trace_truncated:
         st.warning(t("trace_capture_limit_warning"))
+
+
+@st.cache_data(show_spinner=False)
+def _process_uploaded_image_bytes(image_bytes: bytes, grid_size: int = 4):
+    from PIL import Image
+    import io
+    import base64
+
+    img = Image.open(io.BytesIO(image_bytes))
+    img = img.convert("RGBA")
+
+    w, h = img.size
+    size = min(w, h)
+    left = (w - size) // 2
+    top = (h - size) // 2
+    img = img.crop((left, top, left + size, top + size))
+
+    tile_size = 70
+    img = img.resize((grid_size * tile_size, grid_size * tile_size), Image.Resampling.LANCZOS)
+
+    tiles = {}
+    for val in range(1, grid_size * grid_size):
+        row = (val - 1) // grid_size
+        col = (val - 1) % grid_size
+        tile = img.crop((col * tile_size, row * tile_size, (col + 1) * tile_size, (row + 1) * tile_size))
+
+        buffer = io.BytesIO()
+        tile.save(buffer, format="PNG")
+        b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        tiles[val] = f"data:image/png;base64,{b64}"
+
+    return tiles
 
 
 def process_uploaded_image(image_file, grid_size: int = 4):
@@ -1410,36 +1549,8 @@ def process_uploaded_image(image_file, grid_size: int = 4):
         dict mapping tile values (1-15) to base64 data URLs, or empty dict if failed
     """
     try:
-        from PIL import Image
-        import io
-        import base64
-
-        img = Image.open(image_file)
-        img = img.convert("RGBA")
-
-        # Make square
-        w, h = img.size
-        size = min(w, h)
-        left = (w - size) // 2
-        top = (h - size) // 2
-        img = img.crop((left, top, left + size, top + size))
-
-        # Resize to grid_size * tile_size
-        tile_size = 70  # Match CSS puzzle cell size
-        img = img.resize((grid_size * tile_size, grid_size * tile_size), Image.Resampling.LANCZOS)
-
-        tiles = {}
-        for val in range(1, grid_size * grid_size):
-            row = (val - 1) // grid_size
-            col = (val - 1) % grid_size
-            tile = img.crop((col * tile_size, row * tile_size, (col + 1) * tile_size, (row + 1) * tile_size))
-
-            buffer = io.BytesIO()
-            tile.save(buffer, format="PNG")
-            b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-            tiles[val] = f"data:image/png;base64,{b64}"
-
-        return tiles
+        image_file.seek(0)
+        return dict(_process_uploaded_image_bytes(image_file.read(), grid_size))
     except Exception as e:
         import logging
         logging.warning(f"process_uploaded_image failed: {e}")

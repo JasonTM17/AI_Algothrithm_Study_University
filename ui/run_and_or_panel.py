@@ -35,7 +35,7 @@ def render_and_or_controls(
     mode = st.radio(
         t("adv_deflection_support"),
         [t("run_andor_intended_only"), t("run_andor_include_deflections")],
-        index=1,
+        index=0,
         key=key,
         horizontal=True,
     )

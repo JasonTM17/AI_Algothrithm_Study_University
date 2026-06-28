@@ -364,7 +364,7 @@ def render_exam_defense_panel() -> None:
     records = [
         {
             _t("academic_section"): "Demo flow",
-            _t("academic_what_to_show"): "Start in Play, load a teaching preset, run A*, then compare against Greedy or Hill Climbing.",
+            _t("academic_what_to_show"): "Start in Play, run A*, then use Run Algorithm to compare its certificate with Greedy or Hill Climbing.",
             _t("academic_why_it_matters"): "Shows the difference between optimal solvers and contrast demos.",
         },
         {

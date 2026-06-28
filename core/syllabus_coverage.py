@@ -54,7 +54,7 @@ SYLLABUS_COVERAGE_ROWS = [
     },
     {
         "Syllabus topic": "Issues of hill-climbing search",
-        "App surface": "Theory/PEAS -> Hill-Climbing Issues; teaching preset",
+        "App surface": "Theory/PEAS -> Hill-Climbing Issues; audited comparison case",
         "Evidence": "Local optimum preset plus plateau, ridge, sideways, and stochastic escape notes.",
         "Defense note": "This is the main reason local search is a contrast demo in this project.",
     },
@@ -239,7 +239,7 @@ HILL_CLIMBING_ISSUE_ROWS = [
     {
         "Issue": "Local optimum",
         "What happens": "Every neighbor has h >= current h, so hill climbing stops before the goal.",
-        "App evidence": "Teaching preset: Hill Climbing stuck: local optimum h=4.",
+        "App evidence": "Audited case: Hill Climbing stuck at local optimum h=4.",
         "Mitigation/demo": "Random restart or simulated annealing can try to escape, without proof.",
     },
     {
