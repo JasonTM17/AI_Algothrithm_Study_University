@@ -5,10 +5,9 @@
 | File | Vai trò |
 |---|---|
 | `app.py` | Streamlit entrypoint, page config, sidebar, language selector, start/goal controls và tab router. |
-| `ui/play_tab.py` | Board số/ảnh, AI replay A* bắt đầu tại step 0, Next/Auto điều khiển từng bước, step slider, challenge score. |
+| `ui/play_tab.py` | Board số/ảnh, AI replay A* bắt đầu tại step 0, Next/Auto điều khiển từng bước, step slider và Node/Frontier/Reached evidence. |
 | `ui/run_tab.py` | Chạy một thuật toán, metrics, trace, trajectory, readable tree và Graphviz evidence. |
 | `ui/compare_tab.py` | Benchmark nhiều solver cùng start/goal/seed/limit. |
-| `ui/trace_tab.py` | Đọc trace đã lưu và export CSV. |
 | `ui/hand_tracing.py` | Luyện mở rộng frontier bằng tay. |
 | `ui/theory_tab.py` | PEAS, taxonomy, proof cards, caveat và Group 6 comparison. |
 | `ui/advanced_tab.py` | CSP, complex environments, game/chance và AI-vs-AI Tournament. |

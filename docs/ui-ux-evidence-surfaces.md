@@ -19,6 +19,7 @@ App ưu tiên giao diện học thuật: người học phải thấy thuật to
 - Solution spine được phóng lớn hơn node phụ.
 - Frontier/reached snapshot đặt cạnh tree để không phải suy luận từ DOT nhỏ.
 - Graphviz vẫn có để audit edge parent-child.
+- Full Graphviz mở kèm zoom 75–300%, nút thu/phóng/vừa khung và vùng cuộn; mức mặc định 150% để nhãn node đọc được.
 - Với cây lớn, UI lọc solution path, expanded neighborhood hoặc first N nodes thay vì ép toàn bộ vào một hình nhỏ.
 - Tree không gọi mọi legal path là lời giải: nếu `path_verified=True` nhưng `goal_reached=False`, readable view dùng nhãn `Verified Trajectory` và màu hổ phách thay vì `Solution Path`.
 

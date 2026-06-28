@@ -5,9 +5,9 @@ Tài liệu này ghi lại hình dạng release cho bài thi sau khi hợp nhấ
 ```mermaid
 flowchart LR
     M["master"] --> W["Streamlit web"]
-    W --> P["Play + Challenge"]
+    W --> P["Play board + A* replay"]
     W --> R["Run Algorithm + certified search"]
-    W --> C["Compare + Step Trace"]
+    W --> C["Compare"]
     W --> T["Theory + Hand-Tracing"]
     W --> A["Advanced concept lab"]
 ```
@@ -23,7 +23,7 @@ flowchart LR
 
 | Thành phần | Nội dung |
 |---|---|
-| Web learning lab | Play, Challenge, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory, Advanced. |
+| Web learning lab | Play, Run Algorithm, Compare, Hand-Tracing, Theory, Advanced. |
 | Academic framing | Thuật toán được label là solver chuẩn, demo đối chiếu, extension hoặc tournament/game demo. |
 | Evidence | Legal path certificate, goal reached, optimality proven, trace và search tree edge. |
 | Advanced boundary | CSP/game/chance/belief-state là concept lab, không xếp chung solver leaderboard. |

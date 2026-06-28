@@ -152,17 +152,12 @@ def _algorithm_section(index: int, spec, record: dict) -> list[str]:
         f"| Evidence trong GIF | {spec.evidence} |",
         f"| Guarantee | {spec.guarantee} |",
         f"| Caveat | {spec.academic_caveat} |",
+        f"| Phù hợp với 15-puzzle chuẩn | {_standard_15_puzzle_fit(spec, record)} |",
         f"| Web capture source | `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}` |",
         f"| web_run_status | `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))} |",
         f"| Demo input | seed `{record['seed']}`, termination `{record['termination']}`, {param_text} |",
         f"| Certificate flags | `path_verified={record['path_verified']}`, `goal_reached={record['goal_reached']}`, `optimality_proven={record['optimality_proven']}` |",
         f"| Result message | {result_message} |",
-        "",
-        "Khi thuyết trình:",
-        "",
-        "1. Nói rõ state/action/cost model trước khi giải thích hình.",
-        "2. Chỉ vào evidence chính trên GIF: frontier, reached, candidate, belief, domain, utility hoặc score.",
-        "3. Kết thúc bằng guarantee và caveat để không claim quá mức.",
         "",
     ]
 
@@ -242,6 +237,46 @@ def _status_label(status: str) -> str:
     }.get(status, "unknown run status")
 
 
+def _standard_15_puzzle_fit(spec, record: dict) -> str:
+    notes = {
+        "BFS": "Solver chuẩn cho ca nông: complete và optimal với unit step cost, nhưng frontier/reached tăng rất nhanh nên không hợp cho 15-puzzle sâu.",
+        "DFS": "Không dùng làm solver chuẩn: có thể tìm được một path hợp lệ nhưng không bảo đảm ngắn nhất và dễ đi sâu vào nhánh kém.",
+        "UCS": "Solver chuẩn khi chi phí bước không âm. Với 15-puzzle unit cost, UCS gần tương đương BFS nhưng giữ rõ mô hình path cost g(n).",
+        "IDS": "Solver chuẩn cho unit-cost khi depth limit đủ lớn: tiết kiệm bộ nhớ hơn BFS nhưng lặp lại nhiều lần qua các giới hạn độ sâu.",
+        "Greedy Best-First": "Không dùng để chứng minh tối ưu: h(n) giúp chạy nhanh hơn nhưng bỏ qua g(n), nên path có thể dài hơn A*.",
+        "A*": "Solver chuẩn chính của app: với Manhattan Distance admissible/consistent và unit step cost, có thể bật optimality_proven khi tới goal.",
+        "IDA*": "Solver chuẩn memory-bounded: hợp với 15-puzzle sâu hơn A* về bộ nhớ, đổi lại có thể revisit nhiều state theo threshold.",
+        "Simple Hill Climbing": "Không ổn làm solver chuẩn: chỉ đi theo cải thiện cục bộ và có thể dừng ở local optimum dù goal chưa đạt.",
+        "Steepest-Ascent Hill Climbing": "Không ổn làm solver chuẩn: xét hết neighbor cục bộ tốt hơn Simple HC nhưng vẫn kẹt plateau/local optimum.",
+        "Stochastic Hill Climbing": "Không ổn làm solver chuẩn: seed khác có thể cho trajectory khác, không có completeness hay optimality certificate.",
+        "Random-Restart Hill Climbing": "Không ổn làm solver chuẩn: restart tăng cơ hội thoát basin xấu nhưng vẫn không chứng minh được shortest path.",
+        "Local Beam Search": "Không ổn làm solver chuẩn: giữ nhiều candidate giúp minh họa tìm kiếm cục bộ, nhưng beam nhỏ có thể bỏ mất route tốt.",
+        "Simulated Annealing": "Không ổn làm solver chuẩn: có thể nhận bước xấu để thoát local optimum, nhưng legal trajectory không đồng nghĩa solved hoặc optimal.",
+        "AND-OR Search": "Không phải solver tuyến tính của 15-puzzle deterministic: dùng để minh họa conditional plan khi môi trường có outcome lệch.",
+        "Searching with no observation": "Không phải solver chuẩn full-observation: dùng belief set khi agent không thấy trạng thái thật; hidden state chỉ để debug.",
+        "Searching for partially observable problems": "Không phải solver chuẩn khi chỉ biết vài ô: dùng known-tile matrix để thu hẹp belief, vẫn có thể mơ hồ.",
+        "LRTA*": "Không phải offline optimal solver: minh họa agent online cập nhật H(s) từng bước, cap là số bước hành động tối đa.",
+        "CSP Definition": "Không giải puzzle trực tiếp: chỉ dựng mô hình biến/domain/constraint để người học hiểu cách mã hóa bài toán.",
+        "Constraint Propagation": "Không thay thế graph search: propagation lọc domain trong horizon đã chọn, chỉ solved khi horizon khớp path demo.",
+        "Path Consistency": "Không giải 15-puzzle chuẩn: minh họa consistency trên ràng buộc, không sinh shortest path.",
+        "Global Constraints": "Không giải trực tiếp: kiểm tra ràng buộc toàn cục như AllDifferent, dùng để giải thích model CSP.",
+        "Backtracking Search": "Chỉ hợp demo horizon nhỏ: có thể tìm path trong mô hình bounded transition, không claim tối ưu toàn cục.",
+        "Min-Conflicts": "Không phù hợp 15-puzzle chuẩn: repair bằng tile swaps không nhất thiết là legal blank moves, nên không phải lời giải trượt ô.",
+        "Constraint Graphs": "Không giải trực tiếp: trình bày graph biến/ràng buộc để đọc cấu trúc CSP, không phải solver path.",
+        "AI-vs-AI Tournament": "Không phải thuật toán giải puzzle: là lớp chấm điểm hai solver bằng A* reference và verified trajectory.",
+        "Minimax": "Không phải solver tự nhiên của 15-puzzle: MIN là nhánh worst-case robustness, không phải đối thủ thật.",
+        "Alpha-Beta Pruning": "Không phải solver tự nhiên của 15-puzzle: chỉ prune cây Minimax worst-case cùng root value, không đổi puzzle thành game hai người.",
+        "Expectimax": "Không phải solver chuẩn: dùng CHANCE/probability model để so expected value, xác suất là mô hình giáo dục.",
+    }
+    note = notes.get(spec.algorithm, spec.academic_caveat)
+    status = record.get("web_run_status", "unknown")
+    if status == "not_solved_in_demo":
+        note += " GIF ghi trung thực rằng demo không tạo solution claim."
+    elif status == "ran_model_not_goal_path":
+        note += " GIF là model evidence, không phải path tới goal."
+    return _table_cell(note)
+
+
 def _table_cell(value: object) -> str:
     text = str(value).replace("\n", " ").replace("|", "/").strip()
     return text or "-"
@@ -311,6 +346,7 @@ def _gallery(specs, records: dict[str, dict]) -> str:
                 f"- **Trace evidence:** {spec.evidence}",
                 f"- **Guarantee:** {spec.guarantee}",
                 f"- **Caveat:** {spec.academic_caveat}",
+                f"- **Phù hợp với 15-puzzle chuẩn:** {_standard_15_puzzle_fit(spec, record)}",
                 f"- **Source:** `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}`.",
                 f"- **web_run_status:** `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))}.",
                 f"- **Result message:** {_table_cell(record.get('result_message', ''))}",

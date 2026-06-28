@@ -40,10 +40,9 @@
 
 | Tab | Điểm cần thấy sớm |
 |---|---|
-| Play | Board, start/goal, solvability, challenge/replay controls. |
+| Play | Board, start/goal, solvability, A* replay controls, trajectory and evidence. |
 | Run Algorithm | Algorithm group, role, controls, run certificate, trace/search tree. |
 | Compare | Preset, list thuật toán, seed/limits, bảng kết quả, caveat so sánh. |
-| Step Trace | Empty state có hướng dẫn, trace table, detail slider, CSV export. |
 | Hand-Tracing | Frontier order, thao tác mở rộng, graph edge do người học chọn. |
 | Theory | PEAS, taxonomy, group comparison, proof card, exam defense. |
 | Advanced | Mode cards, caveat extension, result evidence và replay nếu có. |

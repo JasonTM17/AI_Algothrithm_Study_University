@@ -2,7 +2,7 @@
 
 ## Trạng Thái Hiện Tại
 
-App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory và Advanced. Contract học thuật hiện tại:
+App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, Hand-Tracing, Theory và Advanced. Trace/Node/Frontier/Reached nằm trực tiếp trong Run Algorithm để không tách evidence khỏi thuật toán đang chạy. Contract học thuật hiện tại:
 
 - 6 nhóm / 28 thuật toán.
 - Puzzle số và puzzle ảnh replay theo state thật.

@@ -111,6 +111,11 @@ def test_readme_is_academic_atlas_with_all_algorithm_gifs():
     assert "docs/algorithm-demo-gallery.md" in readme
     assert "live Streamlit browser capture" in readme
     assert "web_run_status" in readme
+    assert "Khi thuyết trình" not in readme
+    assert readme.count("Phù hợp với 15-puzzle chuẩn") == 28
+    assert "Không ổn làm solver chuẩn" in readme
+    assert "Không phải solver tuyến tính của 15-puzzle deterministic" in readme
+    assert "repair bằng tile swaps không nhất thiết là legal blank moves" in readme
     assert "So Sánh Thuật Toán Trong Nhóm" in readme
     assert "Frontier/decision rule" in readme
     assert "Same root value as full Minimax" in readme
@@ -127,6 +132,8 @@ def test_algorithm_gallery_has_full_academic_metadata():
     assert "28 GIF" in gallery
     assert "live Streamlit browser capture" in gallery
     assert "web_run_status" in gallery
+    assert "Khi thuyết trình" not in gallery
+    assert gallery.count("Phù hợp với 15-puzzle chuẩn") == 28
     for algorithm, note in ALGORITHM_NOTES.items():
         assert algorithm in gallery
         assert note.learning_goal in gallery

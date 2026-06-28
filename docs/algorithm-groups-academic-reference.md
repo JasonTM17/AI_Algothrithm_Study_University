@@ -79,8 +79,8 @@ Các tham số dưới đây là phần dễ bị thiếu khi chỉ đọc lý t
 | Action order | Solver nhận `action_order`, mặc định `LRUD`; UI có thể đổi thứ tự action mỗi run. | Node count, trace và path có thể đổi theo thứ tự sinh neighbor; benchmark phải ghi action order. |
 | Tie-breaker | UCS, Greedy và A* hỗ trợ `FIFO`, `LIFO`, `Min-g`, `Max-g`. | Tie-breaker chỉ phá hòa trong priority queue; không tự tạo optimality nếu thuật toán không optimal. |
 | Resource limit | BFS/UCS/Greedy mặc định `max_nodes=50000`, A*/IDA* `100000`; DFS/IDS có thêm `max_depth=50`; timeout mặc định thường là `60s`, A*/IDA* là `120s`. | Timeout, node cap hoặc depth cap làm mất chứng cứ thực nghiệm; phải đọc `termination_reason` trước khi claim. |
-| Run variation | `RunVariation` ghi seed, action order, tie-breaker, solver seed và cờ `randomizes_path`. | Run/Advanced có thể thay đổi cách trình bày qua mỗi lần bấm nhưng vẫn giữ certificate path/goal/optimality. |
-| Solver thật sự dùng seed | Stochastic HC, Random-Restart HC, Simulated Annealing, Min-Conflicts, No Observation, Partial Observation và Expectimax. | Không ghi “random” cho BFS/A*/IDA*; deterministic solver chỉ có variation metadata của UI. |
+| Run variation | `RunVariation` ghi seed, action order, tie-breaker, solver seed và cờ `randomizes_path`. | Run/Advanced giữ metadata nội bộ để kiểm thử; UI kết quả chính không hiển thị các dòng kỹ thuật gây nhiễu. |
+| Solver thật sự dùng seed | Stochastic HC, Random-Restart HC, Simulated Annealing, Min-Conflicts, No Observation, Partial Observation và Expectimax. | Compare có thể hiển thị seed khi cần tái lập; Run/Advanced chỉ lưu nội bộ. |
 | Non-path variation | AND-OR, CSP Definition, Path Consistency, Global Constraints và Constraint Graphs không randomize path. | Đây là model/explanation output, không nên diễn giải như trajectory puzzle tuyến tính. |
 | Dispatcher kwargs | `core/solver_dispatch.py` chỉ truyền tham số mà từng solver nhận được; CSP explanatory functions chỉ nhận start/goal, CSP search nhận timeout. | UI tránh truyền sai signature; khi audit lỗi run, kiểm `build_solver_kwargs` trước. |
 | CSP horizon cap | `csp_definition` và `constraint_propagation` bị cap `time_horizon <= 5`; `solve_csp_constraint_graphs` cap `time_horizon <= 3`. | CSP demo cố ý bounded để dễ chạy; AC-3 exact-horizon không phải shortest-path proof toàn cục. |
@@ -143,7 +143,7 @@ Các vấn đề hill climbing cần nói rõ:
 
 | Vấn đề | Ý nghĩa | Cách app minh họa |
 |---|---|---|
-| Local optimum | Không neighbor nào tốt hơn current nhưng chưa tới goal. | Teaching preset và result caveat. |
+| Local optimum | Không neighbor nào tốt hơn current nhưng chưa tới goal. | Audited regression case và result caveat. |
 | Plateau/shoulder | Nhiều neighbor có cùng `h`, strict improvement không có hướng đi. | Theory và local-search trace. |
 | Ridge | Cần đi ngang hoặc tạm thời xấu hơn mới tốt về sau. | Simulated Annealing có xác suất nhận move xấu khi temperature còn cao. |
 | Randomness dependence | Seed khác nhau sinh trajectory khác nhau. | Stochastic HC, Random-Restart HC, Simulated Annealing. |
@@ -172,7 +172,7 @@ Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đ
 
 | Thuật toán | Môi trường | Output | Ranh giới |
 |---|---|---|---|
-| AND-OR Search | Nondeterministic | Conditional plan | Không cần cho 15-puzzle deterministic chuẩn. |
+| AND-OR Search | Nondeterministic | Conditional plan | UI mặc định intended-only. All-deflections là stress test worst-case có safety cap; dừng vì cap/timeout không chứng minh không tồn tại plan. |
 | No Observation Search | Không quan sát state thật | Belief-state action demo | Sensor bị yếu đi có chủ ý. |
 | Partially Observable Search | Quan sát một phần | Actual path plus belief/observation trace | Không phải solver chuẩn. |
 | LRTA* | Online search/learning | Path học từng bước | Có thể không tối ưu; dùng để bàn về agent online. |

@@ -50,7 +50,7 @@ AI-vs-AI Tournament chỉ là lớp chấm điểm hai solver agent trên cùng 
 | F-06 | Theory hiển thị PEAS, taxonomy, proof card, rubric và báo cáo chấm. | `ui/theory_tab.py`, `ui/academic_panels.py`, `core/academic.py`, `core/academic_proofs.py`. |
 | F-07 | Advanced tách CSP, complex environment, game/chance và Tournament khỏi solver chuẩn. | `ui/advanced_tab.py`, `algorithms/csp.py`, `algorithms/complex_env.py`, `algorithms/adversarial.py`. |
 | F-08 | Tournament dùng A* reference và replay hai trajectory. | `core/ai_vs_ai_tournament.py`, `ui/ai_vs_ai_tournament.py`, `ui/tournament_replay.py`. |
-| F-09 | Play có puzzle board, image mode và challenge score. | `ui/play_tab.py`, `ui/sample_images.py`, `core/gameplay.py`. |
+| F-09 | Play có puzzle board, image mode, A* replay và Node/Frontier/Reached evidence. | `ui/play_tab.py`, `ui/sample_images.py`. |
 | F-10 | UI có localization tiếng Việt/English. | `ui/localization.py`, `tests/test_localization.py`. |
 
 ## Yêu cầu phi chức năng
@@ -59,14 +59,14 @@ AI-vs-AI Tournament chỉ là lớp chấm điểm hai solver agent trên cùng 
 |---|---|
 | Đúng học thuật | Không gọi extension là solver chuẩn; không claim tối ưu khi thiếu certificate. |
 | Hiệu năng demo | Có timeout, max nodes, trace cap và cảnh báo resource limit. |
-| Tái lập | Benchmark, Tournament và Hand-Tracing dùng seed/action order rõ ràng; Run có variation metadata. |
+| Tái lập | Benchmark, Tournament và Hand-Tracing dùng seed/action order rõ ràng; Run lưu variation metadata nội bộ nhưng không làm rối kết quả chính. |
 | Khả dụng lớp học | Chạy bằng `streamlit run app.py`, không cần database hoặc secret. |
 | Dễ chấm | Có test plan, docs học thuật, báo cáo grading và CI. |
 | Mobile | Sidebar, board, bảng trace và cards phải đọc được trên viewport nhỏ. |
 
 ## Tiêu chí thành công
 
-- App chạy không lỗi Streamlit ở các tab Play, Run Algorithm, Compare, Step Trace, Hand-Tracing, Theory và Advanced.
+- App chạy không lỗi Streamlit ở các tab Play, Run Algorithm, Compare, Hand-Tracing, Theory và Advanced.
 - Mọi path solution thành công phải có `path_verified=True` và state cuối bằng `goal_state`.
 - `optimality_proven=True` chỉ xuất hiện khi thuật toán optimal, path hợp lệ, tới goal và termination là `goal`.
 - CSP AC-3 trả exact-horizon path hoặc domain wipe-out cho horizon đã chọn, không claim shortest path toàn cục.
