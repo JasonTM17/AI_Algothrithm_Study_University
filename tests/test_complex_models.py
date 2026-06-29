@@ -1,18 +1,23 @@
-"""Academic contracts for extension environment models."""
+"""Academic contracts for the three complex-environment models."""
 
 import pytest
 
+from algorithms.belief_search import (
+    BeliefState,
+    observe_blank_and_neighbors,
+    partition_by_observation,
+    predict_belief,
+)
 from algorithms.complex_env import (
     AND_OR_EXPANSION_CAP,
     and_or_search,
     default_known_positions,
     format_known_positions_matrix,
     no_observation_search,
-    online_search_lrta,
     parse_known_positions_matrix,
     partially_observable_search,
 )
-from core.puzzle import GOAL_STATE, scramble
+from core.puzzle import GOAL_STATE, _move_blank, scramble
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
@@ -22,14 +27,10 @@ def test_zero_known_tiles_produces_an_empty_observation():
     assert default_known_positions(ONE_MOVE, 0) == {}
 
 
-def test_known_positions_matrix_parses_visible_tiles_and_ignores_unknown_cells():
+def test_known_positions_matrix_round_trip_and_unknown_cells():
     known = parse_known_positions_matrix(
-        "1 _ _ _\n"
-        "_ 6 _ _\n"
-        "_ _ 11 _\n"
-        "_ _ _ _"
+        "1 _ _ _\n_ 6 _ _\n_ _ 11 _\n_ _ _ _"
     )
-
     assert known == {0: 1, 5: 6, 10: 11}
     assert parse_known_positions_matrix(format_known_positions_matrix(known)) == known
 
@@ -43,239 +44,135 @@ def test_known_positions_matrix_parses_visible_tiles_and_ignores_unknown_cells()
         ("16 _ _ _\n_ _ _ _\n_ _ _ _\n_ _ _ _", "0..15"),
     ],
 )
-def test_known_positions_matrix_rejects_invalid_academic_clues(matrix, expected_message):
+def test_known_positions_matrix_rejects_invalid_clues(matrix, expected_message):
     with pytest.raises(ValueError, match=expected_message):
         parse_known_positions_matrix(matrix)
 
 
-def test_and_or_deterministic_support_finds_one_step_conditional_plan():
+def test_and_or_deterministic_support_finds_conditional_plan():
     result = and_or_search(ONE_MOVE, GOAL_STATE, max_depth=1, nondet_prob=0.0)
     assert result.success
-    assert result.nodes_expanded > 0
-    assert result.nodes_generated > 1
+    assert result.capability == "conditional_plan"
+    assert result.termination_reason == "model_success"
+    assert result.model_evidence["conditional_plan"]
+    assert not result.path
     assert not result.uses_probability
-    assert "intended outcome only" in result.message
     assert "not probability-weighted" in result.message
 
 
-def test_and_or_requires_all_supported_outcomes_to_succeed():
-    result = and_or_search(ONE_MOVE, GOAL_STATE, max_depth=1, nondet_prob=0.3)
+def test_and_or_requires_every_supported_outcome():
+    result = and_or_search(ONE_MOVE, GOAL_STATE, max_depth=1, nondet_prob=1.0)
     assert not result.success
     assert result.nodes_expanded > 0
-    assert "include all legal deflections" in result.message
     assert "every supported outcome" in result.message
-
-
-def test_and_or_trace_treats_nondet_prob_as_support_switch():
-    result = and_or_search(ONE_MOVE, GOAL_STATE, max_depth=1, nondet_prob=1.0)
-
     trace_text = " ".join(step.reason for step in result.trace)
-    assert "binary support switch" in trace_text
     assert "not a probability weight" in trace_text
 
 
-def test_and_or_orders_intended_actions_by_heuristic():
+def test_and_or_resource_limit_is_not_false_impossibility_proof():
     start = scramble(GOAL_STATE, depth=10, seed=42)
     result = and_or_search(
-        start, GOAL_STATE, max_depth=20, nondet_prob=0.0,
-        timeout=5, action_order="LRUD",
+        start, GOAL_STATE, max_depth=20, nondet_prob=1.0, timeout=30
     )
-
-    assert result.success
-    assert result.nodes_expanded <= 20
-    assert result.termination_reason == "model_success"
-
-
-def test_and_or_all_deflections_stops_without_false_failure_proof():
-    start = scramble(GOAL_STATE, depth=10, seed=42)
-    result = and_or_search(
-        start, GOAL_STATE, max_depth=20, nondet_prob=1.0, timeout=30,
-    )
-
     assert not result.success
     assert result.nodes_expanded == AND_OR_EXPANSION_CAP
     assert result.termination_reason == "resource_limit"
     assert "before proving or disproving" in result.message
-    assert "No conditional plan found" not in result.message
 
 
-def test_and_or_timeout_is_not_reported_as_depth_exhaustion():
-    result = and_or_search(
-        ONE_MOVE, GOAL_STATE, max_depth=20, nondet_prob=1.0, timeout=0.0,
-    )
-
-    assert not result.success
-    assert result.termination_reason == "timeout"
-    assert "before proving or disproving" in result.message
-    assert "No conditional plan found" not in result.message
-
-
-@pytest.mark.parametrize("probability", [-0.1, 1.1])
-def test_and_or_rejects_invalid_support_probability(probability):
+@pytest.mark.parametrize("support", [-0.1, 1.1])
+def test_and_or_rejects_invalid_support_switch(support):
     with pytest.raises(ValueError):
-        and_or_search(ONE_MOVE, nondet_prob=probability)
+        and_or_search(ONE_MOVE, nondet_prob=support)
 
 
-def test_no_observation_binds_heuristic_to_custom_goal():
-    custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+def test_predict_belief_uses_documented_illegal_action_noop():
+    belief = BeliefState({GOAL_STATE, ONE_MOVE})
+    predicted = predict_belief(belief, "R")
+    assert GOAL_STATE in predicted  # R is illegal at the goal, so it is a no-op.
+    assert _move_blank(ONE_MOVE, "R") in predicted
+
+
+def test_observation_partitions_are_disjoint_and_cover_prediction():
+    belief = BeliefState({GOAL_STATE, ONE_MOVE, scramble(GOAL_STATE, 2, seed=9)})
+    predicted = predict_belief(belief, "L")
+    partitions = partition_by_observation(predicted)
+    values = list(partitions.values())
+    assert set().union(*map(set, values)) == set(predicted)
+    for index, left in enumerate(values):
+        for right in values[index + 1:]:
+            assert left.isdisjoint(right)
+    for observation, states in partitions.items():
+        assert all(observe_blank_and_neighbors(state) == observation for state in states)
+
+
+def test_no_observation_singleton_returns_conformant_sequence_not_hidden_path():
     result = no_observation_search(
-        GOAL_STATE,
-        goal=custom_goal,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        action_order="LRUD",
-    )
-
-    assert result.success
-    assert result.actions == ["L"]
-    assert result.path[-1] == custom_goal
-    assert result.goal_state == custom_goal
-    assert result.random_seed is None
-    assert result.uses_randomness
-    assert result.path_verified
-
-
-def test_no_observation_records_seed_for_reproducible_belief_generation():
-    first = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-    )
-    second = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-    )
-
-    assert first.random_seed == second.random_seed == 123
-    assert first.actions == second.actions
-    assert first.path == second.path
-    assert first.goal_state == GOAL_STATE
-    assert first.path_verified
-
-
-def test_no_observation_trace_tracks_hidden_state_after_a_legal_blind_action():
-    result = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-    )
-
-    assert result.path == [ONE_MOVE, GOAL_STATE]
-    assert result.trace[-1].state == result.path[-1]
-    assert "decision itself uses belief" in result.trace[-1].reason
-
-
-def test_lrta_counts_observed_successors_as_generated_nodes():
-    result = online_search_lrta(ONE_MOVE, max_steps=1, timeout=5)
-
-    assert result.nodes_expanded == 1
-    assert result.nodes_generated > result.nodes_expanded
-    assert "h_old=" in result.trace[0].reason
-
-
-def test_no_observation_reconstructs_belief_from_known_tiles_and_group_planner():
-    known = default_known_positions(ONE_MOVE, 2)
-    result = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=4,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-        known_positions=known,
-        belief_planner="BFS",
-    )
-
-    reasons = " ".join(step.reason for step in result.trace)
-    assert result.trace[0].belief_size >= 1
-    assert "known positions=2" in reasons
-    assert "planner=BFS" in reasons
-    assert "Blind action" in reasons
-    assert result.random_seed == 123
-
-
-def test_belief_planner_trace_reports_successful_planner_votes():
-    result = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-        belief_planner="BFS",
-    )
-
-    reasons = " ".join(step.reason for step in result.trace)
-    assert "planner_votes=" in reasons
-    assert "fallback_votes={'L': 0, 'R': 0, 'U': 0, 'D': 0}" in reasons
-    assert "fallback_reason=none" in reasons
-
-
-def test_belief_planner_trace_reports_exception_fallback(monkeypatch):
-    def broken_bfs(*args, **kwargs):
-        raise RuntimeError("test planner failure")
-
-    monkeypatch.setattr("algorithms.uninformed.bfs", broken_bfs)
-    result = no_observation_search(
-        ONE_MOVE,
-        num_belief_states=1,
-        max_steps=1,
-        timeout=5,
-        seed=123,
-        belief_planner="BFS",
-    )
-
-    reasons = " ".join(step.reason for step in result.trace)
-    assert "planner_votes={'L': 0, 'R': 0, 'U': 0, 'D': 0}" in reasons
-    assert "fallback_votes=" in reasons
-    assert "fallback_reason=planner=BFS raised RuntimeError" in reasons
-
-
-def test_partially_observable_search_returns_certified_actual_trajectory():
-    result = partially_observable_search(
         ONE_MOVE,
         num_belief_states=1,
         max_steps=1,
         timeout=5,
         action_order="RULD",
-        seed=42,
+        seed=123,
+        known_positions={index: value for index, value in enumerate(ONE_MOVE)},
     )
-
     assert result.success
     assert result.actions == ["R"]
-    assert result.path == [ONE_MOVE, GOAL_STATE]
-    assert result.goal_state == GOAL_STATE
-    assert result.random_seed == 42
-    assert result.uses_randomness
-    assert result.path_verified
-    assert result.goal_reached
+    assert result.capability == "conformant_plan"
+    assert not result.path
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert result.model_evidence["illegal_action_semantics"] == "no-op"
 
 
-def test_partial_observation_uses_known_tiles_and_collapses_to_reconstructed_state():
+def test_conformant_plan_replays_on_every_initial_belief_state():
+    result = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        action_order="RULD",
+        seed=7,
+        known_positions={index: value for index, value in enumerate(ONE_MOVE)},
+    )
+    initial_states = result.model_evidence["initial_belief"]["sample"]
+    for raw_state in initial_states:
+        state = tuple(raw_state)
+        for action in result.actions:
+            state = _move_blank(state, action) or state
+        assert state == GOAL_STATE
+
+
+def test_no_observation_bounded_failure_is_not_global_impossibility():
+    result = no_observation_search(
+        ONE_MOVE,
+        num_belief_states=3,
+        max_steps=0,
+        timeout=5,
+        seed=11,
+    )
+    assert not result.success
+    assert result.termination_reason == "depth_limit"
+    assert "not a global impossibility proof" in result.message
+
+
+def test_partial_observation_returns_policy_not_linear_path():
     result = partially_observable_search(
         ONE_MOVE,
-        num_belief_states=4,
-        max_steps=2,
+        num_belief_states=1,
+        max_steps=1,
         timeout=5,
         action_order="RULD",
         seed=42,
-        known_positions=default_known_positions(ONE_MOVE, 2),
-        belief_planner="A* Search",
+        known_positions={index: value for index, value in enumerate(ONE_MOVE)},
     )
+    assert result.success
+    assert result.capability == "contingent_policy"
+    assert result.model_evidence["policy"]["type"] == "OR"
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert not result.path
 
-    reasons = " ".join(step.reason for step in result.trace)
-    assert "known positions=2" in reasons
-    assert "planner=A* Search" in reasons
-    assert result.path_verified
 
-
-def test_partially_observable_search_certifies_start_at_goal():
+def test_partial_observation_start_at_goal_returns_goal_policy():
     result = partially_observable_search(
         GOAL_STATE,
         num_belief_states=1,
@@ -283,34 +180,12 @@ def test_partially_observable_search_certifies_start_at_goal():
         timeout=5,
         seed=99,
     )
-
     assert result.success
-    assert result.actions == []
-    assert result.path == [GOAL_STATE]
-    assert result.goal_state == GOAL_STATE
-    assert result.random_seed == 99
-    assert result.path_verified
-    assert result.goal_reached
+    assert result.model_evidence["policy"]["type"] == "goal"
 
 
 @pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
-def test_belief_generators_scramble_from_custom_goal_parity(solver):
-    swapped_goal = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
-    result = solver(
-        swapped_goal,
-        goal=swapped_goal,
-        num_belief_states=2,
-        max_steps=0,
-        timeout=1,
-        seed=7,
-    )
-
-    assert result.runtime < 1
-    assert result.nodes_expanded == 0
-
-
-@pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
-def test_belief_search_timeout_reports_actual_completed_steps(solver):
+def test_belief_search_timeout_is_structured(solver):
     result = solver(
         ONE_MOVE,
         num_belief_states=2,
@@ -318,23 +193,7 @@ def test_belief_search_timeout_reports_actual_completed_steps(solver):
         timeout=0.0,
         seed=7,
     )
-
+    assert not result.success
     assert result.nodes_expanded == 0
-    assert result.nodes_generated == 0
     assert result.termination_reason == "timeout"
-    assert "Timeout after 0" in result.message
-
-
-def test_lrta_success_reports_requested_goal_certificate():
-    result = online_search_lrta(
-        ONE_MOVE,
-        goal=GOAL_STATE,
-        max_steps=5,
-        timeout=5,
-        action_order="RULD",
-    )
-
-    assert result.success
     assert result.goal_state == GOAL_STATE
-    assert result.path_verified
-    assert result.goal_reached

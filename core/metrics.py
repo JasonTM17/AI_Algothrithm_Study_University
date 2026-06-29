@@ -10,9 +10,9 @@ class TraceStep:
     step: int
     state: tuple[int, ...]
     action: Optional[str] = None
-    g: int = 0
-    h: float = 0.0
-    f: float = 0.0
+    g: Optional[int] = 0
+    h: Optional[float] = 0.0
+    f: Optional[float] = 0.0
     frontier_size: int = 0
     reached_size: int = 0
     reason: str = ""
@@ -37,6 +37,8 @@ class TraceStep:
     alpha: Optional[float] = None
     beta: Optional[float] = None
     utility: Optional[float] = None
+    intended_action: Optional[str] = None
+    realized_action: Optional[str] = None
     # Search visualization fields
     node_state: Optional[tuple] = None
     frontier_states: Optional[list[tuple]] = None
@@ -86,6 +88,8 @@ class SearchResult:
     variation_solver_seed: Optional[int] = None
     variation_randomizes_path: bool = True
     message: str = ""
+    capability: str = ""
+    model_evidence: dict[str, object] = field(default_factory=dict)
     trace: list[TraceStep] = field(default_factory=list)
     search_tree_nodes: list[SearchTreeNode] = field(default_factory=list)
     search_tree_edges: list[SearchTreeEdge] = field(default_factory=list)
@@ -217,40 +221,69 @@ class SearchResult:
             return states[state]
 
         edges: list[SearchTreeEdge] = []
-        edge_keys: set[tuple[str, str, str]] = set()
+        edges_by_key: dict[tuple[str, str, str], SearchTreeEdge] = {}
+
+        def add_edge(
+            parent: SearchTreeNode,
+            child: SearchTreeNode,
+            action: str,
+            on_solution_path: bool,
+        ) -> None:
+            key = (parent.node_id, child.node_id, action)
+            existing = edges_by_key.get(key)
+            if existing is not None:
+                existing.on_solution_path = existing.on_solution_path or on_solution_path
+                return
+            edge = SearchTreeEdge(
+                parent.node_id, child.node_id, action, on_solution_path,
+            )
+            edges.append(edge)
+            edges_by_key[key] = edge
+
+        # Keep node IDs chronological. The old path-first build assigned the goal
+        # an early ID, then appended earlier trace events after it, which made the
+        # graph look as though BFS continued generating nodes after finding Goal.
         if recorded_path:
-            for index, state in enumerate(recorded_path):
-                add_node(state, index, index, None, None)
-                if index:
-                    parent = states[recorded_path[index - 1]]
-                    child = states[state]
-                    action = self.actions[index - 1]
-                    on_solution_path = bool(solution_states)
-                    edges.append(SearchTreeEdge(
-                        parent.node_id, child.node_id, action, on_solution_path,
-                    ))
-                    edge_keys.add((parent.node_id, child.node_id, action))
+            add_node(recorded_path[0], 0, 0, None, None)
 
         for event in self.trace:
+            # Rejected duplicate/cycle events are useful in the trace table, but
+            # they were never inserted into the search tree. Drawing them created
+            # misleading reverse arrows from a child back to its parent.
+            if event.event.startswith("reject"):
+                continue
             parent_state, child_state = event.node_state, event.state
             if not (is_puzzle_state(parent_state) and is_puzzle_state(child_state) and event.action):
                 continue
             if _move_blank(parent_state, event.action) != child_state:
                 continue
+            child_depth = event.depth or int(event.g or 0)
+            event_g = event.g if event.g is not None else child_depth
             parent = add_node(
-                parent_state, max(int(event.g) - 1, 0), max(event.g - 1, 0), None, None,
+                parent_state, max(child_depth - 1, 0), max(event_g - 1, 0), None, None,
             )
-            child = add_node(child_state, event.depth or int(event.g), event.g, event.h, event.f)
-            child.depth, child.g, child.h, child.f = (
-                event.depth or int(event.g), event.g, event.h, event.f,
+            child = add_node(child_state, child_depth, event_g, event.h, event.f)
+            add_edge(
+                parent,
+                child,
+                event.action,
+                (parent_state, event.action, child_state) in solution_edges,
             )
-            key = (parent.node_id, child.node_id, event.action)
-            if key not in edge_keys:
-                edges.append(SearchTreeEdge(
-                    parent.node_id, child.node_id, event.action,
-                    (parent_state, event.action, child_state) in solution_edges,
-                ))
-                edge_keys.add(key)
+
+        # A solver may keep a bounded trace or test Goal only when popping a node.
+        # Add any missing certified path states after the chronological trace, and
+        # upgrade matching trace edges to solution-path edges.
+        for index, state in enumerate(recorded_path):
+            add_node(state, index, index, None, None)
+            if index:
+                parent = states[recorded_path[index - 1]]
+                child = states[state]
+                add_edge(
+                    parent,
+                    child,
+                    self.actions[index - 1],
+                    bool(solution_states),
+                )
         self.search_tree_nodes = list(states.values())
         self.search_tree_edges = edges
 
@@ -297,7 +330,10 @@ def search_tree_to_dot(result: SearchResult, max_nodes: int = 40) -> str:
         grid = "\\n".join(" ".join(" _" if val == 0 else f"{val:2d}" for val in row) for row in rows)
         h_text = "-" if node.h is None else f"{node.h:g}"
         f_text = "-" if node.f is None else f"{node.f:g}"
-        label = f"{node.node_id} | d={node.depth} g={node.g:g} h={h_text} f={f_text}\\n{grid}"
+        if result.algorithm == "BFS":
+            label = f"{node.node_id} | d={node.depth}\\n{grid}"
+        else:
+            label = f"{node.node_id} | d={node.depth} g={node.g:g} h={h_text} f={f_text}\\n{grid}"
         fill = "#D1FAE5" if node.on_solution_path else "#E0E7FF"
         border = "#059669" if node.on_solution_path else "#4F46E5"
         lines.append(f'{node.node_id} [label="{label}" fillcolor="{fill}" color="{border}"];')

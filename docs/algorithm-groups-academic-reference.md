@@ -25,7 +25,7 @@ PEAS chuẩn:
 | Actuators | Trượt ô trống theo `L/R/U/D` khi hợp lệ. |
 | Sensors | Board đầy đủ, vị trí ô trống, legal moves và heuristic estimates. |
 
-Ranh giới quan trọng: CSP, AND-OR, no/partial observation, LRTA*, Minimax, Alpha-Beta và Expectimax là phần mở rộng học thuật. AI-vs-AI Tournament là lớp chấm điểm giữa hai solver agent cùng giải 15-puzzle; nó không biến 15-puzzle thành môi trường có MIN player.
+Ranh giới quan trọng: CSP, AND-OR, no/partial observation, Minimax, Alpha-Beta và Expectimax là phần mở rộng học thuật. AI-vs-AI Tournament là lớp chấm điểm giữa hai solver agent cùng giải 15-puzzle; nó không biến 15-puzzle thành môi trường có MIN player.
 
 ## 2. Phân loại nhanh
 
@@ -33,7 +33,7 @@ Ranh giới quan trọng: CSP, AND-OR, no/partial observation, LRTA*, Minimax, A
 |---|---|---:|---|
 | Solver chuẩn | BFS, UCS, IDS, A*, IDA* | Có | Chứng minh lời giải hợp lệ, tính đầy đủ và tối ưu trong điều kiện phù hợp. |
 | Demo đối chiếu | DFS, Greedy Best-First, local search variants | Không | Chỉ ra trade-off, suboptimality, local optimum, plateau hoặc thiếu guarantee. |
-| Mở rộng minh họa | CSP, AND-OR, No Observation, Partial Observation, LRTA* | Không | Giải thích cách đổi mô hình bài toán, sensor hoặc environment. |
+| Mở rộng minh họa | CSP, AND-OR, No Observation, Partial Observation | Không | Giải thích cách đổi mô hình bài toán, sensor hoặc environment. |
 | Tournament/game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Tournament là scoring layer | Tournament chấm điểm hai agent; game/chance mode là extension giáo dục. |
 
 Khi bảo vệ, luôn tách ba tầng bằng chứng:
@@ -51,8 +51,8 @@ Khi bảo vệ, luôn tách ba tầng bằng chứng:
 | Dùng được để đối chiếu, không dùng làm kết luận solver tốt | DFS | Thấp | DFS phù hợp để nói về memory trade-off và depth limit; không được nói DFS tối ưu. |
 | Dùng được để chứng minh heuristic không đủ | Greedy Best-First | Thấp | Greedy hợp lý như baseline nhanh hoặc ví dụ sai lầm; không được nói Greedy tối ưu vì nó bỏ qua `g(n)`. |
 | Dùng được để dạy failure mode của local search | Hill Climbing variants, Local Beam, Simulated Annealing | Thấp cho solving, cao cho minh họa | Các thuật toán này hợp lý khi mục tiêu là local optimum, plateau, ridge, randomness; không hợp lý nếu xem là solver chuẩn đáng tin cậy. |
-| Chỉ dùng như mô hình hóa CSP hoặc bằng chứng horizon nhỏ | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs | Không phải solver chuẩn | CSP hợp lý để học `X, D, C`, AllDifferent và AC-3; không hợp lý nếu claim là hướng tự nhiên nhất để giải 15-puzzle sâu. |
-| Chỉ dùng khi cố ý đổi sensor/environment | AND-OR, No Observation, Partial Observation, LRTA* | Không phải solver chuẩn | Các thuật toán này hợp lý cho nondeterministic, belief-state, partial sensor hoặc online agent; không nên so trực tiếp với A*/IDA* như cùng mô hình. |
+| Chỉ dùng như mô hình hóa CSP hoặc bằng chứng horizon nhỏ | Backtracking, Backtracking + Forward Checking, AC-3, Min-Conflicts | Không phải solver chuẩn | CSP hợp lý để học state-chain variables/domains/constraints; không hợp lý nếu claim là hướng tự nhiên nhất để giải 15-puzzle sâu. |
+| Chỉ dùng khi cố ý đổi sensor/environment | AND-OR, No Observation, Partial Observation | Không phải solver chuẩn | Các thuật toán này hợp lý cho nondeterministic hoặc belief-state search; không nên so trực tiếp với A*/IDA* như cùng mô hình. |
 | Chỉ dùng cho scoring/game/chance extension | AI-vs-AI Tournament, Minimax, Alpha-Beta, Expectimax | Không phải solver chuẩn | Tournament hợp lý để chấm hai solver bằng A* reference; Minimax/Alpha-Beta/Expectimax hợp lý để dạy game/chance, không hợp lý nếu nói 15-puzzle có đối thủ tự nhiên. |
 
 Quy tắc ngắn: nếu mục tiêu là giải 15-puzzle chuẩn, ưu tiên A*/IDA*, dùng BFS/UCS/IDS cho puzzle nông và chứng minh lý thuyết. Các nhóm còn lại chỉ hợp lý khi mục tiêu là minh họa trade-off, failure mode hoặc mô hình AI mở rộng.
@@ -81,7 +81,7 @@ Các tham số dưới đây là phần dễ bị thiếu khi chỉ đọc lý t
 | Resource limit | BFS/UCS/Greedy mặc định `max_nodes=50000`, A*/IDA* `100000`; DFS/IDS có thêm `max_depth=50`; timeout mặc định thường là `60s`, A*/IDA* là `120s`. | Timeout, node cap hoặc depth cap làm mất chứng cứ thực nghiệm; phải đọc `termination_reason` trước khi claim. |
 | Run variation | `RunVariation` ghi seed, action order, tie-breaker, solver seed và cờ `randomizes_path`. | Run/Advanced giữ metadata nội bộ để kiểm thử; UI kết quả chính không hiển thị các dòng kỹ thuật gây nhiễu. |
 | Solver thật sự dùng seed | Stochastic HC, Random-Restart HC, Simulated Annealing, Min-Conflicts, No Observation, Partial Observation và Expectimax. | Compare có thể hiển thị seed khi cần tái lập; Run/Advanced chỉ lưu nội bộ. |
-| Non-path variation | AND-OR, CSP Definition, Path Consistency, Global Constraints và Constraint Graphs không randomize path. | Đây là model/explanation output, không nên diễn giải như trajectory puzzle tuyến tính. |
+| Non-path variation | AND-OR và belief-state policy không randomize path. | Đây là conditional/conformant/contingent output, không nên diễn giải như trajectory puzzle tuyến tính. |
 | Dispatcher kwargs | `core/solver_dispatch.py` chỉ truyền tham số mà từng solver nhận được; CSP explanatory functions chỉ nhận start/goal, CSP search nhận timeout. | UI tránh truyền sai signature; khi audit lỗi run, kiểm `build_solver_kwargs` trước. |
 | CSP horizon cap | `csp_definition` và `constraint_propagation` bị cap `time_horizon <= 5`; `solve_csp_constraint_graphs` cap `time_horizon <= 3`. | CSP demo cố ý bounded để dễ chạy; AC-3 exact-horizon không phải shortest-path proof toàn cục. |
 | Backtracking CSP | `max_steps` mặc định `5000`, timeout `30s`, dùng heuristic value ordering. | Không gọi là MRV/LCV/forward checking đầy đủ; fail không chứng minh unsolvable. |
@@ -90,8 +90,7 @@ Các tham số dưới đây là phần dễ bị thiếu khi chỉ đọc lý t
 | Random-Restart HC | `max_iterations=5000`, `max_restarts=20`, seed tùy chọn. | Nhiều restart tăng cơ hội nhưng không biến thành complete/optimal solver. |
 | Simulated Annealing | `max_iterations=50000`, `initial_temp=100.0`, `cooling_rate=0.9995`, `min_temp=0.01`, seed tùy chọn. | Probability nhận move xấu phụ thuộc temperature; schedule là caveat quan trọng. |
 | AND-OR | `max_depth=10`; UI dùng mode `Intended outcome only` hoặc `Include all legal deflections`. `nondet_prob` còn trong signature để tương thích và chỉ là binary support switch. | Output là conditional plan; OR là agent chọn, AND là mọi outcome phải xử lý, không rank bằng xác suất. |
-| No/Partial Observation | `num_belief_states=5`, `max_steps=20`, seed tùy chọn; heuristic cố định theo Manhattan trong demo belief. | Đây là belief-state/sensor demo, không so node count trực tiếp với A*. |
-| LRTA* | `max_steps=10000`, heuristic mặc định Manhattan, update bảng `H(state)` online. | Agent học khi đi; có thể lặp hoặc đi dài, không thay thế A* offline. |
+| No/Partial Observation | `num_belief_states=5`, `max_steps=20`, seed tùy chọn; finite belief approximation. | Đây là conformant/contingent belief-state demo, không so node count trực tiếp với A*. |
 | Minimax/Alpha-Beta | `depth=3`, heuristic mặc định Manhattan, timeout `60s`. | Depth-limited game-tree utility, không phải optimal certificate của puzzle chuẩn. |
 | Expectimax | `depth=3`, `success_prob=0.8`, seed tùy chọn; returned actions là một sampled outcome path. | Expected utility cần mô hình xác suất; path hiển thị không phải full stochastic policy. |
 
@@ -154,15 +153,12 @@ CSP mô hình hóa bài toán bằng biến `X`, miền giá trị `D` và ràng
 
 | Thành phần | Trong app | Ý nghĩa học thuật |
 |---|---|---|
-| CSP Definition | Trình bày `X[t][p]`, `A[t]`, initial, goal, AllDifferent, transition, legal move | Đổi cách nhìn từ path search sang constraint satisfaction. |
-| Constraint Propagation | AC-3 trên chuỗi state `S[0]..S[T]` | Thu hẹp domain; trả exact-horizon path hoặc domain wipe-out. |
-| Path Consistency | Consistency bậc cao hơn arc consistency | Kiểm tra ràng buộc giữa nhiều biến. |
-| Global Constraints | AllDifferent | Tóm gọn nhiều ràng buộc nhị phân. |
-| Backtracking Search | Bounded transition planning | Minh họa DFS theo horizon, không phải solver chính. |
-| Min-Conflicts | Local repair trên tile placement | Hợp với N-Queens hơn 15-puzzle transition planning. |
-| Constraint Graphs | Đồ thị biến-ràng buộc | Giải thích liên kết và độ phình. |
+| Backtracking | Chronological assignment trên chuỗi state `S[0]..S[T]` | Minh họa exact-horizon CSP search. |
+| Backtracking + Forward Checking | Backtracking kèm prune domain kế tiếp | So sánh pruning với backtracking thuần. |
+| AC-3 | Arc consistency trên chuỗi state `S[0]..S[T]` | Thu hẹp domain; chỉ replay khi trích được exact legal path. |
+| Min-Conflicts | Local repair trên complete state-chain assignment | Hợp với N-Queens hơn 15-puzzle transition planning; không complete/optimal. |
 
-Backtracking CSP trong app dùng heuristic value ordering. Không gọi là MRV/LCV hay forward checking đầy đủ vì code không cài đặt đầy đủ các heuristic CSP đó.
+Backtracking CSP trong app dùng bounded state-chain domains. Forward Checking là biến thể riêng; AC-3 là propagation; Min-Conflicts là local repair, không phải shortest-path solver.
 
 AC-3 executable dùng biến trạng thái đầy đủ để tránh bộ ràng buộc `X[t][p]` quá lớn trong demo. Hai đầu mút bị cố định bởi start và goal; mỗi cặp state liên tiếp phải cách nhau đúng một legal blank move. Kết quả chỉ cho horizon `T` đã chọn, không tự động chứng minh đường ngắn nhất toàn cục.
 
@@ -173,9 +169,8 @@ Trong Run Algorithm, AND-OR có thể xuất hiện bằng alias để khớp đ
 | Thuật toán | Môi trường | Output | Ranh giới |
 |---|---|---|---|
 | AND-OR Search | Nondeterministic | Conditional plan | UI mặc định intended-only. All-deflections là stress test worst-case có safety cap; dừng vì cap/timeout không chứng minh không tồn tại plan. |
-| No Observation Search | Không quan sát state thật | Belief-state action demo | Sensor bị yếu đi có chủ ý. |
-| Partially Observable Search | Quan sát một phần | Actual path plus belief/observation trace | Không phải solver chuẩn. |
-| LRTA* | Online search/learning | Path học từng bước | Có thể không tối ưu; dùng để bàn về agent online. |
+| No Observation Search | Không quan sát state thật | Conformant action sequence | Sensor bị yếu đi có chủ ý; hidden actual state không điều khiển policy. |
+| Partially Observable Search | Quan sát một phần | Contingent policy theo observation | Không phải solver chuẩn; mọi branch observation phải được cover. |
 
 Nếu sensor, transition hoặc observability thay đổi, biểu diễn state và thuật toán cũng thay đổi. Không so sánh node count của nhóm này với A*/IDA* như thể cùng một bài toán.
 
@@ -210,7 +205,7 @@ Mỗi round chạy A* làm reference. Nếu A* reference không chứng minh đ�
 | Solver chuẩn tốt nhất | A* với Manhattan hoặc Linear Conflict | "Greedy cũng tối ưu vì có heuristic" |
 | Puzzle sâu, ít bộ nhớ hơn A* | IDA* | "BFS phù hợp puzzle sâu" |
 | Chứng minh heuristic failure | Greedy, Hill Climbing preset | "Local search là solver đáng tin cậy" |
-| Giải thích môi trường phức tạp | AND-OR, belief-state, LRTA* | "Đây là cùng bài toán chuẩn" |
+| Giải thích môi trường phức tạp | AND-OR, belief-state | "Đây là cùng bài toán chuẩn" |
 | Giải thích CSP | CSP planning, AC-3, constraint graph | "CSP là cách tự nhiên nhất cho 15-puzzle" |
 | So sánh hai AI | AI-vs-AI Tournament | "15-puzzle có đối thủ tự nhiên" |
 

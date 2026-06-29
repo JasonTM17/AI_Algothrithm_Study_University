@@ -28,7 +28,7 @@ from scripts.readme_gif_styles import PROFILES
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--featured", action="store_true", help="Generate hero and six group GIFs.")
-    parser.add_argument("--all", action="store_true", help="Generate all 28 algorithm GIFs.")
+    parser.add_argument("--all", action="store_true", help="Generate all 24 algorithm GIFs.")
     parser.add_argument("--algorithm", help="Generate one algorithm GIF by name or slug.")
     parser.add_argument("--check", action="store_true", help="Validate generated assets and manifest.")
     parser.add_argument("--profile", choices=["hero", "group", "algorithm", "all"], default="all")

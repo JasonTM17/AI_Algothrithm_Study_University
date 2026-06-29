@@ -33,7 +33,7 @@ from core.syllabus_coverage import (
 )
 from core.theory import THEORY
 from core.puzzle import GOAL_STATE, is_solvable, scramble
-from core.solver_dispatch import CSP_EXPLANATORY_FUNCTIONS, build_solver_kwargs
+from core.solver_dispatch import CSP_FUNCTIONS, build_solver_kwargs
 from algorithms.informed import a_star, greedy_best_first, ida_star
 from algorithms.uninformed import bfs, dfs, ids, ucs
 from ui.localization import LOC
@@ -47,9 +47,9 @@ from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, STYLES
 def test_taxonomy_covers_all_displayed_algorithms():
     displayed = {name for names in ALGORITHM_GROUPS.values() for name in names}
 
-    assert len(displayed) == 28
+    assert len(displayed) == 24
     assert set(ALGORITHM_TAXONOMY) == displayed
-    assert len(taxonomy_rows()) == 28
+    assert len(taxonomy_rows()) == 24
 
 
 def test_complexity_comparison_covers_every_algorithm_by_display_group():
@@ -127,9 +127,9 @@ def test_extension_theory_has_real_english_learning_fields():
     algorithms = [
         "Simple HC", "Steepest Ascent HC", "Stochastic HC", "Random-Restart HC",
         "Local Beam Search", "Simulated Annealing", "AND-OR", "No Observation",
-        "Partially Observable", "LRTA*", "CSP Definition", "Constraint Propagation",
+        "Partially Observable", "CSP Definition", "Constraint Propagation",
         "Path Consistency", "Global Constraints", "Backtracking Search", "Min-Conflicts",
-        "Constraint Graphs",
+        "Constraint Graphs", "Backtracking", "Backtracking + Forward Checking", "AC-3",
     ]
     vietnamese_letters = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
 
@@ -165,7 +165,6 @@ def test_syllabus_coverage_matrix_covers_uploaded_screenshot_topics():
         "AND-OR search",
         "Searching with no observation",
         "Searching for partially observable problems",
-        "Online search",
         "Definition of a constraint satisfaction problem",
         "Constraint propagation",
         "Path consistency",
@@ -214,15 +213,14 @@ def test_foundation_panels_have_academic_evidence_rows():
     } <= {row["Issue"] for row in HILL_CLIMBING_ISSUE_ROWS}
 
 
-def test_csp_backtracking_label_does_not_claim_mrv_lcv():
+def test_csp_backtracking_label_matches_state_chain_assignment_search():
     backtracking_rows = [
         row for row in COMPARISON_TABLE
-        if row["Group"] == "CSP" and row["Algorithm"] == "Backtracking Search"
+        if row["Group"] == "CSP" and row["Algorithm"] == "Backtracking"
     ]
 
     assert backtracking_rows
-    assert backtracking_rows[0]["Heuristic"] == "Manhattan Distance"
-    assert "MRV+LCV" not in " ".join(str(row) for row in COMPARISON_TABLE)
+    assert backtracking_rows[0]["Suitable"] == "Exact-horizon CSP"
 
 
 def test_run_selector_exposes_full_academic_taxonomy_with_extension_caveats():
@@ -261,9 +259,9 @@ def test_real_solvers_are_limited_to_standard_search_algorithms():
 
 def test_csp_complex_and_game_algorithms_are_not_real_solvers():
     for name in [
-        "CSP Definition",
-        "Constraint Propagation",
-        "Backtracking Search",
+        "Backtracking",
+        "Backtracking + Forward Checking",
+        "AC-3",
         "Min-Conflicts",
         "AND-OR Search",
         "Searching with no observation",
@@ -406,8 +404,8 @@ def test_decision_guide_has_actionable_exam_paths():
         assert row["Why"]
 
 
-def test_csp_explanatory_dispatch_keeps_kwargs_minimal():
-    for fn_name in CSP_EXPLANATORY_FUNCTIONS:
+def test_csp_dispatch_uses_shared_bounded_state_chain_settings():
+    for fn_name in CSP_FUNCTIONS:
         kwargs = build_solver_kwargs(
             fn_name,
             start=GOAL_STATE,
@@ -421,8 +419,10 @@ def test_csp_explanatory_dispatch_keeps_kwargs_minimal():
 
         assert kwargs["start"] == GOAL_STATE
         assert kwargs["goal"] == GOAL_STATE
-        assert "timeout" not in kwargs
-        assert "action_order" not in kwargs
+        assert kwargs["timeout"] == 5
+        assert kwargs["action_order"] == "LRUD"
+        assert kwargs["time_horizon"] == 4
+        assert kwargs["candidate_limit"] == 100
         assert "heuristic" not in kwargs
 
 
@@ -527,16 +527,18 @@ def test_game_tree_theory_states_resource_bound_caveats():
 
 
 def test_csp_theory_matches_the_executable_model_boundaries():
-    propagation = THEORY["Constraint Propagation"]
+    propagation = THEORY["AC-3"]
     path_consistency_entry = THEORY["Path Consistency"]
-    backtracking = THEORY["Backtracking Search"]
+    backtracking = THEORY["Backtracking"]
+    forward_checking = THEORY["Backtracking + Forward Checking"]
     min_conflicts_entry = THEORY["Min-Conflicts"]
     graph = THEORY["Constraint Graphs"]
 
     assert "exact horizon" in propagation["application_en"]
     assert "does not execute" in path_consistency_entry["application_en"]
-    assert "does not provide full MRV" in backtracking["suitable_en"]
-    assert "need not be a legal blank move" in min_conflicts_entry["application_en"]
+    assert "bounded state chain" in backtracking["suitable_en"]
+    assert "domain wipe-out" in forward_checking["idea_en"]
+    assert "every transition is a legal blank move" in min_conflicts_entry["application_en"]
     assert "high-arity factor" in graph["idea_en"]
 
 

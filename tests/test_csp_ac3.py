@@ -51,7 +51,7 @@ def test_ac3_detects_exact_horizon_parity_domain_wipeout():
     assert any(not domain for domain in evidence.domains)
     assert evidence.values_removed > 0
     assert not result.success
-    assert result.termination_reason == "depth_limit"
+    assert result.termination_reason == "horizon_infeasible"
     assert "Domain wipe-out" in result.message
 
 

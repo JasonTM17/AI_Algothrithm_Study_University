@@ -4,12 +4,12 @@
 
 App đã có đủ workflow bảo vệ đồ án: Play, Run Algorithm, Compare, Hand-Tracing, Theory và Advanced. Trace/Node/Frontier/Reached nằm trực tiếp trong Run Algorithm để không tách evidence khỏi thuật toán đang chạy. Contract học thuật hiện tại:
 
-- 6 nhóm / 28 thuật toán.
+- 6 nhóm / 24 thuật toán.
 - Puzzle số và puzzle ảnh replay theo state thật.
 - Search tree có readable view và Graphviz evidence.
 - Belief-state UI có known-tile matrix.
 - Group 6 dùng framing worst-case robustness/chance.
-- README là atlas học thuật, nhúng 28 GIF chạy thật.
+- README là atlas học thuật, nhúng 24 GIF chạy thật.
 - GIF pipeline có profile `hero/group/algorithm`, live browser capture, manifest semantic và contact sheet.
 
 ## Ưu Tiên Ngắn Hạn

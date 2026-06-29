@@ -630,7 +630,7 @@ def _trace_state_catalog(trace: list) -> tuple[dict[tuple, str], dict[tuple, dic
                 parent,
                 {
                     "action": None,
-                    "g": max(int(step.g or 0) - 1, 0),
+                    "g": max(int(step.g) - 1, 0) if step.g is not None else None,
                     "h": None,
                     "f": None,
                     "parent": None,
@@ -748,7 +748,13 @@ def _state_to_grid_str(state: tuple) -> str:
     return "\n".join(lines)
 
 
-def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "detail_step_slider"):
+def render_search_detail_table(
+    trace: list,
+    max_rows: int = 50,
+    key: str = "detail_step_slider",
+    *,
+    show_evaluation_metrics: bool = True,
+):
     """Render detailed Node/Frontier/Reached table for each trace step."""
     if not trace:
         st.info(t("tc_no_trace"))
@@ -817,12 +823,14 @@ def render_search_detail_table(trace: list, max_rows: int = 50, key: str = "deta
     g_text = step.g if step.g is not None else "-"
     h_text = f"{step.h:.1f}" if step.h is not None else "-"
     f_text = f"{step.f:.1f}" if step.f is not None else "-"
-    st.markdown(
+    detail_header = (
         f"**{t('det_trace_row')}: {step_idx}/{max_step_index}** | "
         f"**{t('det_algorithm_step')}: {step.step}** | "
-        f"{t('tc_action')}: `{step.action or 'Start'}` | "
-        f"g={g_text} h={h_text} f={f_text}"
+        f"{t('tc_action')}: `{step.action or 'Start'}`"
     )
+    if show_evaluation_metrics:
+        detail_header += f" | g={g_text} h={h_text} f={f_text}"
+    st.markdown(detail_header)
 
     st.markdown(f"**{t('det_curr_node')}**")
     current_state = step.node_state or step.state
@@ -1087,16 +1095,26 @@ def render_comparison_table(results: list):
 
     rows = []
     for r in results:
+        if r.termination_reason == "not_applicable":
+            status = t("compare_not_applicable")
+        elif r.path_verified and r.goal_reached:
+            status = t("mc_solved")
+        elif r.path_verified:
+            status = t("compare_partial_trajectory")
+        elif r.success:
+            status = t("compare_model_output")
+        else:
+            status = t("mc_failed")
         row = {
             t("compare_group_col"): _localized_group_name(r.group),
             t("run_algo"): r.algorithm,
-            t("mc_status"): t("mc_solved") if r.success else t("mc_failed"),
+            t("mc_status"): status,
             t("mc_recorded_steps"): str(len(r.actions)) if r.path_verified else "-",
             t("compare_action_trajectory"): compact_action_path(r.actions) if r.path_verified else "-",
             t("mc_cost"): str(r.cost) if r.success else "-",
             t("mc_expanded"): r.nodes_expanded,
             t("mc_max_f"): r.max_frontier_size,
-            t("mc_runtime"): f"{r.runtime:.4f}",
+            t("mc_runtime"): "-" if r.termination_reason == "not_applicable" else f"{r.runtime:.4f}",
             t("compare_seed_mode"): str(r.random_seed) if r.random_seed is not None else t("compare_deterministic"),
             f"{t('compare_optimal_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_optimal else t("tc_no"),
             f"{t('compare_complete_col')} ({t('compare_theory_suffix')})": t("tc_yes") if r.is_complete else t("tc_no"),
@@ -1108,8 +1126,9 @@ def render_comparison_table(results: list):
     df = pd.DataFrame(rows)
     st.dataframe(df, width="stretch", hide_index=True)
 
-    if len([r for r in results if r.success]) > 1:
-        successful = [r for r in results if r.success]
+    rankable = [r for r in results if r.path_verified and r.goal_reached]
+    if len(rankable) > 1:
+        successful = rankable
         fastest = min(successful, key=lambda x: x.runtime if x.runtime is not None else float('inf'))
         shortest = min(successful, key=lambda x: len(x.actions) if x.actions is not None else float('inf'))
         max_mem = max(successful, key=lambda x: x.nodes_expanded if x.nodes_expanded is not None else 0)

@@ -15,7 +15,7 @@ FEATURED_SPECS = {
     "informed-search": "IDA*",
     "local-search": "Steepest-Ascent Hill Climbing",
     "complex-environments": "Searching for partially observable problems",
-    "csp": "Constraint Propagation",
+    "csp": "AC-3",
     "ai-vs-ai-tournament": "AI-vs-AI Tournament",
 }
 
@@ -136,21 +136,17 @@ def _build_spec(algorithm: str, group: str) -> DemoSpec:
     elif algorithm in {"Searching with no observation", "Searching for partially observable problems"}:
         start = ONE_MOVE_START
         params.update({
-            "max_steps": 3,
-            "num_belief_states": 4,
-            "known_positions": {14: 15},
+            "max_steps": 2,
+            "num_belief_states": 1,
+            "known_positions": {
+                index: value for index, value in enumerate(ONE_MOVE_START)
+            },
             "seed": 42,
         })
-    elif algorithm == "LRTA*":
-        params["max_steps"] = 8
     elif mode == "csp":
         start = ONE_MOVE_START
-        if algorithm in {"CSP Definition", "Constraint Propagation", "Constraint Graphs"}:
-            # The teaching board is one move from the goal. Horizon one shows
-            # satisfiable propagation; horizon two is a valid parity wipe-out
-            # but obscures the intended lesson in a short GIF.
-            params["time_horizon"] = 1
-        elif algorithm == "Backtracking Search":
+        params["time_horizon"] = 1
+        if algorithm in {"Backtracking", "Backtracking + Forward Checking"}:
             params["max_steps"] = 600
         elif algorithm == "Min-Conflicts":
             params["max_iterations"] = 80

@@ -11,12 +11,10 @@ from ui.action_states import render_action_state
 from ui.academic_panels import (
     render_academic_header,
     render_algorithm_role_card,
-    render_exam_defense_panel,
     render_exam_answer_templates,
     render_extension_warning,
     render_exam_path,
     render_grading_summary_panel,
-    render_grading_report_export,
     render_peas_panel,
     render_proof_cards,
     render_recommendation_rubric,
@@ -36,11 +34,6 @@ def render_theory_tab(t=None) -> None:
     )
     render_exam_path("Theory/PEAS", t=t)
     render_grading_summary_panel()
-    render_exam_defense_panel()
-    render_grading_report_export(
-        st.session_state.start_state,
-        st.session_state.get("benchmark_results", []),
-    )
     render_peas_panel()
     render_extension_warning(t=t)
     render_recommendation_rubric()

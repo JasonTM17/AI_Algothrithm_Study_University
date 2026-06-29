@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-MEDIA_VERIFIED_AT = "2026-06-27"
+MEDIA_VERIFIED_AT = "2026-06-29"
 
 
 @dataclass(frozen=True)
@@ -32,8 +32,8 @@ GROUP_GUIDES = {
         "question": "Which neighbor was considered, chosen, rejected or accepted probabilistically?",
     },
     "Complex Environments": {
-        "purpose": "Model conditional, belief-state and online variants that extend the basic 15-puzzle PEAS.",
-        "question": "What does the agent know, and is the output a path, a policy or an online trace?",
+        "purpose": "Model conditional, conformant and contingent planning over explicit belief states.",
+        "question": "What does the agent know, and is the output a conditional plan, conformant sequence or observation policy?",
     },
     "CSP": {
         "purpose": "Reframe puzzle planning as variables, domains and constraints.",
@@ -161,35 +161,24 @@ ALGORITHM_NOTES: dict[str, DemoNote] = {
     ),
     "Searching with no observation": DemoNote(
         "Extension",
-        "Separate hidden actual state from belief-state decision making.",
-        "Maintain a belief set when observations reveal no tile positions.",
-        "belief size, planner votes, fallback votes and action trace.",
-        "Demonstrates belief reasoning; not a standard full-observation solver.",
-        "Hidden state is shown only as debug evidence.",
+        "Find one conformant action sequence without reading the hidden state.",
+        "Graph-search finite belief states using Predict(B,a), with illegal actions defined as no-op.",
+        "belief frontier/reached, duplicate rejection, action sequence and goal coverage.",
+        "Success means every represented initial state reaches the goal under one sequence.",
+        "The finite reconstructed belief is an approximation, and bounded failure is not a global impossibility proof.",
     ),
     "Searching for partially observable problems": DemoNote(
         "Extension",
-        "Use known tile positions to reduce the belief set.",
-        "Filter belief candidates using a known-tile matrix.",
-        "known positions, belief size, planner votes and fallback reason.",
-        "Can propose legal actions under partial knowledge.",
-        "With too few known tiles, the belief set can still be ambiguous.",
+        "Build a contingent policy that covers every possible local observation.",
+        "Predict a belief, partition by blank-and-neighbor percept, then recurse on each updated belief.",
+        "predicted belief, observation partitions, branch coverage and policy depth.",
+        "Success requires a subpolicy for every represented observation branch.",
+        "The sensor and finite belief approximation are explicit; hidden state never builds the policy.",
     ),
-    "LRTA*": DemoNote(
-        "Extension",
-        "Study online heuristic learning one action at a time.",
-        "Update H(s) after observing local successors.",
-        "online step, H update, chosen action and cap reason.",
-        "Online learning demo, not an offline optimal certificate.",
-        "The node cap is a max online-step cap in the UI.",
-    ),
-    "CSP Definition": DemoNote("Extension", "Name variables, domains and constraints.", "Build a state-chain CSP model.", "variables/domains/constraints count.", "Model definition only.", "A model is not yet a solved trajectory."),
-    "Constraint Propagation": DemoNote("Extension", "See domains shrink before search.", "Apply AC-3 style propagation.", "domain reductions and wipe-out status.", "Sound pruning for represented constraints.", "Propagation alone may not decide the puzzle."),
-    "Path Consistency": DemoNote("Extension", "Inspect consistency across triples of variables.", "Check pair/triple compatibility in the model.", "consistency events and remaining domains.", "Educational consistency evidence.", "Not a shortest-path solver."),
-    "Global Constraints": DemoNote("Extension", "Use all-different and structural constraints.", "Apply global constraint checks over the state chain.", "constraint status and domain evidence.", "Rules out impossible assignments.", "Does not replace graph-search optimality."),
-    "Backtracking Search": DemoNote("Extension", "Search assignments in the CSP model.", "Depth-first assignment with constraint checks.", "assigned variables, backtrack reason and final path if found.", "Can solve small exact-horizon demos.", "Horizon-bound; not a global shortest-path claim."),
-    "Min-Conflicts": DemoNote("Extension", "Repair an assignment by reducing conflicts.", "Randomized local repair over CSP variables.", "conflict count, selected variable and seed.", "Useful concept for CSP repair.", "Better suited to N-Queens style CSPs than canonical 15-puzzle."),
-    "Constraint Graphs": DemoNote("Extension", "Visualize variables as a constraint network.", "Build graph nodes/edges from CSP relations.", "constraint graph summary and consistency evidence.", "Explains structure, not a solver certificate.", "Graph readability matters more than path optimality here."),
+    "Backtracking": DemoNote("Extension", "Assign an exact-horizon state chain chronologically.", "Backtrack when a neighboring state violates the legal blank-move constraint.", "assignments, checks, backtracks and verified path when found.", "Sound within the represented horizon and resource bounds.", "Horizon failure is not global unsolvability or a shortest-path certificate."),
+    "Backtracking + Forward Checking": DemoNote("Extension", "Compare early domain pruning with plain backtracking.", "After assignment, remove unsupported values from the next state domain.", "assignments, values pruned, domain wipe-out and backtracks.", "Uses the same ordering as Backtracking for a fair empirical comparison.", "Worst-case complexity remains exponential and failure is horizon-bounded."),
+    "AC-3": DemoNote("Extension", "Read arc consistency without confusing propagation with a solved path.", "REVISE directed arcs between adjacent state variables.", "arc queue, revisions, values removed and domain sizes.", "Sound propagation; replay appears only after extracting an exact legal chain.", "Arc-consistent non-singleton domains are not by themselves a unique solution."),
+    "Min-Conflicts": DemoNote("Extension", "Repair a complete state-chain assignment by reducing violated transitions.", "Select a conflicted variable and a value with lower total conflict.", "iteration, conflicted variable, conflict count and fixed seed.", "A zero-conflict verified chain is replayable.", "Not complete or optimal; iteration failure returns repair evidence only."),
     "AI-vs-AI Tournament": DemoNote("Scoring layer", "Score two agents against the same A* reference.", "Run two solvers and classify verified trajectories.", "points, optimal cost, excess cost and invalid-path penalties.", "Fair benchmark when the reference certificate exists.", "Tournament is not a natural adversarial PEAS model."),
     "Minimax": DemoNote("Robustness demo", "Interpret MIN as worst-case robustness, not a real puzzle opponent.", "Alternate MAX promising moves with MIN worst-case legal continuations.", "MAX/MIN nodes, utility and selected root action.", "Depth-limited worst-case decision rule.", "Both sides share legal blank moves because 15-puzzle has no natural adversary."),
     "Alpha-Beta Pruning": DemoNote("Robustness demo", "Learn branch-and-bound pruning over the same worst-case tree.", "Prune branches that cannot change the minimax root value.", "alpha, beta, pruned branches and root utility.", "Same root value as full Minimax for the searched tree.", "Pruning saves nodes; it does not turn the puzzle into a real two-player game."),

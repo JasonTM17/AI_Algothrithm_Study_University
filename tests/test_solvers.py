@@ -320,6 +320,10 @@ class TestAlphaBeta:
         assert "same fully searched worst-case tree" in result.message
         assert "not a real opponent" in result.message
 
+    def test_completed_depth_is_not_misclassified_by_no_timeout_wording(self):
+        result = alpha_beta_pruning(EASY_STATE, depth=2, timeout=10)
+        assert result.termination_reason in {"goal", "depth_limit"}
+
 
 class TestExpectimax:
     def test_returns_result(self):

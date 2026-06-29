@@ -22,7 +22,7 @@ Sản phẩm được thiết kế cho lớp học: người chấm có thể ch
 | Board 4x4, state là hoán vị `0..15`. | Board kích thước khác. |
 | Solver chuẩn: BFS, UCS, IDS, A*, IDA*. | Claim rằng mọi demo đều là solver đáng tin cậy. |
 | Demo đối chiếu: DFS, Greedy, local search. | Dùng local search để chứng minh tối ưu. |
-| Concept lab: CSP, AND-OR, belief-state, LRTA*, game/chance, Tournament. | Gộp extension vào leaderboard solver chuẩn. |
+| Concept lab: CSP, AND-OR, belief-state, game/chance, Tournament. | Gộp extension vào leaderboard solver chuẩn. |
 | Kiểm thử bằng compile, pytest, Streamlit health. | Backend API, database, auth hoặc secret management. |
 
 ## Định vị học thuật
@@ -33,7 +33,7 @@ Sản phẩm được thiết kế cho lớp học: người chấm có thể ch
 |---|---|
 | Solver chuẩn | BFS, UCS, IDS, A*, IDA* |
 | Demo đối chiếu | DFS, Greedy Best-First, Simple/Steepest/Stochastic/Random-Restart Hill Climbing, Local Beam, Simulated Annealing |
-| Mở rộng minh họa | CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs, AND-OR, No Observation, Partial Observation, LRTA* |
+| Mở rộng minh họa | Backtracking, Backtracking + Forward Checking, AC-3, Min-Conflicts, AND-OR, No Observation, Partial Observation |
 | Tournament/game/chance | AI-vs-AI Tournament, Minimax, Alpha-Beta Pruning, Expectimax |
 
 AI-vs-AI Tournament chỉ là lớp chấm điểm hai solver agent trên cùng puzzle. Mỗi round dùng A* làm reference optimal certificate; đường tối ưu hợp lệ được 100 điểm, đường hợp lệ dài hơn bị giảm theo `optimal_cost / actual_cost`, fail/timeout bị trừ điểm và invalid path bị phạt mạnh nhất.

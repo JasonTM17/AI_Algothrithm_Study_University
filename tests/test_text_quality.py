@@ -75,7 +75,7 @@ def test_docs_track_current_ui_evidence_surfaces():
     codebase_summary = Path("docs/codebase-summary.md").read_text(encoding="utf-8")
     architecture = Path("docs/system-architecture.md").read_text(encoding="utf-8")
 
-    assert "Atlas 28 Thuật Toán Có GIF Chạy Thật" in readme
+    assert "Atlas 24 Thuật Toán Có GIF Chạy Thật" in readme
     assert "live Streamlit browser capture" in readme
     assert "web_run_status" in readme
     assert "Workflow Bảo Vệ Đồ Án" not in readme

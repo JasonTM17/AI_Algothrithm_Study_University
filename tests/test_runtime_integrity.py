@@ -81,16 +81,13 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     from algorithms.complex_env import (
         and_or_search,
         no_observation_search,
-        online_search_lrta,
         partially_observable_search,
     )
     from algorithms.csp import (
+        backtracking_forward_checking,
         backtracking_search,
         constraint_propagation,
-        csp_definition,
         min_conflicts,
-        path_consistency,
-        solve_csp_constraint_graphs,
     )
     from core.puzzle import GOAL_STATE
 
@@ -99,16 +96,13 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
     search_kw = dict(**base_kw, timeout=1.0, action_order="LRUD")
 
     calls = [
-        lambda: csp_definition(time_horizon=1, **base_kw),
-        lambda: constraint_propagation(time_horizon=1, **base_kw),
-        lambda: backtracking_search(**csp_search_kw, max_steps=10),
-        lambda: min_conflicts(**csp_search_kw, max_iterations=10, seed=1),
-        lambda: solve_csp_constraint_graphs(time_horizon=1, **base_kw),
-        lambda: path_consistency(**base_kw),
+        lambda: constraint_propagation(time_horizon=1, **csp_search_kw),
+        lambda: backtracking_search(time_horizon=1, **csp_search_kw, max_steps=10),
+        lambda: backtracking_forward_checking(time_horizon=1, **csp_search_kw, max_steps=10),
+        lambda: min_conflicts(time_horizon=1, **csp_search_kw, max_iterations=10, seed=1),
         lambda: and_or_search(max_depth=1, nondet_prob=0.2, seed=1, **search_kw),
         lambda: no_observation_search(num_belief_states=2, max_steps=1, seed=1, **search_kw),
         lambda: partially_observable_search(num_belief_states=2, max_steps=1, seed=1, **search_kw),
-        lambda: online_search_lrta(heuristic="Manhattan Distance", max_steps=1, **search_kw),
         lambda: minimax(depth=1, heuristic="Manhattan Distance", **search_kw),
         lambda: alpha_beta_pruning(depth=1, heuristic="Manhattan Distance", **search_kw),
         lambda: expectimax(depth=1, heuristic="Manhattan Distance", success_prob=0.8, seed=1, **search_kw),
@@ -122,27 +116,30 @@ def test_advanced_mode_function_kwargs_match_app_dispatch():
         start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
         goal=GOAL_STATE,
         timeout=1.0,
+        time_horizon=1,
         max_iterations=50,
         seed=1,
     )
     assert min_conflicts_result.success
-    assert "NOT a sequence of legal 15-puzzle moves" in min_conflicts_result.message
+    assert min_conflicts_result.path_verified
 
     planning_result = backtracking_search(
         start=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
         goal=GOAL_STATE,
         timeout=1.0,
+        time_horizon=1,
         max_steps=50,
     )
     assert planning_result.success and planning_result.path_verified
     assert not planning_result.is_optimal
-    assert "not MRV/forward checking" in planning_result.message
+    assert "exact-horizon CSP assignment" in planning_result.message
 
     custom_goal = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
     custom_planning_result = backtracking_search(
         start=GOAL_STATE,
         goal=custom_goal,
         timeout=1.0,
+        time_horizon=1,
         max_steps=50,
     )
     assert custom_planning_result.success
@@ -165,18 +162,15 @@ def test_run_algorithm_dispatch_strips_unsupported_csp_kwargs():
         heuristic="Manhattan Distance",
     )
 
-    csp_definition_kwargs = build_solver_kwargs("csp_definition", **base)
-    assert "timeout" not in csp_definition_kwargs
-    assert "action_order" not in csp_definition_kwargs
-    assert csp_definition_kwargs["time_horizon"] == 4
-
-    csp_graph_kwargs = build_solver_kwargs("solve_csp_constraint_graphs", **base)
-    assert csp_graph_kwargs["time_horizon"] == 3
-
     backtracking_kwargs = build_solver_kwargs("backtracking_search", **base)
     assert backtracking_kwargs["timeout"] == 1.0
-    assert "action_order" not in backtracking_kwargs
+    assert backtracking_kwargs["action_order"] == "LRUD"
+    assert backtracking_kwargs["time_horizon"] == 4
     assert backtracking_kwargs["max_steps"] == 50
+
+    ac3_kwargs = build_solver_kwargs("constraint_propagation", **base)
+    assert ac3_kwargs["time_horizon"] == 4
+    assert ac3_kwargs["candidate_limit"] == 50
 
     a_star_kwargs = build_solver_kwargs("a_star", tie_breaker="Min-g", **base)
     assert a_star_kwargs["action_order"] == "LRUD"
@@ -266,11 +260,11 @@ def test_run_solver_error_results_report_requested_goal():
     assert result.termination_reason == "timeout"
 
 
-def test_app_image_sample_loading_is_explicit():
+def test_app_image_sample_selection_updates_immediately():
     app_source = (ROOT / "app.py").read_text(encoding="utf-8")
 
-    assert "on_sample_image_change" not in app_source
-    assert "on_change=on_sample" not in app_source
+    assert "_activate_selected_sample_image" in app_source
+    assert "on_change=_activate_selected_sample_image" in app_source
     assert 'if __name__ == "__main__"' not in app_source
-    assert "btn_load_sample" in app_source
+    assert "btn_load_sample" not in app_source
 

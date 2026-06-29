@@ -2,7 +2,16 @@
 
 import streamlit as st
 
-from algorithms.complex_env import BELIEF_PLANNERS
+from core.academic import (
+    CONDITIONAL_PLAN,
+    CONFORMANT_PLAN,
+    CONTINGENT_POLICY,
+    CSP_ASSIGNMENT_SEARCH,
+    CSP_LOCAL_REPAIR,
+    CSP_PROPAGATION,
+    PARTIAL_TRAJECTORY,
+    algorithm_capability,
+)
 from core.heuristics import HEURISTICS
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, is_solvable
@@ -42,14 +51,10 @@ EXTENSION_MODEL_FUNCTIONS = {
     "and_or_search",
     "no_observation_search",
     "partially_observable_search",
-    "online_search_lrta",
-    "csp_definition",
     "constraint_propagation",
-    "path_consistency",
-    "global_constraints",
     "backtracking_search",
+    "backtracking_forward_checking",
     "min_conflicts",
-    "constraint_graphs",
     "minimax",
     "alpha_beta_pruning",
     "expectimax",
@@ -62,6 +67,20 @@ def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple
         if t:
             return "success", t("run_success", algo=algo_name)
         return "success", f"{algo_name} found a solution!"
+    capability = result.capability or algorithm_capability(algo_name)
+    if capability == PARTIAL_TRAJECTORY and result.path_verified:
+        return "warning", (
+            f"{algo_name} produced a legal partial trajectory but did not reach the goal."
+        )
+    if capability in {
+        CONDITIONAL_PLAN,
+        CONFORMANT_PLAN,
+        CONTINGENT_POLICY,
+        CSP_ASSIGNMENT_SEARCH,
+        CSP_PROPAGATION,
+        CSP_LOCAL_REPAIR,
+    } and result.success:
+        return "info", f"{algo_name}: {result.message}"
     if result.success:
         if t:
             return "info", t("run_model_success_no_goal", algo=algo_name)
@@ -70,6 +89,8 @@ def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple
             f"{algo_name} produced a successful model result, "
             "but it did not certify a standard path to the requested goal.",
         )
+    if result.termination_reason in {"arc_consistent", "inconsistent", "horizon_infeasible"}:
+        return "info", f"{algo_name}: {result.message}"
     return "warning", f"{algo_name}: {result.message}"
 
 
@@ -107,6 +128,7 @@ def render_run_algorithm_tab(t=None) -> None:
         algo_name = st.selectbox(tx("run_algo"), algorithms, key="algo_name")
 
     selected_fn_name = ALGORITHM_FN_MAP.get(algo_name, "")
+    is_tournament_workflow = selected_fn_name == "ai_vs_ai_tournament"
     render_algorithm_role_card(algo_name)
 
     belief_input_error = None
@@ -125,7 +147,6 @@ def render_run_algorithm_tab(t=None) -> None:
             "random_restart_hill_climbing",
             "local_beam_search",
             "simulated_annealing",
-            "online_search_lrta",
             "minimax",
             "alpha_beta_pruning",
             "expectimax",
@@ -136,8 +157,8 @@ def render_run_algorithm_tab(t=None) -> None:
             heuristic = "Manhattan Distance"  # default, won't be used
             if algo_name == AND_OR_ALGORITHM:
                 st.caption(tx("run_andor_heuristic_caption"))
-            elif algo_name == "AI-vs-AI Tournament":
-                st.warning(tx("run_tournament_redirect"))
+            elif is_tournament_workflow:
+                st.caption(tx("run_tournament_redirect"))
 
         tie_breaker = "FIFO"
 
@@ -171,9 +192,6 @@ def render_run_algorithm_tab(t=None) -> None:
                 tree=RUN_TREE_NODES,
             )
         )
-        if algo_name == "LRTA*":
-            st.caption(tx("run_lrta_max_steps_caption"))
-
         # Extra params for specific algorithms
         extra_params = {}
         if "Hill Climbing" in algo_name or "Beam" in algo_name:
@@ -194,6 +212,32 @@ def render_run_algorithm_tab(t=None) -> None:
             extra_params["success_prob"] = st.slider(tx("run_success_prob"), 0.1, 1.0, 0.8, key="success_prob")
         if algo_name == AND_OR_ALGORITHM:
             extra_params["nondet_prob"] = render_and_or_controls(tx)
+        if selected_fn_name in {
+            "backtracking_search",
+            "backtracking_forward_checking",
+            "constraint_propagation",
+            "min_conflicts",
+        }:
+            suggested_horizon = max(
+                1,
+                min(
+                    int(
+                        HEURISTICS["Manhattan Distance"](
+                            tuple(st.session_state.start_state),
+                            goal=tuple(goal),
+                        )
+                    ),
+                    12,
+                ),
+            )
+            extra_params["time_horizon"] = st.number_input(
+                tx("run_csp_horizon"),
+                min_value=1,
+                max_value=12,
+                value=suggested_horizon,
+                key=f"{selected_fn_name}_time_horizon",
+                help=tx("run_csp_horizon_help"),
+            )
         if algo_name in {NO_OBSERVATION_ALGORITHM, PARTIALLY_OBSERVABLE_ALGORITHM}:
             default_known = 0 if algo_name == NO_OBSERVATION_ALGORITHM else 2
             known_positions, belief_input_error = render_known_positions_editor(
@@ -202,14 +246,14 @@ def render_run_algorithm_tab(t=None) -> None:
                 start=tuple(st.session_state.start_state),
                 default_count=default_known,
             )
-            planner = st.selectbox(
-                tx("run_belief_planner"),
-                list(BELIEF_PLANNERS),
-                index=1,
-                key=f"{selected_fn_name}_belief_planner",
-                help=tx("run_belief_planner_help"),
+            extra_params["num_belief_states"] = st.number_input(
+                tx("run_belief_candidate_count"),
+                min_value=1,
+                max_value=20,
+                value=5,
+                key=f"{selected_fn_name}_belief_size",
             )
-            extra_params["belief_planner"] = planner
+            extra_params["max_beliefs"] = min(int(max_nodes), 5_000)
             extra_params["known_positions"] = known_positions
 
     run_signature = (
@@ -219,7 +263,9 @@ def render_run_algorithm_tab(t=None) -> None:
     if st.session_state.get("last_run_signature") != run_signature:
         st.session_state.pop("last_result", None)
 
-    if st.button(
+    if is_tournament_workflow:
+        st.info(tx("run_tournament_redirect"))
+    elif st.button(
         tx("run_btn"), key="btn_run", type="primary",
         disabled=belief_input_error is not None,
     ):
@@ -230,8 +276,6 @@ def render_run_algorithm_tab(t=None) -> None:
             fn_name = selected_fn_name
             if not fn_name:
                 st.error(tx("run_error_not_found", algo=algo_name))
-            elif fn_name == "ai_vs_ai_tournament":
-                st.warning(tx("run_tournament_redirect"))
             else:
                 import algorithms.uninformed as u
                 import algorithms.informed as inf
@@ -253,14 +297,10 @@ def render_run_algorithm_tab(t=None) -> None:
                     "and_or_search": ce.and_or_search,
                     "no_observation_search": ce.no_observation_search,
                     "partially_observable_search": ce.partially_observable_search,
-                    "online_search_lrta": ce.online_search_lrta,
-                    "csp_definition": csp_mod.csp_definition,
                     "constraint_propagation": csp_mod.constraint_propagation,
-                    "path_consistency": csp_mod.path_consistency,
-                    "global_constraints": csp_mod.global_constraints,
                     "backtracking_search": csp_mod.backtracking_search,
+                    "backtracking_forward_checking": csp_mod.backtracking_forward_checking,
                     "min_conflicts": csp_mod.min_conflicts,
-                    "solve_csp_constraint_graphs": csp_mod.solve_csp_constraint_graphs,
                     "minimax": adv.minimax,
                     "alpha_beta_pruning": adv.alpha_beta_pruning,
                     "expectimax": adv.expectimax,
@@ -296,6 +336,7 @@ def render_run_algorithm_tab(t=None) -> None:
                         try:
                             with activate_run_variation(variation):
                                 result = solver_fn(**kwargs)
+                            result.capability = result.capability or algorithm_capability(algo_name)
                             apply_run_variation(result, variation)
                             st.session_state["last_run_variation_seed"] = variation.seed
                             st.session_state["last_run_variation_action_order"] = variation.action_order
@@ -350,6 +391,7 @@ def render_run_algorithm_tab(t=None) -> None:
                 result.trace,
                 max_rows=RUN_DETAIL_ROWS,
                 key="run_detail_step_slider",
+                show_evaluation_metrics=result.algorithm != "BFS",
             )
 
             st.markdown("---")
@@ -363,4 +405,5 @@ def render_run_algorithm_tab(t=None) -> None:
                     result.trace,
                     max_rows=RUN_DETAIL_ROWS,
                     key="run_expanded_detail_step_slider",
+                    show_evaluation_metrics=result.algorithm != "BFS",
                 )

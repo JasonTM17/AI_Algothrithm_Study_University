@@ -10,6 +10,17 @@ CONTRAST_DEMO = "contrast_demo"
 ILLUSTRATIVE_EXTENSION = "illustrative_extension"
 STOCHASTIC_GAME_DEMO = "stochastic_game_demo"
 
+VERIFIED_PATH = "verified_path"
+PARTIAL_TRAJECTORY = "partial_trajectory"
+CONDITIONAL_PLAN = "conditional_plan"
+CONFORMANT_PLAN = "conformant_plan"
+CONTINGENT_POLICY = "contingent_policy"
+CSP_ASSIGNMENT_SEARCH = "csp_assignment_search"
+CSP_PROPAGATION = "csp_propagation"
+CSP_LOCAL_REPAIR = "csp_local_repair"
+DECISION_POLICY = "decision_policy"
+SCORED_BENCHMARK = "scored_benchmark"
+
 ROLE_LABELS = {
     REAL_SOLVER: "Real Solver",
     CONTRAST_DEMO: "Contrast Demo",
@@ -24,38 +35,44 @@ class AlgorithmTaxonomy:
     environment: str
     guarantee: str
     exam_note: str
+    capability: str
 
 
 ALGORITHM_TAXONOMY: dict[str, AlgorithmTaxonomy] = {
-    "BFS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete, optimal with unit step cost.", "Good for proving optimality, but memory grows exponentially."),
-    "DFS": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not optimal; complete only with strict depth/visited limits.", "Use to contrast low memory against poor solution guarantees."),
-    "UCS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal for positive costs.", "Equivalent to BFS in 15-puzzle because each move costs 1."),
-    "IDS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal with unit step cost.", "Best uninformed teaching choice when memory matters."),
-    "Greedy Best-First": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal in graph search practice.", "Fast heuristic-only baseline; compare against A* to show suboptimality."),
-    "A*": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal with admissible, consistent heuristic.", "Primary reference solver for final-exam explanation."),
-    "IDA*": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Optimal with admissible heuristic and bounded branching.", "A* quality with much lower memory, useful for deeper puzzles."),
-    "Simple Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows local optimum failure clearly."),
-    "Steepest-Ascent Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows best-neighbor choice still cannot guarantee solution."),
-    "Stochastic Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Adds randomness but still may get stuck."),
-    "Random-Restart Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not optimal; probabilistic success only.", "Useful for explaining restarts, not a reliable 15-puzzle solver."),
-    "Local Beam Search": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows multiple-state local search as a stronger contrast case."),
-    "Simulated Annealing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "No finite optimality guarantee.", "Good for explaining escape from local minima through temperature."),
-    "AND-OR Search": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "nondeterministic", "Returns conditional plans in an extended model.", "Not natural for standard deterministic 15-puzzle."),
-    "Searching with no observation": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "no_observation", "Belief-state demo, not a practical standard solver.", "Use only to explain sensor limitations."),
-    "Searching for partially observable problems": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "partial_observable", "Belief update demo, not a natural solver.", "Shows how partial sensors change the state representation."),
-    "LRTA*": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "online", "Online learning demo; path may be non-optimal.", "Good for agent-learning discussion, not benchmark solving."),
-    "CSP Definition": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Modeling aid, not a search guarantee.", "Use to show X, D, C formulation."),
-    "Constraint Propagation": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Pruning aid, not a solver alone.", "Explain AC-style domain reduction."),
-    "Path Consistency": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Consistency concept, not a natural solver.", "Useful for comparing arc/path/global consistency."),
-    "Global Constraints": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Constraint modeling concept.", "AllDifferent is valid but CSP planning is large."),
-    "Backtracking Search": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete under bounded horizon/limits.", "Bounded transition-planning illustration ordered by Manhattan Distance heuristic; it does not implement MRV/forward checking."),
-    "Min-Conflicts": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Not complete or optimal here.", "Better for N-Queens than transition-heavy 15-puzzle."),
-    "Constraint Graphs": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Analysis artifact.", "Use to visualize why CSP planning grows quickly."),
-    "AI-vs-AI Tournament": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "scored_competition", "Scores two solver agents against an A* reference.", "Use to compare AI outputs without claiming 15-puzzle has an opponent."),
-    "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Worst-case game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MIN is a robustness branch over legal moves."),
-    "Alpha-Beta Pruning": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Same minimax value with pruning when the worst-case tree is fully searched.", "Use to explain pruning, not puzzle optimality."),
-    "Expectimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "stochastic", "Expected-utility demo under chance outcomes.", "Use only for stochastic action extensions."),
+    "BFS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete, optimal with unit step cost.", "Good for proving optimality, but memory grows exponentially.", VERIFIED_PATH),
+    "DFS": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not optimal; bounded runs may stop before the goal.", "Use to contrast LIFO exploration against poor solution guarantees.", VERIFIED_PATH),
+    "UCS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal for positive costs.", "Equivalent to BFS in 15-puzzle because each move costs 1.", VERIFIED_PATH),
+    "IDS": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal with unit step cost.", "Best uninformed teaching choice when memory matters.", VERIFIED_PATH),
+    "Greedy Best-First": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal in graph search practice.", "Fast heuristic-only baseline; compare against A* to show suboptimality.", VERIFIED_PATH),
+    "A*": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Complete and optimal with admissible, consistent heuristic.", "Primary reference solver for final-exam explanation.", VERIFIED_PATH),
+    "IDA*": AlgorithmTaxonomy(REAL_SOLVER, "deterministic", "Optimal with admissible heuristic and bounded branching.", "A* quality with much lower memory, useful for deeper puzzles.", VERIFIED_PATH),
+    "Simple Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows local optimum failure clearly.", PARTIAL_TRAJECTORY),
+    "Steepest-Ascent Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows best-neighbor choice still cannot guarantee solution.", PARTIAL_TRAJECTORY),
+    "Stochastic Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Adds randomness but still may get stuck.", PARTIAL_TRAJECTORY),
+    "Random-Restart Hill Climbing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not optimal; probabilistic success only.", "Useful for explaining restarts, not a reliable 15-puzzle solver.", PARTIAL_TRAJECTORY),
+    "Local Beam Search": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "Not complete or optimal.", "Shows multiple-state local search as a stronger contrast case.", PARTIAL_TRAJECTORY),
+    "Simulated Annealing": AlgorithmTaxonomy(CONTRAST_DEMO, "deterministic", "No finite optimality guarantee.", "Good for explaining escape from local minima through temperature.", PARTIAL_TRAJECTORY),
+    "AND-OR Search": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "nondeterministic", "Returns a conditional plan in a fully observable nondeterministic model.", "Every supported outcome needs a subplan; this is not a linear solution path.", CONDITIONAL_PLAN),
+    "Searching with no observation": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "no_observation", "Searches belief states for one conformant action sequence.", "The decision must not inspect the hidden physical state.", CONFORMANT_PLAN),
+    "Searching for partially observable problems": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "partial_observable", "Returns a contingent policy over observation branches.", "Prediction and observation update operate on belief states.", CONTINGENT_POLICY),
+    "Backtracking": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Finds an exact-horizon state-chain assignment within resource bounds.", "A bounded CSP encoding, not a global shortest-path certificate.", CSP_ASSIGNMENT_SEARCH),
+    "Backtracking + Forward Checking": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Backtracking with domain pruning after each assignment.", "Compare assignment checks and pruned values against plain backtracking.", CSP_ASSIGNMENT_SEARCH),
+    "AC-3": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Enforces arc consistency on a bounded state-chain CSP.", "Arc-consistent domains are not automatically a solved puzzle.", CSP_PROPAGATION),
+    "Min-Conflicts": AlgorithmTaxonomy(ILLUSTRATIVE_EXTENSION, "planning_csp", "Repairs a complete bounded CSP assignment; no completeness guarantee.", "Only a zero-conflict legal chain is a replayable puzzle path.", CSP_LOCAL_REPAIR),
+    "AI-vs-AI Tournament": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "scored_competition", "Scores two solver agents against an A* reference.", "Use to compare AI outputs without claiming 15-puzzle has an opponent.", SCORED_BENCHMARK),
+    "Minimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Worst-case game-tree utility demo, not a standard solver.", "15-puzzle has no opponent; MIN is a robustness branch over legal moves.", DECISION_POLICY),
+    "Alpha-Beta Pruning": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "worst_case_robustness", "Same minimax value with pruning when the worst-case tree is fully searched.", "Use to explain pruning, not puzzle optimality.", DECISION_POLICY),
+    "Expectimax": AlgorithmTaxonomy(STOCHASTIC_GAME_DEMO, "stochastic", "Expected-utility demo under chance outcomes.", "Use only for stochastic action extensions.", DECISION_POLICY),
 }
+
+ALGORITHM_CAPABILITIES = {
+    name: taxonomy.capability for name, taxonomy in ALGORITHM_TAXONOMY.items()
+}
+
+
+def algorithm_capability(algorithm: str) -> str:
+    """Return the canonical output contract for a displayed algorithm."""
+    return ALGORITHM_CAPABILITIES.get(algorithm, "")
 
 
 PEAS_TABLE = [
@@ -113,7 +130,7 @@ RECOMMENDATION_RUBRIC = [
     },
     {
         "Need": "Discuss PEAS extensions",
-        "Use": "CSP, AND-OR, LRTA*, AI-vs-AI Tournament, Minimax, Expectimax",
+        "Use": "CSP, AND-OR, belief-state search, AI-vs-AI Tournament, Minimax, Expectimax",
         "Avoid": "Benchmarking them as natural solvers",
         "Reason": "They teach alternate agent models and environments.",
     },
@@ -133,6 +150,7 @@ def taxonomy_rows() -> list[dict[str, str]]:
             "Algorithm": name,
             "Role": ROLE_LABELS[item.role],
             "Environment": item.environment,
+            "Capability": item.capability,
             "Guarantee": item.guarantee,
             "Exam note": item.exam_note,
         }

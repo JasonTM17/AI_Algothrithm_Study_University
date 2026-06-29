@@ -8,6 +8,12 @@ import time
 import random
 from typing import Optional
 from algorithms.csp_ac3 import run_state_chain_ac3
+from algorithms.csp_algorithms import (
+    ac3 as _ac3,
+    backtracking as _backtracking,
+    backtracking_forward_checking as _backtracking_forward_checking,
+    min_conflicts_state_chain as _min_conflicts_state_chain,
+)
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
 from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
@@ -79,7 +85,7 @@ def csp_definition(
     )
 
 
-def constraint_propagation(
+def _legacy_constraint_propagation(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     time_horizon: int = 3,
 ) -> SearchResult:
@@ -220,7 +226,7 @@ Implementation check:"""
     )
 
 
-def backtracking_search(
+def _legacy_backtracking_search(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     max_steps: int = 5000, timeout: float = 30.0,
 ) -> SearchResult:
@@ -337,7 +343,7 @@ def backtracking_search(
     )
 
 
-def min_conflicts(
+def _legacy_min_conflicts(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     max_iterations: int = 10000, timeout: float = 30.0,
     seed: Optional[int] = None,
@@ -472,4 +478,108 @@ the constraint graph becomes very large for deep solutions."""
         goal_state=goal,
         message=msg, trace=[], suitable_for_puzzle=False,
         is_complete=False, is_optimal=False,
+    )
+
+
+def _default_csp_horizon(
+    start: tuple[int, ...],
+    goal: tuple[int, ...],
+) -> int:
+    h_fn = get_heuristic("Manhattan Distance", goal)
+    return max(1, min(int(h_fn(start)), 12))
+
+
+def backtracking_search(
+    start: tuple[int, ...],
+    goal: tuple[int, ...] = GOAL_STATE,
+    max_steps: int = 20_000,
+    timeout: float = 5.0,
+    action_order: str = "LRUD",
+    time_horizon: int | None = None,
+    candidate_limit: int = 20_000,
+) -> SearchResult:
+    """Canonical bounded CSP backtracking implementation."""
+    return _backtracking(
+        start,
+        goal,
+        time_horizon=(
+            _default_csp_horizon(start, goal)
+            if time_horizon is None
+            else time_horizon
+        ),
+        max_steps=max_steps,
+        timeout=timeout,
+        action_order=action_order,
+        candidate_limit=candidate_limit,
+    )
+
+
+def backtracking_forward_checking(
+    start: tuple[int, ...],
+    goal: tuple[int, ...] = GOAL_STATE,
+    max_steps: int = 20_000,
+    timeout: float = 5.0,
+    action_order: str = "LRUD",
+    time_horizon: int | None = None,
+    candidate_limit: int = 20_000,
+) -> SearchResult:
+    """Canonical bounded backtracking solver with forward checking."""
+    return _backtracking_forward_checking(
+        start,
+        goal,
+        time_horizon=(
+            _default_csp_horizon(start, goal)
+            if time_horizon is None
+            else time_horizon
+        ),
+        max_steps=max_steps,
+        timeout=timeout,
+        action_order=action_order,
+        candidate_limit=candidate_limit,
+    )
+
+
+def constraint_propagation(
+    start: tuple[int, ...],
+    goal: tuple[int, ...] = GOAL_STATE,
+    time_horizon: int = 3,
+    timeout: float = 5.0,
+    action_order: str = "LRUD",
+    candidate_limit: int = 20_000,
+) -> SearchResult:
+    """Canonical AC-3 entry point kept for import compatibility."""
+    return _ac3(
+        start,
+        goal,
+        time_horizon=time_horizon,
+        timeout=timeout,
+        action_order=action_order,
+        candidate_limit=candidate_limit,
+    )
+
+
+def min_conflicts(
+    start: tuple[int, ...],
+    goal: tuple[int, ...] = GOAL_STATE,
+    max_iterations: int = 10_000,
+    timeout: float = 5.0,
+    seed: Optional[int] = None,
+    action_order: str = "LRUD",
+    time_horizon: int | None = None,
+    candidate_limit: int = 20_000,
+) -> SearchResult:
+    """Canonical Min-Conflicts repair over the bounded state-chain CSP."""
+    return _min_conflicts_state_chain(
+        start,
+        goal,
+        time_horizon=(
+            _default_csp_horizon(start, goal)
+            if time_horizon is None
+            else time_horizon
+        ),
+        max_iterations=max_iterations,
+        timeout=timeout,
+        action_order=action_order,
+        candidate_limit=candidate_limit,
+        seed=seed,
     )

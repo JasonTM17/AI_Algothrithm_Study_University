@@ -6,10 +6,12 @@ from core.academic_proofs import BENCHMARK_PRESETS
 from algorithms.uninformed import bfs
 from core.puzzle import GOAL_STATE, validate_solution_path
 from ui.play_tab import VICTORY_MESSAGE_KEYS
+from ui.sample_images import generate_sample_tiles
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
+LOCAL_PARTIAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 12, 13, 10, 0, 15)
 
 
 def state_text(state):
@@ -79,7 +81,7 @@ def test_play_image_mode_uses_image_tiles_for_manual_board():
     assert app.button(key="btn_play_reset")
     assert not app.session_state.image_tiles
 
-    app.button(key="btn_load_sample").click().run()
+    app.radio(key="play_board_mode_choice").set_value("Puzzle \u1ea3nh").run()
 
     image_markdown_values = [getattr(markdown, "value", "") for markdown in app.markdown]
     assert any(
@@ -93,7 +95,7 @@ def test_play_image_mode_uses_image_tiles_for_manual_board():
 
 def test_play_image_tile_click_moves_without_query_link_reload():
     app = AppTest.from_file("app.py", default_timeout=15).run()
-    app.button(key="btn_load_sample").click().run()
+    app.radio(key="play_board_mode_choice").set_value("Puzzle \u1ea3nh").run()
     app.session_state.start_state = ONE_MOVE
     app.run()
 
@@ -133,6 +135,89 @@ def test_ai_solver_replay_keeps_play_history_certifiable():
     assert not app.exception
 
 
+def test_sidebar_sample_selection_updates_image_board_immediately_without_numbers():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.run()
+    app.radio(key="play_board_mode_choice").set_value("Image puzzle").run()
+
+    original_tile = app.session_state.image_tiles[1]
+    app.selectbox(key="sample_select").set_value("Cosmic Astronaut Cat").run()
+
+    assert app.session_state.image_tiles[1] != original_tile
+    assert app.session_state.image_tiles == generate_sample_tiles("Cosmic Astronaut Cat")
+    assert app.session_state.play_board_mode == "image"
+    assert app.session_state.image_active is True
+    assert app.session_state.show_numbers is False
+    assert not app.exception
+
+
+def test_play_image_compare_uses_the_current_visible_board_as_start():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+    app.radio(key="play_board_mode_choice").set_value("Image puzzle").run()
+
+    visible_state = tuple(app.session_state.play_state)
+    app.button(key="btn_open_image_compare").click().run()
+
+    assert app.session_state.start_state == visible_state
+    assert app.session_state.main_tab_value == "Compare"
+    assert app.radio(key="main_tab_label").value == "Compare"
+    assert app.button(key="btn_benchmark")
+    timeout = app.number_input(key="compare_timeout_Shallow proof case")
+    timeout.set_value(timeout.value + 1).run()
+    assert app.session_state.main_tab_value == "Compare"
+    assert app.radio(key="main_tab_label").value == "Compare"
+    assert not app.exception
+
+
+def test_compare_renders_synchronized_image_race_for_verified_paths():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.session_state["image_tiles"] = generate_sample_tiles("Cyberpunk City")
+    app.session_state["image_active"] = True
+    app.run()
+
+    app.multiselect(key="compare_groups").set_value(["Uninformed Search", "Informed Search"]).run()
+    app.multiselect(key="compare_Uninformed Search").set_value(["BFS"]).run()
+    app.multiselect(key="compare_Informed Search").set_value(["A*"]).run()
+    app.button(key="btn_benchmark").click().run()
+
+    markdown_text = "\n".join(getattr(item, "value", "") for item in app.markdown)
+    assert "image-algorithm-race" in markdown_text
+    assert "image-race-board" in markdown_text
+    assert "image-race-number" not in markdown_text
+    assert app.slider(key="image_race_step_1").max == 1
+    assert all(result.path_verified and result.goal_reached for result in app.session_state.benchmark_results)
+    assert not app.exception
+
+
+def test_compare_can_select_every_comparable_path_algorithm_in_one_action():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.run()
+
+    app.button(key="compare_select_all_path_algorithms").click().run()
+
+    assert app.multiselect(key="compare_groups").value == [
+        "Uninformed Search",
+        "Informed Search",
+        "Local Search",
+    ]
+    selected = []
+    for group in app.multiselect(key="compare_groups").value:
+        selected.extend(app.multiselect(key=f"compare_{group}").value)
+    assert len(selected) == 13
+    assert "A*" in selected
+    assert "Simulated Annealing" in selected
+    assert not app.exception
+
+
 def test_play_ai_solver_panel_exposes_visible_replay_controls():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
@@ -144,7 +229,18 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
 
     assert "hands-on puzzle work" in markdown_text
-    assert "Click Find Solution" in caption_text
+    assert app.selectbox(key="play_ai_group").value == "Informed Search"
+    assert tuple(app.selectbox(key="play_ai_group").options) == (
+        "Uninformed Search",
+        "Informed Search",
+        "Local Search",
+        "Complex Environments",
+        "CSP",
+        "AI-vs-AI Tournament",
+    )
+    assert app.selectbox(key="play_ai_algorithm").value == "A*"
+    assert "all 6 canonical groups" in caption_text
+    assert "Run A*" in caption_text
     assert "A* Search" in markdown_text
     assert "f(n)=g(n)+h(n)" in markdown_text
     assert "Manhattan Distance" in markdown_text
@@ -154,7 +250,7 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     solved_markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
     expander_labels = [expander.label for expander in app.expander]
     assert app.session_state.play_solution_path
-    assert "A* Node / Frontier / Reached Evidence" in expander_labels
+    assert "A*: Node / Frontier / Reached evidence" in expander_labels
     assert "Search Tree Visualization" in solved_markdown_text
     assert "search-tree-readable" in solved_markdown_text
     assert "Current A* replay step" in solved_markdown_text
@@ -173,6 +269,250 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     assert app.session_state.play_solution_idx == 1
     assert app.session_state.play_state == GOAL_STATE
     assert app.session_state.play_victory_message_key in VICTORY_MESSAGE_KEYS
+    assert not app.exception
+
+
+def test_play_shows_non_linear_groups_without_fake_image_replay():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.run()
+
+    app.selectbox(key="play_ai_group").set_value("Complex Environments").run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    info_text = "\n".join(getattr(info, "value", "") for info in app.info)
+    assert app.selectbox(key="play_ai_algorithm").value == "AND-OR Search"
+    assert "not a linear replay solver" in markdown_text
+    assert "does not return the same kind of step-by-step solution path" in info_text
+    assert app.button(key="btn_ai_solve_unavailable")
+    assert not app.exception
+
+
+def test_play_group6_policy_comparison_starts_two_lanes_and_moves_one_step():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    assert tuple(app.segmented_control(key="play_experience_mode").options) == (
+        "Solver Replay",
+        "Group 6 Decision Lab",
+    )
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+
+    assert app.segmented_control(key="group6_play_view").value == "policy"
+    assert app.selectbox(key="group6_policy_algorithm_a").value == "Minimax"
+    assert app.selectbox(key="group6_policy_algorithm_b").value == "Alpha-Beta Pruning"
+    comparison = app.session_state.group6_policy_comparison
+    assert comparison.lane_a.history == comparison.lane_b.history == [ONE_MOVE]
+
+    app.button(key="btn_group6_policy_next").click().run()
+    comparison = app.session_state.group6_policy_comparison
+    assert comparison.turn == 1
+    assert len(comparison.lane_a.history) <= 2
+    assert len(comparison.lane_b.history) <= 2
+    assert not app.exception
+
+
+def test_play_group6_image_mode_forces_number_overlays_off():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.radio(key="play_board_mode_choice").set_value("Image puzzle").run()
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+
+    markdown_text = "\n".join(
+        getattr(markdown, "value", "") for markdown in app.markdown
+    )
+    assert app.session_state.play_board_mode == "image"
+    assert app.session_state.show_numbers is False
+    assert '<span class="play-tile-number">' not in markdown_text
+    assert "AI A / Policy A" in markdown_text
+    assert "AI B / Policy B" in markdown_text
+    assert not app.exception
+
+
+def test_play_group6_control_change_resets_policy_comparison():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    app.button(key="btn_group6_policy_next").click().run()
+    assert app.session_state.group6_policy_comparison.turn == 1
+
+    app.number_input(key="group6_policy_depth").set_value(4).run()
+    comparison = app.session_state.group6_policy_comparison
+    assert comparison.turn == 0
+    assert comparison.settings.depth == 4
+    assert not app.exception
+
+
+def test_play_manual_move_invalidates_group6_evidence():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    app.button(key="btn_group6_policy_next").click().run()
+    assert app.session_state.group6_policy_comparison.turn == 1
+    app.segmented_control(key="play_experience_mode").set_value("solver").run()
+    app.button(key="play_main_hit_3_3").click().run()
+    assert "group6_policy_comparison" not in app.session_state
+    assert not app.exception
+
+
+def test_play_group6_auto_advances_one_turn_per_fragment_tick():
+    app = AppTest.from_file("app.py", default_timeout=30)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    assert app.session_state.group6_policy_comparison.turn == 0
+    app.button(key="btn_group6_policy_auto").click().run()
+    assert app.session_state.group6_policy_comparison.turn == 1
+    assert len(app.session_state.group6_policy_comparison.lane_a.history) <= 2
+    assert len(app.session_state.group6_policy_comparison.lane_b.history) <= 2
+    assert not app.exception
+
+
+def test_play_can_switch_algorithm_and_compare_from_the_same_baseline():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.selectbox(key="play_ai_group").set_value("Uninformed Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("BFS").run()
+    app.button(key="btn_ai_solve").click().run()
+    baseline = tuple(app.session_state.play_comparison_baseline)
+    assert baseline == ONE_MOVE
+    assert app.session_state.play_solution_res.algorithm == "BFS"
+
+    app.button(key="btn_play_next").click().run()
+    assert app.session_state.play_state == GOAL_STATE
+
+    app.selectbox(key="play_ai_group").set_value("Informed Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("A*").run()
+    assert app.session_state.play_state == baseline
+
+    app.button(key="btn_ai_solve").click().run()
+    assert app.session_state.play_solution_res.algorithm == "A*"
+    assert app.session_state.play_solution_path[0] == baseline
+    assert set(app.session_state.play_comparison_results) == {"BFS", "A*"}
+    assert all(
+        result.path_verified and result.goal_reached
+        for result in app.session_state.play_comparison_results.values()
+    )
+    assert not app.exception
+
+
+def test_play_local_partial_trajectory_replays_but_is_not_ranked_as_solved():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = LOCAL_PARTIAL
+    app.run()
+
+    app.selectbox(key="play_ai_group").set_value("Local Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("Simple Hill Climbing").run()
+    app.button(key="btn_ai_solve").click().run()
+
+    result = app.session_state.play_solution_res
+    assert result.algorithm == "Simple Hill Climbing"
+    assert result.path_verified
+    assert not result.goal_reached
+    assert app.session_state.play_solution_path == result.path
+    markdown_text = "\n".join(getattr(item, "value", "") for item in app.markdown)
+    warning_text = "\n".join(getattr(item, "value", "") for item in app.warning)
+    assert "Legal partial trajectory" in warning_text
+    assert "stopped before the goal" in warning_text
+    assert "Fastest verified run" not in markdown_text
+    assert not app.exception
+
+
+def test_play_failed_algorithm_keeps_the_shared_baseline_visible():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.run()
+    baseline = tuple(app.session_state.play_state)
+
+    app.selectbox(key="play_ai_group").set_value("Uninformed Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("DFS").run()
+    app.button(key="btn_ai_solve").click().run()
+
+    result = app.session_state.play_comparison_results["DFS"]
+    assert not result.path_verified
+    assert app.session_state.play_state == baseline
+    assert app.session_state.play_solution_path is None
+    assert not app.exception
+
+
+def test_play_manual_move_clears_comparison_baseline_and_results():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+    app.button(key="btn_ai_solve").click().run()
+
+    assert app.session_state.play_comparison_results
+    app.button(key="play_main_hit_3_3").click().run()
+
+    assert "play_comparison_baseline" not in app.session_state
+    assert "play_comparison_results" not in app.session_state
+    assert app.session_state.play_solution_path is None
+    assert app.session_state.play_state == GOAL_STATE
+    assert not app.exception
+
+
+def test_play_manual_start_change_clears_stale_auto_replay_baseline():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.run()
+
+    original_start = tuple(app.session_state.start_state)
+    app.button(key="btn_ai_solve").click().run()
+    assert tuple(app.session_state.play_comparison_baseline) == original_start
+    assert tuple(app.session_state.play_solution_path[0]) == original_start
+
+    app.radio(key="input_method").set_value("Manual Input").run()
+    app.text_area(key="manual_input").set_value(matrix_state_text(TWO_MOVE)).run()
+    app.button(key="btn_parse").click().run()
+
+    assert app.session_state.start_state == TWO_MOVE
+    assert app.session_state.play_state == TWO_MOVE
+    assert "play_comparison_baseline" not in app.session_state
+    assert "play_comparison_results" not in app.session_state
+    assert app.session_state.play_solution_path is None
+
+    app.button(key="btn_ai_solve").click().run()
+    assert tuple(app.session_state.play_comparison_baseline) == TWO_MOVE
+    assert tuple(app.session_state.play_solution_path[0]) == TWO_MOVE
+    assert app.session_state.play_state == TWO_MOVE
+
+    app.button(key="btn_play_auto").click().run()
+    assert app.session_state.play_solution_idx == 0
+    assert app.session_state.play_state == TWO_MOVE
+
+    app.run()
+    assert app.session_state.play_solution_idx == 1
+    assert app.session_state.play_state == app.session_state.play_solution_path[1]
+    assert app.session_state.play_state != original_start
     assert not app.exception
 
 
@@ -481,7 +821,6 @@ def test_run_tab_exposes_canonical_complex_environment_group():
         "AND-OR Search",
         "Searching with no observation",
         "Searching for partially observable problems",
-        "LRTA*",
     ]
     assert app.selectbox(key="algo_name").value == "AND-OR Search"
     assert not [widget for widget in app.slider if widget.key == "run_andor_prob"]
@@ -490,6 +829,33 @@ def test_run_tab_exposes_canonical_complex_environment_group():
         "Include all legal deflections",
     ]
     assert app.radio(key="run_andor_deflection_mode").value == "Intended outcome only"
+    assert not app.exception
+
+
+def test_run_tab_tournament_entry_does_not_render_fake_solver_button():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["start_state"] = ONE_MOVE
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+
+    app.selectbox(key="algo_group").set_value("AI-vs-AI Tournament").run()
+
+    assert app.selectbox(key="algo_name").value == "AI-vs-AI Tournament"
+    assert "btn_run" not in {button.key for button in app.button}
+    assert "last_result" not in app.session_state
+
+    app.selectbox(key="algo_name").set_value("Minimax").run()
+    assert "btn_run" in {button.key for button in app.button}
+    app.number_input(key="max_depth").set_value(2).run()
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+    assert result.algorithm == "Minimax"
+    assert result.path_verified
+    assert result.goal_reached
+    assert not result.optimality_proven
+    assert "worst-case legal continuations" in result.message
     assert not app.exception
 
 
@@ -591,17 +957,14 @@ def test_advanced_and_or_uses_deflection_mode_radio():
     assert not app.exception
 
 
-def test_run_lrta_caption_explains_node_cap_as_online_steps():
+def test_run_complex_environment_group_has_no_removed_lrta_entry():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["start_state"] = ONE_MOVE
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Run Algorithm"
     app.run()
     app.selectbox(key="algo_group").set_value("Complex Environments").run()
-    app.selectbox(key="algo_name").set_value("LRTA*").run()
-
-    caption_text = "\n".join(getattr(caption, "value", "") for caption in app.caption)
-    assert "maximum number of online action steps" in caption_text
+    assert "LRTA*" not in app.selectbox(key="algo_name").options
     assert not app.exception
 
 
@@ -617,23 +980,18 @@ def test_run_no_observation_uses_known_tile_belief_controls():
     known_matrix = app.text_area(key="no_observation_search_known_matrix")
     assert known_matrix.label == "Known tiles matrix"
     assert known_matrix.value == "_ _ _ _\n_ _ _ _\n_ _ _ _\n_ _ _ _"
-    assert app.selectbox(key="no_observation_search_belief_planner").options == [
-        "BFS",
-        "A* Search",
-        "Stochastic Hill Climbing",
-    ]
+    assert app.number_input(key="no_observation_search_belief_size").value == 5
 
     app.text_area(key="no_observation_search_known_matrix").set_value(
         "1 2 _ _\n_ _ _ _\n_ _ _ _\n_ _ _ _"
     ).run()
-    app.selectbox(key="no_observation_search_belief_planner").set_value("BFS").run()
     app.button(key="btn_run").click().run()
 
     result = app.session_state.last_result
-    reasons = " ".join(step.reason for step in result.trace)
     assert result.algorithm == "Searching with no observation"
-    assert "known positions=2" in reasons
-    assert "planner=BFS" in reasons
+    assert result.capability == "conformant_plan"
+    assert result.model_evidence["known_positions"] == {0: 1, 1: 2}
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
     assert not app.exception
 
 
@@ -648,13 +1006,12 @@ def test_advanced_partial_observation_accepts_two_known_tiles_matrix():
     app.text_area(key="po_known_matrix").set_value(
         "1 2 _ _\n_ _ _ _\n_ _ _ _\n_ _ _ _"
     ).run()
-    app.selectbox(key="po_belief_planner").set_value("BFS").run()
     app.button(key="adv_run_partially_observable").click().run()
 
     result = app.session_state.advanced_outputs[0]["result"]
-    reasons = " ".join(step.reason for step in result.trace)
-    assert "known positions=2" in reasons
-    assert "planner=BFS" in reasons
+    assert result.capability == "contingent_policy"
+    assert result.model_evidence["known_positions"] == {0: 1, 1: 2}
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
     assert not app.exception
 
 
@@ -841,6 +1198,19 @@ def test_stochastic_run_uses_fresh_variation_seed_each_time():
     assert not app.exception
 
 
+def test_compare_recovers_recommended_selection_when_widget_state_is_missing():
+    preset_name = next(iter(BENCHMARK_PRESETS))
+    preset = BENCHMARK_PRESETS[preset_name]
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Compare"
+    app.session_state["compare_selection_preset"] = preset_name
+    app.run()
+
+    assert app.multiselect(key="compare_groups").value == list(preset["recommended_groups"])
+    assert not app.exception
+
+
 def test_compare_records_distinct_seeds_for_stochastic_algorithms():
     app = AppTest.from_file("app.py", default_timeout=20)
     app.session_state["start_state"] = ONE_MOVE
@@ -965,12 +1335,11 @@ def test_theory_grading_report_preview_does_not_inject_page_headings():
     app.run()
 
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
-    code_text = "\n".join(getattr(code, "value", "") for code in app.code)
-
     assert "15-Puzzle AI Final Exam Grading Report" not in markdown_text
     assert "Current Start State" not in markdown_text
-    assert "15-Puzzle AI Final Exam Grading Report" in code_text
-    assert "Current Start State" in code_text
+    assert "Grading summary" in [
+        getattr(item, "value", "") for item in app.subheader
+    ]
     assert not app.exception
 
 
@@ -1066,13 +1435,15 @@ def test_advanced_backtracking_uses_custom_goal_and_variation_metadata():
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Advanced Mode"
     app.run()
-    app.selectbox(key="complex_mode_v2").set_value("Backtracking Search + Manhattan Distance heuristic").run()
-    app.button(key="adv_run_backtracking_search___manhattan_distance_heuristic").click().run()
+    app.selectbox(key="complex_mode_v2").set_value("CSP Workbench").run()
+    app.selectbox(key="advanced_csp_algorithm").set_value("Backtracking").run()
+    app.number_input(key="csp_t").set_value(1).run()
+    app.button(key="adv_run_csp_workbench").click().run()
 
     outputs = app.session_state.advanced_outputs
     planning = outputs[0]["result"]
 
-    assert planning.algorithm == "Backtracking Search"
+    assert planning.algorithm == "Backtracking"
     assert planning.goal_state == ONE_MOVE
     assert planning.path_verified
     assert planning.goal_reached
@@ -1095,7 +1466,6 @@ def test_advanced_partial_observation_renders_observation_evidence():
     assert app.text_area(key="po_known_matrix").value == (
         "1 2 _ _\n_ _ _ _\n_ _ _ _\n_ _ _ _"
     )
-    assert app.selectbox(key="po_belief_planner").value == "A* Search"
     app.button(key="adv_run_partially_observable").click().run()
 
     result = app.session_state.advanced_outputs[0]["result"]
@@ -1104,11 +1474,11 @@ def test_advanced_partial_observation_renders_observation_evidence():
 
     assert result.algorithm == "Searching for partially observable problems"
     assert any(step.observation for step in result.trace)
-    assert any("known positions=2" in step.reason for step in result.trace)
+    assert result.model_evidence["known_positions"] == {0: 1, 1: 2}
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
     assert "Strict criterion" in info_values
     assert "Belief Size" in metric_labels
     assert "Observation" in metric_labels
-    assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert result.random_seed == result.variation_solver_seed
     assert not app.exception
 
@@ -1119,20 +1489,21 @@ def test_advanced_csp_ac3_produces_replayable_exact_horizon_path():
     app.session_state["global_lang_select"] = "English"
     app.session_state["main_tab_label"] = "Advanced Mode"
     app.run()
-    app.selectbox(key="complex_mode_v2").set_value("CSP Definition & Propagation").run()
+    app.selectbox(key="complex_mode_v2").set_value("CSP Workbench").run()
+    app.selectbox(key="advanced_csp_algorithm").set_value("AC-3").run()
     app.number_input(key="csp_t").set_value(1).run()
-    app.button(key="adv_run_csp_definition___propagation").click().run()
+    app.button(key="adv_run_csp_workbench").click().run()
 
-    propagation = app.session_state.advanced_outputs[1]["result"]
+    propagation = app.session_state.advanced_outputs[0]["result"]
 
-    assert propagation.algorithm == "Constraint Propagation"
+    assert propagation.algorithm == "AC-3"
     assert propagation.actions == ["R"]
     assert propagation.path_verified
     assert propagation.goal_reached
     assert propagation.search_tree_edges
-    assert propagation.variation_randomizes_path
+    assert propagation.capability == "csp_propagation"
     assert "Search Tree Visualization" in [expander.label for expander in app.expander]
-    assert "AC-3 State-Chain CSP" in propagation.message
+    assert "AC-3" in propagation.message
     assert not app.exception
 
 

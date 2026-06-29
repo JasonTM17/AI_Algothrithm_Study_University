@@ -14,6 +14,10 @@ from scripts.readme_gif_manifest import check_generated_assets, manifest_record
 from scripts.readme_gif_runner import run_demo
 from scripts.readme_gif_specs import build_specs, registry_summary
 from scripts.readme_gif_styles import PROFILES
+from scripts.render_readme_docs import (
+    STANDARD_SOLVER_ALGORITHMS,
+    _run_fit_conclusion,
+)
 from ui.styles import ALGORITHM_GROUPS
 import ui.web_gif_capture as web_gif_capture
 
@@ -33,7 +37,7 @@ def test_gif_registry_covers_canonical_algorithm_groups():
     assert summary == {
         "groups": len(ALGORITHM_GROUPS),
         "algorithms": sum(len(items) for items in ALGORITHM_GROUPS.values()),
-        "specs": 28,
+        "specs": 24,
     }
     assert {spec.algorithm for spec in build_specs()} == {
         algorithm for algorithms in ALGORITHM_GROUPS.values() for algorithm in algorithms
@@ -112,11 +116,15 @@ def test_readme_is_academic_atlas_with_all_algorithm_gifs():
     assert "live Streamlit browser capture" in readme
     assert "web_run_status" in readme
     assert "Khi thuyết trình" not in readme
-    assert readme.count("Phù hợp với 15-puzzle chuẩn") == 28
-    assert "Không ổn làm solver chuẩn" in readme
-    assert "Không phải solver tuyến tính của 15-puzzle deterministic" in readme
-    assert "repair bằng tile swaps không nhất thiết là legal blank moves" in readme
-    assert "So Sánh Thuật Toán Trong Nhóm" in readme
+    assert readme.count("docs/assets/algorithm-demos/") == 24
+    assert "24/24" in readme
+    assert "28/28" not in readme
+    assert "24 algorithms" in readme
+    assert "28 algorithms" not in readme
+    assert "LRTA*" not in readme
+    assert "Backtracking + Forward Checking" in readme
+    assert "AC-3" in readme
+    assert "state-chain" in readme
     assert "Frontier/decision rule" in readme
     assert "Same root value as full Minimax" in readme
     assert "support switch không phải probability weight" in readme
@@ -129,11 +137,13 @@ def test_readme_is_academic_atlas_with_all_algorithm_gifs():
 
 def test_algorithm_gallery_has_full_academic_metadata():
     gallery = (ROOT / "docs/algorithm-demo-gallery.md").read_text(encoding="utf-8")
-    assert "28 GIF" in gallery
+    assert "24 GIF" in gallery
+    assert "28 GIF" not in gallery
     assert "live Streamlit browser capture" in gallery
     assert "web_run_status" in gallery
     assert "Khi thuyết trình" not in gallery
-    assert gallery.count("Phù hợp với 15-puzzle chuẩn") == 28
+    assert gallery.count('<img src="assets/algorithm-demos/') == 24
+    assert "LRTA*" not in gallery
     for algorithm, note in ALGORITHM_NOTES.items():
         assert algorithm in gallery
         assert note.learning_goal in gallery
@@ -175,6 +185,47 @@ def test_web_run_status_distinguishes_solution_model_failure_and_tournament():
         "not_solved_in_demo",
         "ran_tournament_model",
     }
+
+
+def test_each_algorithm_has_an_explicit_truthful_run_and_fit_conclusion():
+    expected_standard = {"BFS", "UCS", "IDS", "A*", "IDA*"}
+    assert STANDARD_SOLVER_ALGORITHMS == expected_standard
+
+    conclusions = {}
+    statuses = {}
+    for spec in build_specs():
+        evidence = run_demo(spec)
+        status = _web_run_status(evidence)
+        record = {
+            "web_run_status": status,
+            "termination": evidence.termination,
+        }
+        conclusion = _run_fit_conclusion(spec, record)
+        conclusions[spec.algorithm] = conclusion
+        statuses[spec.algorithm] = status
+
+        assert conclusion
+        assert "không chạy được" not in conclusion.lower()
+        if status == "solved_optimal":
+            assert spec.algorithm in expected_standard
+            assert "PHÙ HỢP LÀM SOLVER CHUẨN" in conclusion
+        elif status == "solved_not_optimal":
+            assert "DEMO TỚI GOAL" in conclusion
+            assert "KHÔNG CÓ CHỨNG CHỈ TỐI ƯU" in conclusion
+        elif status == "not_solved_in_demo":
+            assert "CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL" in conclusion
+            assert "không phải crash" in conclusion
+        elif status == "ran_model_not_goal_path":
+            if spec.algorithm == "AND-OR Search":
+                assert "TRẢ CONDITIONAL PLAN" in conclusion
+            else:
+                assert "CHẾ ĐỘ MÔ HÌNH/EVIDENCE" in conclusion
+        elif status == "ran_tournament_model":
+            assert "CHẾ ĐỘ CHẤM ĐIỂM" in conclusion
+
+    assert len(conclusions) == 24
+    assert sum(value == "not_solved_in_demo" for value in statuses.values()) == 5
+    assert sum(value == "ran_model_not_goal_path" for value in statuses.values()) == 3
 
 
 def test_number_tile_palette_stays_restrained():
@@ -228,8 +279,8 @@ def test_tournament_capture_replays_a_real_scored_agent_path():
     assert any("replay=" in fact for fact in evidence.facts)
 
 
-def test_featured_constraint_propagation_uses_a_satisfiable_exact_horizon():
-    spec = next(spec for spec in build_specs() if spec.algorithm == "Constraint Propagation")
+def test_featured_ac3_uses_a_satisfiable_exact_horizon():
+    spec = next(spec for spec in build_specs() if spec.algorithm == "AC-3")
     evidence = run_demo(spec)
 
     assert spec.params["time_horizon"] == 1
@@ -268,7 +319,7 @@ def test_and_or_and_csp_metrics_name_their_real_evidence():
     )
     assert and_or_metrics["Depth limit"] == "2"
 
-    propagation = run_demo(by_name["Constraint Propagation"])
+    propagation = run_demo(by_name["AC-3"])
     propagation_metrics = dict(
         web_gif_capture._capture_metrics(
             propagation,

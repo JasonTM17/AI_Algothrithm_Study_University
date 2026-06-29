@@ -3,7 +3,7 @@
 [![Web quality](https://github.com/JasonTM17/AI_Algothrithm_Study_University/actions/workflows/quality.yml/badge.svg)](https://github.com/JasonTM17/AI_Algothrithm_Study_University/actions/workflows/quality.yml)
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-app-FF4B4B?logo=streamlit&logoColor=white)
-![28 algorithms](https://img.shields.io/badge/AI-28%20algorithms-7FAF6F)
+![24 algorithms](https://img.shields.io/badge/AI-24%20algorithms-7FAF6F)
 
 **Tác giả:** JasonTM17
 
@@ -16,10 +16,11 @@ GIF hero ở trên được chụp từ live Streamlit browser capture bằng `a
 ## Mục Lục
 
 - [Chạy Nhanh](#chạy-nhanh)
+- [Kết Quả Quét Lại 24 Thuật Toán](#kết-quả-quét-lại-24-thuật-toán)
 - [Bản Đồ 6 Nhóm](#bản-đồ-6-nhóm)
 - [Cách Đọc Từng Nhóm](#cách-đọc-từng-nhóm)
 - [So Sánh Thuật Toán Trong Nhóm](#so-sánh-thuật-toán-trong-nhóm)
-- [Atlas 28 Thuật Toán Có GIF Chạy Thật](#atlas-28-thuật-toán-có-gif-chạy-thật)
+- [Atlas 24 Thuật Toán Có GIF Chạy Thật](#atlas-24-thuật-toán-có-gif-chạy-thật)
 - [Cách Đọc Evidence](#cách-đọc-evidence)
 - [Tài Liệu](#tài-liệu)
 
@@ -50,9 +51,21 @@ python scripts/generate-readme-gifs.py --check --check-readability
 python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65
 ```
 
+## Kết Quả Quét Lại 24 Thuật Toán
+
+Quét trực tiếp toàn bộ demo specs bằng cùng runner dùng để tạo GIF. Kết quả hiện tại: **24/24 mục thực thi không phát sinh exception**. `Không tới goal` không đồng nghĩa `không chạy được`; README tách riêng crash, run dừng chưa giải xong, model evidence và solution path.
+
+- **Solver chuẩn, demo tới goal và có chứng chỉ tối ưu (5):** BFS, UCS, IDS, A*, IDA*.
+- **Demo tới goal nhưng không có chứng chỉ tối ưu (10):** DFS, Greedy Best-First, Local Beam Search, Backtracking, Backtracking + Forward Checking, AC-3, Min-Conflicts, Minimax, Alpha-Beta Pruning, Expectimax.
+- **Chạy được nhưng demo không tới goal (5):** Simple Hill Climbing, Steepest-Ascent Hill Climbing, Stochastic Hill Climbing, Random-Restart Hill Climbing, Simulated Annealing.
+- **Chỉ tạo model evidence/conditional plan, không tạo goal path (3):** AND-OR Search, Searching with no observation, Searching for partially observable problems.
+- **Chỉ chạy lớp chấm điểm tournament (1):** AI-vs-AI Tournament.
+
+Chỉ nhóm đầu được README gọi là **solver chuẩn có chứng chỉ tối ưu** cho cấu hình demo. Các mục còn lại vẫn có giá trị học thuật, nhưng phải đọc đúng output và caveat ghi ngay tại từng thuật toán.
+
 ## Bản Đồ 6 Nhóm
 
-`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.
+`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 24 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.
 
 ### Uninformed Search
 
@@ -82,9 +95,9 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 
 <p><img src="docs/assets/readme/complex-environments.gif" alt="Complex Environments" width="620"></p>
 
-- **Vai trò:** Model conditional, belief-state and online variants that extend the basic 15-puzzle PEAS.
-- **Câu hỏi học thuật:** What does the agent know, and is the output a path, a policy or an online trace?
-- **Thuật toán:** AND-OR Search, Searching with no observation, Searching for partially observable problems, LRTA*
+- **Vai trò:** Model conditional, conformant and contingent planning over explicit belief states.
+- **Câu hỏi học thuật:** What does the agent know, and is the output a conditional plan, conformant sequence or observation policy?
+- **Thuật toán:** AND-OR Search, Searching with no observation, Searching for partially observable problems
 
 ### CSP
 
@@ -92,7 +105,7 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 
 - **Vai trò:** Reframe puzzle planning as variables, domains and constraints.
 - **Câu hỏi học thuật:** Which variable/domain/constraint evidence is being shown instead of a shortest path claim?
-- **Thuật toán:** CSP Definition, Constraint Propagation, Path Consistency, Global Constraints, Backtracking Search, Min-Conflicts, Constraint Graphs
+- **Thuật toán:** Backtracking, Backtracking + Forward Checking, AC-3, Min-Conflicts
 
 ### AI-vs-AI Tournament
 
@@ -109,7 +122,7 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 | Uninformed Search | So sánh FIFO, LIFO, cost queue và iterative deepening khi không có h(n). | Gọi DFS là optimal hoặc quên memory của BFS. |
 | Informed Search | Đọc h(n), g(n), f(n), admissible/consistent và certificate. | Gọi Greedy là optimal chỉ vì một run tình cờ ngắn. |
 | Local Search | Xem candidate được xét/chọn/từ chối và lý do dừng. | Nhầm legal trajectory thành solution path. |
-| Complex Environments | Đọc belief, conditional plan, online update theo đúng mô hình mở rộng. | Ép AND-OR/belief thành đường đi tuyến tính giả. |
+| Complex Environments | Đọc conditional, conformant và contingent policy theo đúng belief-state model. | Ép policy thành đường đi tuyến tính giả hoặc để hidden state điều khiển agent. |
 | CSP | Đọc variables, domains, constraints, propagation và horizon. | Gọi CSP model definition là shortest-path solver. |
 | AI-vs-AI Tournament | Đọc scoring, robustness, pruning và expected value. | Gọi MIN là đối thủ thật của 15-puzzle. |
 
@@ -148,21 +161,17 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 | Thuật toán | Mô hình output | Evidence cần nhìn | Guarantee đúng | Caveat |
 |---|---|---|---|---|
 | AND-OR Search | Conditional plan/policy. | AND node, OR action, deflection support. | Plan hợp lệ trong depth/support đã chọn. | Không phải linear path giả; support switch không phải probability weight. |
-| Searching with no observation | Belief-state reasoning. | belief size, planner votes, fallback reason. | Agent quyết định từ belief set. | Hidden actual state chỉ để debug. |
-| Partially observable search | Known-tile matrix + belief update. | known tiles, observation, belief prune. | Trace reconstruction giáo dục. | Không biến thành solver chuẩn khi chỉ biết vài ô. |
-| LRTA* | Online one-step learning. | H update, local successors, chosen action. | Online demo có legal moves. | Cap là max online steps, không phải node frontier chuẩn. |
+| Searching with no observation | Conformant graph search trên belief state. | Predict(B,a), belief frontier/reached, duplicate rejection, goal coverage. | Một action sequence phải đúng cho mọi state được biểu diễn. | Belief hữu hạn là approximation; bounded failure không chứng minh impossible toàn cục. |
+| Partially observable search | Contingent belief-state AND-OR. | predicted belief, observation partitions, updated beliefs, branch coverage. | Mọi observation branch phải có subpolicy. | Hidden actual state chỉ để audit, không xây policy. |
 
 ### CSP
 
 | Thuật toán | CSP concept | Evidence cần nhìn | Output đúng | Caveat |
 |---|---|---|---|---|
-| CSP Definition | Variables/domains/constraints. | variable count, domain endpoints. | Model definition. | Chưa phải solved trajectory. |
-| Constraint Propagation | AC-3 style exact-horizon pruning. | arc checks, candidate states, domain wipe-out/goal. | Sound pruning for represented constraints. | Horizon parity quan trọng; `T=2` có thể wipe-out đúng logic. |
-| Path Consistency | Triple support explanation. | consistency events, remaining supports. | Educational consistency evidence. | Illustration, không phải shortest-path solver. |
-| Global Constraints | AllDifferent/structural rules. | global check summary. | Rules out invalid assignments. | Không thay thế graph search certificate. |
-| Backtracking Search | DFS over bounded transition model. | assignment/backtrack reason, final path if found. | Can solve small exact horizon. | Dùng Manhattan ordering, không claim full MRV/forward checking. |
-| Min-Conflicts | Local repair of CSP assignment. | conflict count, selected variable. | CSP repair concept. | Tile swaps không nhất thiết là legal blank moves. |
-| Constraint Graphs | Network/factor view. | nodes, edges, high-arity relation. | Structural explanation. | Readability/evidence, not path optimality. |
+| Backtracking | Chronological state-chain assignment. | assignments, consistency checks, backtracks. | Exact-T legal chain khi thành công. | Failure chỉ đúng trong horizon/resource bound. |
+| Backtracking + Forward Checking | Assignment kèm prune domain kế tiếp. | values pruned, domain wipe-out, backtracks. | Cùng ordering để so sánh công bằng với Backtracking. | Worst case vẫn exponential. |
+| AC-3 | Arc-consistency propagation trên state chain. | arc queue, REVISE, values removed, domain sizes. | Sound propagation; replay chỉ từ exact legal chain. | Arc-consistent không tự động nghĩa unique solution. |
+| Min-Conflicts | Seeded local repair của complete state-chain assignment. | conflicted variable, conflict count, iteration. | Replay chỉ khi zero conflict và mọi move legal. | Không complete, không optimal. |
 
 ### AI-vs-AI Tournament
 
@@ -173,9 +182,9 @@ python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing 
 | Alpha-Beta Pruning | Minimax with branch-and-bound pruning. | alpha, beta, cutoff events. | Same root value as full Minimax under same searched tree. | Pruning tiết kiệm node, không đổi PEAS thành game thật. |
 | Expectimax | Expected value with CHANCE nodes. | probability model, expected utility. | Depth-limited expected-value policy. | Probability model là giáo dục và phải nêu rõ. |
 
-## Atlas 28 Thuật Toán Có GIF Chạy Thật
+## Atlas 24 Thuật Toán Có GIF Chạy Thật
 
-Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Trường `web_run_status` ghi trung thực: solved, partial/model, not solved hoặc tournament.
+Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Dòng **Kết luận chạy / độ phù hợp** nói rõ demo có tới goal hay không và thuật toán có được dùng làm solver chuẩn hay chỉ là mô hình giáo dục.
 
 ## Uninformed Search: từng thuật toán
 
@@ -193,6 +202,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Complete and optimal for unit step cost if resources suffice. |
 | Caveat | Memory grows quickly; good for shallow teaching cases, not deep 15-puzzle production search. |
 | Phù hợp với 15-puzzle chuẩn | Solver chuẩn cho ca nông: complete và optimal với unit step cost, nhưng frontier/reached tăng rất nhanh nên không hợp cho 15-puzzle sâu. |
+| Kết luận chạy / độ phù hợp | **PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path và có chứng chỉ tối ưu cho cấu hình đã chạy.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
@@ -213,6 +223,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No shortest-path guarantee in this app setting. |
 | Caveat | Can chase a deep branch and miss a shorter path. |
 | Phù hợp với 15-puzzle chuẩn | Không dùng làm solver chuẩn: có thể tìm được một path hợp lệ nhưng không bảo đảm ngắn nhất và dễ đi sâu vào nhánh kém. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_depth=12` |
@@ -233,6 +244,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Complete and optimal for non-negative costs. |
 | Caveat | On unit-cost 15-puzzle it behaves like BFS but keeps the general cost model explicit. |
 | Phù hợp với 15-puzzle chuẩn | Solver chuẩn khi chi phí bước không âm. Với 15-puzzle unit cost, UCS gần tương đương BFS nhưng giữ rõ mô hình path cost g(n). |
+| Kết luận chạy / độ phù hợp | **PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path và có chứng chỉ tối ưu cho cấu hình đã chạy.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
@@ -253,6 +265,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Complete and optimal for unit step cost if the limit reaches the solution depth. |
 | Caveat | Repeats work across iterations; the trace should be read by limit, not as one queue. |
 | Phù hợp với 15-puzzle chuẩn | Solver chuẩn cho unit-cost khi depth limit đủ lớn: tiết kiệm bộ nhớ hơn BFS nhưng lặp lại nhiều lần qua các giới hạn độ sâu. |
+| Kết luận chạy / độ phù hợp | **PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path và có chứng chỉ tối ưu cho cấu hình đã chạy.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_depth=12` |
@@ -275,6 +288,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No optimality guarantee. |
 | Caveat | May find a longer path or get misled by a locally attractive state. |
 | Phù hợp với 15-puzzle chuẩn | Không dùng để chứng minh tối ưu: h(n) giúp chạy nhanh hơn nhưng bỏ qua g(n), nên path có thể dài hơn A*. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
@@ -295,6 +309,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Optimal with admissible and consistent heuristic when resources do not stop the run. |
 | Caveat | The certificate is valid only for the selected goal and heuristic contract. |
 | Phù hợp với 15-puzzle chuẩn | Solver chuẩn chính của app: với Manhattan Distance admissible/consistent và unit step cost, có thể bật optimality_proven khi tới goal. |
+| Kết luận chạy / độ phù hợp | **PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path và có chứng chỉ tối ưu cho cấu hình đã chạy.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
@@ -315,6 +330,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Optimal with admissible heuristic and sufficient threshold iterations. |
 | Caveat | May revisit many states; trace is threshold-based, not a single frontier queue. |
 | Phù hợp với 15-puzzle chuẩn | Solver chuẩn memory-bounded: hợp với 15-puzzle sâu hơn A* về bộ nhớ, đổi lại có thể revisit nhiều state theo threshold. |
+| Kết luận chạy / độ phù hợp | **PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path và có chứng chỉ tối ưu cho cấu hình đã chạy.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_optimal` - reached goal with an optimality certificate |
 | Demo input | seed `42`, termination `goal`, default demo parameters |
@@ -337,6 +353,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No completeness or optimality guarantee. |
 | Caveat | Local optimum can stop the run far from the goal. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: chỉ đi theo cải thiện cục bộ và có thể dừng ở local optimum dù goal chưa đạt. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát (`termination=stopped`), không phải crash; trajectory/evidence không được gọi là lời giải.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40` |
@@ -357,6 +374,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No completeness or optimality guarantee. |
 | Caveat | Still local; evaluating every neighbor does not solve plateaus. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: xét hết neighbor cục bộ tốt hơn Simple HC nhưng vẫn kẹt plateau/local optimum. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát (`termination=stopped`), không phải crash; trajectory/evidence không được gọi là lời giải.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40` |
@@ -377,6 +395,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No deterministic optimality guarantee. |
 | Caveat | Different seeds can produce different partial trajectories. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: seed khác có thể cho trajectory khác, không có completeness hay optimality certificate. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát (`termination=stopped`), không phải crash; trajectory/evidence không được gọi là lời giải.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7` |
@@ -397,6 +416,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Still not a complete 15-puzzle solver here. |
 | Caveat | More restarts improve chances but do not prove optimality. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: restart tăng cơ hội thoát basin xấu nhưng vẫn không chứng minh được shortest path. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát (`termination=stopped`), không phải crash; trajectory/evidence không được gọi là lời giải.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7`, `max_restarts=3` |
@@ -417,6 +437,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No optimality guarantee. |
 | Caveat | The beam can collapse to similar states and miss the global route. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: giữ nhiều candidate giúp minh họa tìm kiếm cục bộ, nhưng beam nhỏ có thể bỏ mất route tốt. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `max_iterations=40`, `beam_width=3` |
@@ -437,6 +458,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | No certificate of reaching or optimizing the goal. |
 | Caveat | A legal trajectory is not automatically a solution. |
 | Phù hợp với 15-puzzle chuẩn | Không ổn làm solver chuẩn: có thể nhận bước xấu để thoát local optimum, nhưng legal trajectory không đồng nghĩa solved hoặc optimal. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát (`termination=stopped`), không phải crash; trajectory/evidence không được gọi là lời giải.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
 | Demo input | seed `42`, termination `stopped`, `max_iterations=40`, `seed=7` |
@@ -459,10 +481,11 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Returns a policy-like conditional plan, not a linear shortest path. |
 | Caveat | The support switch is not probability weighting. |
 | Phù hợp với 15-puzzle chuẩn | Không phải solver tuyến tính của 15-puzzle deterministic: dùng để minh họa conditional plan khi môi trường có outcome lệch. GIF là model evidence, không phải path tới goal. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC VÀ TRẢ CONDITIONAL PLAN — Output đúng là kế hoạch có nhánh, không phải một linear path tới goal của 15-puzzle deterministic.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
 | Demo input | seed `42`, termination `model_success`, `max_depth=2`, `nondet_prob=0.0` |
-| Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
+| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
 | Result message | Conditional plan found (depth limit=2). AND-OR requires every supported outcome to succeed. Deflection support=intended outcome only; nondet_prob>0 adds all legal deflections, not probability-weighted branches. OR: choose action R (h=1.0) |
 
 ### 15. Searching with no observation
@@ -473,17 +496,18 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 |---|---|
 | Nhóm | Complex Environments |
 | Vai trò | Extension |
-| Learning goal | Separate hidden actual state from belief-state decision making. |
-| Cơ chế | Maintain a belief set when observations reveal no tile positions. |
-| Evidence trong GIF | belief size, planner votes, fallback votes and action trace. |
-| Guarantee | Demonstrates belief reasoning; not a standard full-observation solver. |
-| Caveat | Hidden state is shown only as debug evidence. |
-| Phù hợp với 15-puzzle chuẩn | Không phải solver chuẩn full-observation: dùng belief set khi agent không thấy trạng thái thật; hidden state chỉ để debug. GIF ghi trung thực rằng demo không tạo solution claim. |
+| Learning goal | Find one conformant action sequence without reading the hidden state. |
+| Cơ chế | Graph-search finite belief states using Predict(B,a), with illegal actions defined as no-op. |
+| Evidence trong GIF | belief frontier/reached, duplicate rejection, action sequence and goal coverage. |
+| Guarantee | Success means every represented initial state reaches the goal under one sequence. |
+| Caveat | The finite reconstructed belief is an approximation, and bounded failure is not a global impossibility proof. |
+| Phù hợp với 15-puzzle chuẩn | Không phải solver chuẩn full-observation: conformant sequence phải đúng cho mọi state trong belief hữu hạn và không được đọc hidden state. GIF là model evidence, không phải path tới goal. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC Ở CHẾ ĐỘ MÔ HÌNH/EVIDENCE — Không sinh legal solution path tới goal; mục này dùng để minh họa khái niệm, không phải solver 15-puzzle chuẩn.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `not_solved_in_demo` - web demo completed without a solution claim |
-| Demo input | seed `42`, termination `stopped`, `max_steps=3`, `num_belief_states=4`, `known_positions={'14': 15}`, `seed=42` |
-| Certificate flags | `path_verified=True`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Belief size=4 after 3 steps. No observation keeps a belief set; planner=A* Search cannot safely collapse it. |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
+| Demo input | seed `42`, termination `model_success`, `max_steps=2`, `num_belief_states=1`, `known_positions={'0': 1, '1': 2, '2': 3, '3': 4, '4': 5, '5': 6, '6': 7, '7': 8, '8': 9, '9': 10, '10': 11, '11': 12, '12': 13, '13': 14, '14': 0, '15': 15}`, `seed=42` |
+| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Conformant belief-state search found one fixed action sequence that sends every represented state to the goal. |
 
 ### 16. Searching for partially observable problems
 
@@ -493,141 +517,85 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 |---|---|
 | Nhóm | Complex Environments |
 | Vai trò | Extension |
-| Learning goal | Use known tile positions to reduce the belief set. |
-| Cơ chế | Filter belief candidates using a known-tile matrix. |
-| Evidence trong GIF | known positions, belief size, planner votes and fallback reason. |
-| Guarantee | Can propose legal actions under partial knowledge. |
-| Caveat | With too few known tiles, the belief set can still be ambiguous. |
-| Phù hợp với 15-puzzle chuẩn | Không phải solver chuẩn khi chỉ biết vài ô: dùng known-tile matrix để thu hẹp belief, vẫn có thể mơ hồ. |
+| Learning goal | Build a contingent policy that covers every possible local observation. |
+| Cơ chế | Predict a belief, partition by blank-and-neighbor percept, then recurse on each updated belief. |
+| Evidence trong GIF | predicted belief, observation partitions, branch coverage and policy depth. |
+| Guarantee | Success requires a subpolicy for every represented observation branch. |
+| Caveat | The sensor and finite belief approximation are explicit; hidden state never builds the policy. |
+| Phù hợp với 15-puzzle chuẩn | Không phải linear solver chuẩn: output là contingent policy phân nhánh theo observation của blank và tile kề. GIF là model evidence, không phải path tới goal. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC Ở CHẾ ĐỘ MÔ HÌNH/EVIDENCE — Không sinh legal solution path tới goal; mục này dùng để minh họa khái niệm, không phải solver 15-puzzle chuẩn.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
-| Demo input | seed `42`, termination `goal`, `max_steps=3`, `num_belief_states=4`, `known_positions={'14': 15}`, `seed=42` |
-| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
-| Result message | Actual state reached goal |
-
-### 17. LRTA*
-
-<p><img src="docs/assets/algorithm-demos/lrtastar.gif" alt="LRTA* real GIF" width="560"></p>
-
-| Trục đọc | Nội dung |
-|---|---|
-| Nhóm | Complex Environments |
-| Vai trò | Extension |
-| Learning goal | Study online heuristic learning one action at a time. |
-| Cơ chế | Update H(s) after observing local successors. |
-| Evidence trong GIF | online step, H update, chosen action and cap reason. |
-| Guarantee | Online learning demo, not an offline optimal certificate. |
-| Caveat | The node cap is a max online-step cap in the UI. |
-| Phù hợp với 15-puzzle chuẩn | Không phải offline optimal solver: minh họa agent online cập nhật H(s) từng bước, cap là số bước hành động tối đa. |
-| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
-| Demo input | seed `42`, termination `goal`, `max_steps=8` |
-| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
-| Result message | Goal reached online |
+| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
+| Demo input | seed `42`, termination `model_success`, `max_steps=2`, `num_belief_states=1`, `known_positions={'0': 1, '1': 2, '2': 3, '3': 4, '4': 5, '5': 6, '6': 7, '7': 8, '8': 9, '9': 10, '10': 11, '11': 12, '12': 13, '13': 14, '14': 0, '15': 15}`, `seed=42` |
+| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
+| Result message | Contingent belief-state AND-OR search found a policy covering every represented observation branch. |
 
 ## CSP: từng thuật toán
 
-### 18. CSP Definition
+### 17. Backtracking
 
-<p><img src="docs/assets/algorithm-demos/csp-definition.gif" alt="CSP Definition real GIF" width="560"></p>
+<p><img src="docs/assets/algorithm-demos/backtracking.gif" alt="Backtracking real GIF" width="560"></p>
 
 | Trục đọc | Nội dung |
 |---|---|
 | Nhóm | CSP |
 | Vai trò | Extension |
-| Learning goal | Name variables, domains and constraints. |
-| Cơ chế | Build a state-chain CSP model. |
-| Evidence trong GIF | variables/domains/constraints count. |
-| Guarantee | Model definition only. |
-| Caveat | A model is not yet a solved trajectory. |
-| Phù hợp với 15-puzzle chuẩn | Không giải puzzle trực tiếp: chỉ dựng mô hình biến/domain/constraint để người học hiểu cách mã hóa bài toán. GIF là model evidence, không phải path tới goal. |
+| Learning goal | Assign an exact-horizon state chain chronologically. |
+| Cơ chế | Backtrack when a neighboring state violates the legal blank-move constraint. |
+| Evidence trong GIF | assignments, checks, backtracks and verified path when found. |
+| Guarantee | Sound within the represented horizon and resource bounds. |
+| Caveat | Horizon failure is not global unsolvability or a shortest-path certificate. |
+| Phù hợp với 15-puzzle chuẩn | CSP assignment search theo exact horizon: chỉ replay verified legal chain; không claim shortest path hoặc unsolvable toàn cục. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, `time_horizon=1` |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | CSP Definition for 15-Puzzle (T=1)  Variables:   X[t][p]: tile at position p at time t, t=0..1, p=0..15   A[t]: action at time t, t=0..0  Total variables: 33  Domains:   X[0][p] = {15} (fixed by initial state)   X[1][p] = {0} (fixed by goal |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
+| Demo input | seed `42`, termination `goal`, `time_horizon=1`, `max_steps=600` |
+| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Backtracking found an exact-horizon CSP assignment for T=1. checks=0, backtracks=0, values_pruned=0. |
 
-### 19. Constraint Propagation
+### 18. Backtracking + Forward Checking
 
-<p><img src="docs/assets/algorithm-demos/constraint-propagation.gif" alt="Constraint Propagation real GIF" width="560"></p>
+<p><img src="docs/assets/algorithm-demos/backtracking-forward-checking.gif" alt="Backtracking + Forward Checking real GIF" width="560"></p>
 
 | Trục đọc | Nội dung |
 |---|---|
 | Nhóm | CSP |
 | Vai trò | Extension |
-| Learning goal | See domains shrink before search. |
-| Cơ chế | Apply AC-3 style propagation. |
-| Evidence trong GIF | domain reductions and wipe-out status. |
-| Guarantee | Sound pruning for represented constraints. |
-| Caveat | Propagation alone may not decide the puzzle. |
-| Phù hợp với 15-puzzle chuẩn | Không thay thế graph search: propagation lọc domain trong horizon đã chọn, chỉ solved khi horizon khớp path demo. |
+| Learning goal | Compare early domain pruning with plain backtracking. |
+| Cơ chế | After assignment, remove unsupported values from the next state domain. |
+| Evidence trong GIF | assignments, values pruned, domain wipe-out and backtracks. |
+| Guarantee | Uses the same ordering as Backtracking for a fair empirical comparison. |
+| Caveat | Worst-case complexity remains exponential and failure is horizon-bounded. |
+| Phù hợp với 15-puzzle chuẩn | CSP assignment search có domain pruning; dùng cùng ordering với Backtracking để so sánh, nhưng worst case vẫn exponential. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
+| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
+| Demo input | seed `42`, termination `goal`, `time_horizon=1`, `max_steps=600` |
+| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Backtracking + Forward Checking found an exact-horizon CSP assignment for T=1. checks=0, backtracks=0, values_pruned=0. |
+
+### 19. AC-3
+
+<p><img src="docs/assets/algorithm-demos/ac-3.gif" alt="AC-3 real GIF" width="560"></p>
+
+| Trục đọc | Nội dung |
+|---|---|
+| Nhóm | CSP |
+| Vai trò | Extension |
+| Learning goal | Read arc consistency without confusing propagation with a solved path. |
+| Cơ chế | REVISE directed arcs between adjacent state variables. |
+| Evidence trong GIF | arc queue, revisions, values removed and domain sizes. |
+| Guarantee | Sound propagation; replay appears only after extracting an exact legal chain. |
+| Caveat | Arc-consistent non-singleton domains are not by themselves a unique solution. |
+| Phù hợp với 15-puzzle chuẩn | Propagation trên exact-horizon state chain; arc consistency là evidence, chỉ replay khi trích được exact legal chain. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `time_horizon=1` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
-| Result message | AC-3 State-Chain CSP for 15-Puzzle (T=1)  Variables: S[0]..S[T], where each value is a complete legal puzzle state. Binary constraint: consecutive values must differ by exactly one legal blank move. Endpoints: S[0]=start and S[T]=goal. This |
+| Result message | AC-3 State-Chain CSP completed: revisions=0, values_removed=0, arc_checks=2. Arc-consistent domains contain an extracted verified goal path. |
 
-### 20. Path Consistency
-
-<p><img src="docs/assets/algorithm-demos/path-consistency.gif" alt="Path Consistency real GIF" width="560"></p>
-
-| Trục đọc | Nội dung |
-|---|---|
-| Nhóm | CSP |
-| Vai trò | Extension |
-| Learning goal | Inspect consistency across triples of variables. |
-| Cơ chế | Check pair/triple compatibility in the model. |
-| Evidence trong GIF | consistency events and remaining domains. |
-| Guarantee | Educational consistency evidence. |
-| Caveat | Not a shortest-path solver. |
-| Phù hợp với 15-puzzle chuẩn | Không giải 15-puzzle chuẩn: minh họa consistency trên ràng buộc, không sinh shortest path. GIF là model evidence, không phải path tới goal. |
-| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, default demo parameters |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Path Consistency (Illustration for 15-Puzzle CSP)  Path consistency extends arc consistency to triples of variables. For variables Xi, Xj, Xk, every allowed (Xi, Xj) pair must have a supporting value of Xk that satisfies both connecting con |
-
-### 21. Global Constraints
-
-<p><img src="docs/assets/algorithm-demos/global-constraints.gif" alt="Global Constraints real GIF" width="560"></p>
-
-| Trục đọc | Nội dung |
-|---|---|
-| Nhóm | CSP |
-| Vai trò | Extension |
-| Learning goal | Use all-different and structural constraints. |
-| Cơ chế | Apply global constraint checks over the state chain. |
-| Evidence trong GIF | constraint status and domain evidence. |
-| Guarantee | Rules out impossible assignments. |
-| Caveat | Does not replace graph-search optimality. |
-| Phù hợp với 15-puzzle chuẩn | Không giải trực tiếp: kiểm tra ràng buộc toàn cục như AllDifferent, dùng để giải thích model CSP. GIF là model evidence, không phải path tới goal. |
-| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, default demo parameters |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Global Constraints in 15-Puzzle CSP  AllDifferent(X[t][0], X[t][1], ..., X[t][15]):   At each time step t, all 16 positions must contain distinct tiles (0-15).  This is a GLOBAL constraint because it involves all 16 variables at once. A bin |
-
-### 22. Backtracking Search
-
-<p><img src="docs/assets/algorithm-demos/backtracking-search.gif" alt="Backtracking Search real GIF" width="560"></p>
-
-| Trục đọc | Nội dung |
-|---|---|
-| Nhóm | CSP |
-| Vai trò | Extension |
-| Learning goal | Search assignments in the CSP model. |
-| Cơ chế | Depth-first assignment with constraint checks. |
-| Evidence trong GIF | assigned variables, backtrack reason and final path if found. |
-| Guarantee | Can solve small exact-horizon demos. |
-| Caveat | Horizon-bound; not a global shortest-path claim. |
-| Phù hợp với 15-puzzle chuẩn | Chỉ hợp demo horizon nhỏ: có thể tìm path trong mô hình bounded transition, không claim tối ưu toàn cục. |
-| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
-| Demo input | seed `42`, termination `goal`, `max_steps=600` |
-| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
-| Result message | Bounded transition-planning demo found a path with T=1. This run orders child nodes by Manhattan Distance heuristic, not MRV/forward checking. |
-
-### 23. Min-Conflicts
+### 20. Min-Conflicts
 
 <p><img src="docs/assets/algorithm-demos/min-conflicts.gif" alt="Min-Conflicts real GIF" width="560"></p>
 
@@ -635,41 +603,22 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 |---|---|
 | Nhóm | CSP |
 | Vai trò | Extension |
-| Learning goal | Repair an assignment by reducing conflicts. |
-| Cơ chế | Randomized local repair over CSP variables. |
-| Evidence trong GIF | conflict count, selected variable and seed. |
-| Guarantee | Useful concept for CSP repair. |
-| Caveat | Better suited to N-Queens style CSPs than canonical 15-puzzle. |
-| Phù hợp với 15-puzzle chuẩn | Không phù hợp 15-puzzle chuẩn: repair bằng tile swaps không nhất thiết là legal blank moves, nên không phải lời giải trượt ô. GIF là model evidence, không phải path tới goal. |
+| Learning goal | Repair a complete state-chain assignment by reducing violated transitions. |
+| Cơ chế | Select a conflicted variable and a value with lower total conflict. |
+| Evidence trong GIF | iteration, conflicted variable, conflict count and fixed seed. |
+| Guarantee | A zero-conflict verified chain is replayable. |
+| Caveat | Not complete or optimal; iteration failure returns repair evidence only. |
+| Phù hợp với 15-puzzle chuẩn | Local repair trên complete state-chain assignment; chỉ gọi thành công khi conflict bằng 0 và mọi transition là legal blank move. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, `max_iterations=80` |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Goal reached after 1 iterations via tile swaps. This is a CSP repair trace, NOT a sequence of legal 15-puzzle moves. |
-
-### 24. Constraint Graphs
-
-<p><img src="docs/assets/algorithm-demos/constraint-graphs.gif" alt="Constraint Graphs real GIF" width="560"></p>
-
-| Trục đọc | Nội dung |
-|---|---|
-| Nhóm | CSP |
-| Vai trò | Extension |
-| Learning goal | Visualize variables as a constraint network. |
-| Cơ chế | Build graph nodes/edges from CSP relations. |
-| Evidence trong GIF | constraint graph summary and consistency evidence. |
-| Guarantee | Explains structure, not a solver certificate. |
-| Caveat | Graph readability matters more than path optimality here. |
-| Phù hợp với 15-puzzle chuẩn | Không giải trực tiếp: trình bày graph biến/ràng buộc để đọc cấu trúc CSP, không phải solver path. GIF là model evidence, không phải path tới goal. |
-| Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
-| web_run_status | `ran_model_not_goal_path` - ran successfully as model evidence, not a solved path |
-| Demo input | seed `42`, termination `model_success`, `time_horizon=1` |
-| Certificate flags | `path_verified=False`, `goal_reached=False`, `optimality_proven=False` |
-| Result message | Constraint Graph for 15-Puzzle CSP (T=1)  Nodes: Variables (X[t][p] and A[t]) Edges: Constraints between variables  For T=1:   Position variables: X[0][0..15], X[1][0..15], ... X[1][0..15]   Action variables: A[0], A[1], ... A[1-1]  Constra |
+| web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
+| Demo input | seed `42`, termination `goal`, `time_horizon=1`, `max_iterations=80` |
+| Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
+| Result message | Min-Conflicts found a zero-conflict chain at iteration 0. |
 
 ## AI-vs-AI Tournament: từng thuật toán
 
-### 25. AI-vs-AI Tournament
+### 21. AI-vs-AI Tournament
 
 <p><img src="docs/assets/algorithm-demos/ai-vs-ai-tournament.gif" alt="AI-vs-AI Tournament real GIF" width="560"></p>
 
@@ -683,13 +632,14 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Fair benchmark when the reference certificate exists. |
 | Caveat | Tournament is not a natural adversarial PEAS model. |
 | Phù hợp với 15-puzzle chuẩn | Không phải thuật toán giải puzzle: là lớp chấm điểm hai solver bằng A* reference và verified trajectory. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC Ở CHẾ ĐỘ CHẤM ĐIỂM — Đây là benchmark hai agent, không phải một thuật toán sinh solution path riêng.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `ran_tournament_model` - scored tournament model, not one solution path |
 | Demo input | seed `42`, termination `tournament_scored`, default demo parameters |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
 | Result message | Tournament scoring run |
 
-### 26. Minimax
+### 22. Minimax
 
 <p><img src="docs/assets/algorithm-demos/minimax.gif" alt="Minimax real GIF" width="560"></p>
 
@@ -703,13 +653,14 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Depth-limited worst-case decision rule. |
 | Caveat | Both sides share legal blank moves because 15-puzzle has no natural adversary. |
 | Phù hợp với 15-puzzle chuẩn | Không phải solver tự nhiên của 15-puzzle: MIN là nhánh worst-case robustness, không phải đối thủ thật. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
 | Result message | Minimax (depth=2) Completed depth 2 Best utility: 1000.0 MAX selects the most promising legal move. MIN branch models worst-case legal continuations, not a real opponent. Standard 15-puzzle has no natural adversary; this is robustness analy |
 
-### 27. Alpha-Beta Pruning
+### 23. Alpha-Beta Pruning
 
 <p><img src="docs/assets/algorithm-demos/alpha-beta-pruning.gif" alt="Alpha-Beta Pruning real GIF" width="560"></p>
 
@@ -723,13 +674,14 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Same root value as full Minimax for the searched tree. |
 | Caveat | Pruning saves nodes; it does not turn the puzzle into a real two-player game. |
 | Phù hợp với 15-puzzle chuẩn | Không phải solver tự nhiên của 15-puzzle: chỉ prune cây Minimax worst-case cùng root value, không đổi puzzle thành game hai người. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2` |
 | Certificate flags | `path_verified=True`, `goal_reached=True`, `optimality_proven=False` |
 | Result message | Alpha-Beta Pruning (depth=2) Completed depth 2 Best utility: 1000.0 Nodes expanded: 8 Cutoff events: 1 MIN branch models worst-case legal continuations, not a real opponent. With identical ordering, no timeout, and a completed depth, Alpha- |
 
-### 28. Expectimax
+### 24. Expectimax
 
 <p><img src="docs/assets/algorithm-demos/expectimax.gif" alt="Expectimax real GIF" width="560"></p>
 
@@ -743,6 +695,7 @@ Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/gener
 | Guarantee | Depth-limited expected-value policy under the chosen probability model. |
 | Caveat | Probability model is educational and must be stated before interpreting the result. |
 | Phù hợp với 15-puzzle chuẩn | Không phải solver chuẩn: dùng CHANCE/probability model để so expected value, xác suất là mô hình giáo dục. |
+| Kết luận chạy / độ phù hợp | **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.** |
 | Web capture source | `live_streamlit_browser_capture` via `agent-browser screenshot` |
 | web_run_status | `solved_not_optimal` - reached goal without an optimality certificate |
 | Demo input | seed `42`, termination `goal`, `depth=2`, `success_prob=0.75`, `seed=11` |

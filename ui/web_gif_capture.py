@@ -338,10 +338,11 @@ def _capture_metrics(
 
     if evidence.spec.mode == "csp":
         algorithm = evidence.spec.algorithm
-        if algorithm == "Constraint Propagation":
+        if algorithm == "AC-3":
             activity_metrics = [("Arc checks", expanded), ("Candidate states", generated)]
-        elif algorithm == "Backtracking Search":
-            activity_metrics = [("Expanded", expanded), ("Generated", generated)]
+        elif algorithm in {"Backtracking", "Backtracking + Forward Checking"}:
+            pruned = str(result.model_evidence.get("values_pruned", 0)) if result else "0"
+            activity_metrics = [("Assignments", expanded), ("Values pruned", pruned)]
         elif algorithm == "Min-Conflicts":
             repairs = max(0, len(result.trace) - 1) if result else 0
             activity_metrics = [("Iterations", expanded), ("Recorded repairs", str(repairs))]
@@ -377,11 +378,10 @@ def _capture_metrics(
         belief = str(belief_sizes[-1]) if belief_sizes else "-"
         if evidence.spec.algorithm == "AND-OR Search":
             model_metric = ("Depth limit", str(evidence.spec.params.get("max_depth", "-")))
-        elif evidence.spec.algorithm == "LRTA*":
-            estimates = [step.h for step in trace]
-            model_metric = ("Online H estimate", f"{estimates[-1]:.1f}" if estimates else "-")
+        elif evidence.spec.algorithm == "Searching with no observation":
+            model_metric = ("Conformant belief", belief)
         else:
-            model_metric = ("Belief size / h(n)", f"{belief} / {h_value}")
+            model_metric = ("Observation belief", belief)
         return [
             progress_metric,
             model_metric,

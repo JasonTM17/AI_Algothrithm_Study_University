@@ -21,6 +21,13 @@ from ui.academic_panels import (
 )
 from ui.components import render_comparison_table, render_start_goal_contract
 from ui.components import render_puzzle_board
+from ui.image_algorithm_race import render_image_algorithm_race
+from ui.path_solver_runner import (
+    PATH_ALGORITHM_BY_NAME,
+    PATH_ALGORITHM_SPECS,
+    PathRunSettings,
+    run_path_algorithm,
+)
 from ui.start_goal_controls import apply_goal_state, apply_start_state
 from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS, COMPARISON_TABLE, NOTES
 
@@ -30,6 +37,7 @@ COMPARE_MAX_NODES_MIN = 1000
 COMPARE_MAX_NODES_CAP = 20000
 COMPARE_TIMEOUT_MIN = 5
 COMPARE_TIMEOUT_CAP = 120
+PATH_BENCHMARK_ALGORITHMS = tuple(spec.name for spec in PATH_ALGORITHM_SPECS)
 
 
 def _preset_state_pair(preset: dict) -> tuple[tuple[int, ...], tuple[int, ...]]:
@@ -47,7 +55,10 @@ def _preset_state_pair(preset: dict) -> tuple[tuple[int, ...], tuple[int, ...]]:
 
 def _sync_default_selection_for_preset(preset_name: str, preset: dict) -> None:
     """Reset benchmark selections only when the user picks a different preset."""
-    if st.session_state.get("compare_selection_preset") == preset_name:
+    if (
+        st.session_state.get("compare_selection_preset") == preset_name
+        and "compare_groups" in st.session_state
+    ):
         return
 
     recommended_groups = list(preset.get("recommended_groups", BENCHMARK_GROUPS))
@@ -60,6 +71,17 @@ def _sync_default_selection_for_preset(preset_name: str, preset: dict) -> None:
             if algorithm in ALGORITHM_GROUPS[group]
         ]
     st.session_state["compare_selection_preset"] = preset_name
+
+
+def _select_all_path_benchmark_algorithms() -> None:
+    """Select every algorithm that can produce a comparable linear trajectory."""
+    selected_groups: list[str] = []
+    for group, algorithms in ALGORITHM_GROUPS.items():
+        selected = [name for name in algorithms if name in PATH_BENCHMARK_ALGORITHMS]
+        st.session_state[f"compare_{group}"] = selected
+        if selected:
+            selected_groups.append(group)
+    st.session_state["compare_groups"] = selected_groups
 
 
 def _render_preset_start_goal_preview(t, preset: dict) -> None:
@@ -137,10 +159,15 @@ def render_compare_tab(t=None) -> None:
     st.caption(
         tx("compare_standard_rankings_caption")
     )
+    st.button(
+        tx("compare_select_all_path_algorithms"),
+        key="compare_select_all_path_algorithms",
+        on_click=_select_all_path_benchmark_algorithms,
+        width="stretch",
+    )
 
     selected_groups = st.multiselect(
         tx("compare_groups"), list(BENCHMARK_GROUPS),
-        default=list(preset.get("recommended_groups", ("Uninformed Search", "Informed Search"))),
         key="compare_groups",
     )
 
@@ -149,11 +176,6 @@ def render_compare_tab(t=None) -> None:
         algos = st.multiselect(
             tx("compare_algorithms_from", group=g),
             ALGORITHM_GROUPS[g],
-            default=[
-                algorithm
-                for algorithm in preset.get("recommended_algorithms", ())
-                if algorithm in ALGORITHM_GROUPS[g]
-            ] or ALGORITHM_GROUPS[g][:2],
             key=f"compare_{g}",
         )
         selected_algos.extend(algos)
@@ -223,27 +245,10 @@ def render_compare_tab(t=None) -> None:
         elif not is_solvable(start, goal):
             st.error(tx("run_error_unsolvable"))
         else:
-            import algorithms.uninformed as u
-            import algorithms.informed as inf
-            import algorithms.local_search as ls
-
-            solver_map = {
-                "bfs": lambda **kw: u.bfs(**kw, max_nodes=max_nodes),
-                "dfs": lambda **kw: u.dfs(**kw, max_depth=30, max_nodes=max_nodes),
-                "ucs": lambda **kw: u.ucs(**kw, max_nodes=max_nodes),
-                "ids": lambda **kw: u.ids(**kw, max_depth=30, max_nodes=max_nodes),
-                "greedy_best_first": lambda **kw: inf.greedy_best_first(**kw, max_nodes=max_nodes),
-                "a_star": lambda **kw: inf.a_star(**kw, max_nodes=max_nodes),
-                "ida_star": lambda **kw: inf.ida_star(**kw, max_nodes=max_nodes),
-                "simple_hill_climbing": ls.simple_hill_climbing,
-                "steepest_ascent_hill_climbing": ls.steepest_ascent_hill_climbing,
-                "stochastic_hill_climbing": ls.stochastic_hill_climbing,
-                "random_restart_hill_climbing": ls.random_restart_hill_climbing,
-                "local_beam_search": ls.local_beam_search,
-                "simulated_annealing": ls.simulated_annealing,
-            }
-
             st.session_state.benchmark_results = []
+            st.session_state["image_race_version"] = int(
+                st.session_state.get("image_race_version", 0)
+            ) + 1
 
             progress = st.progress(0, text=tx("compare_running"))
             total = len(selected_algos)
@@ -252,7 +257,7 @@ def render_compare_tab(t=None) -> None:
 
             for i, algo in enumerate(selected_algos):
                 fn_name = ALGORITHM_FN_MAP.get(algo)
-                if fn_name and fn_name in solver_map:
+                if fn_name and algo in PATH_ALGORITHM_BY_NAME:
                     try:
                         run_seed = resolve_run_seed(
                             fn_name,
@@ -260,27 +265,23 @@ def render_compare_tab(t=None) -> None:
                             manual_seed=int(fixed_benchmark_seed),
                             previous_seed=previous_seed,
                         )
-                        kwargs = dict(start=start, goal=goal,
-                                     timeout=float(timeout), action_order=preset_action_order)
                         if run_seed is not None:
-                            kwargs["seed"] = run_seed
                             benchmark_seeds[algo] = run_seed
                             previous_seed = run_seed
-                        if fn_name in ("simple_hill_climbing", "steepest_ascent_hill_climbing",
-                                       "stochastic_hill_climbing", "random_restart_hill_climbing",
-                                       "local_beam_search",
-                                       "simulated_annealing", "greedy_best_first", "a_star",
-                                       "ida_star"):
-                            kwargs["heuristic"] = heuristic
-                        if fn_name in ("simple_hill_climbing", "steepest_ascent_hill_climbing",
-                                       "stochastic_hill_climbing", "local_beam_search",
-                                       "simulated_annealing"):
-                            kwargs["max_iterations"] = 10000
-                        elif fn_name == "random_restart_hill_climbing":
-                            kwargs["max_iterations"] = 5000
-                            kwargs["max_restarts"] = 20
-                        result = solver_map[fn_name](**kwargs)
-                        result.random_seed = run_seed
+                        result = run_path_algorithm(
+                            algo,
+                            start=start,
+                            goal=goal,
+                            settings=PathRunSettings(
+                                timeout=float(timeout),
+                                max_nodes=int(max_nodes),
+                                max_depth=30,
+                                heuristic=heuristic,
+                                action_order=preset_action_order,
+                                tie_breaker="FIFO",
+                                seed=int(run_seed if run_seed is not None else fixed_benchmark_seed),
+                            ),
+                        )
                         st.session_state.benchmark_results.append(result)
                     except Exception as e:
                         st.session_state.benchmark_results.append(
@@ -293,6 +294,8 @@ def render_compare_tab(t=None) -> None:
                             algorithm=algo,
                             group="",
                             message="Algorithm is not eligible for the standard benchmark.",
+                            goal_state=goal,
+                            termination_reason="not_applicable",
                         )
                     )
                 progress.progress((i + 1) / total, text=tx("compare_done", curr=i + 1, total=total))
@@ -304,6 +307,11 @@ def render_compare_tab(t=None) -> None:
 
     if st.session_state.benchmark_results:
         render_comparison_table(st.session_state.benchmark_results)
+        render_image_algorithm_race(
+            st.session_state.benchmark_results,
+            st.session_state.get("image_tiles", {}),
+            tx,
+        )
         render_benchmark_evidence(st.session_state.benchmark_results)
     else:
         render_action_state(

@@ -6,7 +6,6 @@ import heapq
 from typing import Optional
 from core.puzzle import PuzzleState, GOAL_STATE, _move_blank, is_solvable
 from core.node import Node, reconstruct_path, reconstruct_actions
-from core.heuristics import manhattan_distance
 from core.metrics import SearchResult, TraceStep
 
 ACTIONS_LIST = ("L", "R", "U", "D")
@@ -22,6 +21,21 @@ def _make_result(
 ) -> SearchResult:
     """Build SearchResult from search outcome."""
     elapsed = time.perf_counter() - t0
+    lowered_message = message.lower()
+    if success:
+        termination_reason = "goal"
+    elif "timeout" in lowered_message:
+        termination_reason = "timeout"
+    elif "node limit" in lowered_message:
+        termination_reason = "resource_limit"
+    elif "not solvable" in lowered_message:
+        termination_reason = "unsolvable"
+    elif "depth" in lowered_message or "cutoff" in lowered_message:
+        termination_reason = "depth_limit"
+    elif "no solution" in lowered_message:
+        termination_reason = "exhausted"
+    else:
+        termination_reason = "stopped"
     if success:
         if node is not None:
             path = reconstruct_path(node)
@@ -32,6 +46,7 @@ def _make_result(
                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                 max_frontier_size=max_frontier, reached_size=reached_size,
                 runtime=elapsed, message=message, trace=trace,
+                termination_reason=termination_reason,
                 is_complete=is_complete, is_optimal=is_optimal,
             )
         else:
@@ -41,6 +56,7 @@ def _make_result(
                 nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
                 max_frontier_size=max_frontier, reached_size=reached_size,
                 runtime=elapsed, message=message, trace=trace,
+                termination_reason=termination_reason,
                 is_complete=is_complete, is_optimal=is_optimal,
             )
     return SearchResult(
@@ -49,6 +65,7 @@ def _make_result(
         nodes_expanded=nodes_expanded, nodes_generated=nodes_generated,
         max_frontier_size=max_frontier, reached_size=reached_size,
         runtime=elapsed, message=message, trace=trace,
+        termination_reason=termination_reason,
         is_complete=is_complete, is_optimal=is_optimal,
     )
 
@@ -119,7 +136,7 @@ def bfs(
             nodes_generated += 1
 
             if ns == goal:
-                trace.append(TraceStep(step=nodes_expanded, state=ns, action=action, g=child.g, h=0, f=child.g, depth=child.depth, event="goal", frontier_size=len(frontier), reached_size=len(reached), node_state=node.state, frontier_states=[n.state for n in frontier], reached_states=list(reached.keys()), reason="Goal test succeeded"))
+                trace.append(TraceStep(step=nodes_expanded, state=ns, action=action, g=None, h=None, f=None, depth=child.depth, event="goal", frontier_size=len(frontier), reached_size=len(reached), node_state=node.state, frontier_states=[n.state for n in frontier], reached_states=list(reached.keys()), reason="Goal test succeeded"))
                 return _make_result(True, "BFS", child, start, goal, nodes_expanded, nodes_generated, max_frontier, len(reached), t0, trace, "Solution found", True, True)
 
             accepted = ns not in reached or child.g < reached[ns]
@@ -133,8 +150,7 @@ def bfs(
             if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=child.g, h=manhattan_distance(ns, goal), depth=child.depth,
-                        f=child.g + manhattan_distance(ns, goal),
+                        g=None, h=None, f=None, depth=child.depth,
                         frontier_size=len(frontier), reached_size=len(reached),
                         node_state=node.state, frontier_states=[n.state for n in frontier], reached_states=list(reached.keys()),
                         event="generate" if accepted else "reject_duplicate",

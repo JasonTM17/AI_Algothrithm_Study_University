@@ -92,22 +92,22 @@ THEORY["DFS"] = {
       if neighbor is unseen or new_depth < best_depth[neighbor]:
         best_depth[neighbor] ← new_depth
         Stack.push(neighbor)""",
-    "application": "DFS ít tốn bộ nhớ (chỉ lưu đường đi hiện tại) nhưng có thể đi rất sâu và tìm đường rất dài. Cho 15-puzzle, DFS có thể tạo đường đi hàng ngàn bước.",
-    "application_en": "DFS consumes very little memory (only stores the current path) but can go extremely deep, returning long paths. For the 15-puzzle, DFS can generate paths of thousands of steps.",
-    "suitable": "KHÔNG phù hợp cho 15-puzzle vì không đảm bảo tối ưu và đường đi có thể rất dài. Chỉ dùng để minh họa.",
-    "suitable_en": "NOT suitable for 15-puzzle because it does not guarantee optimality and solutions are too long. Only for educational demonstration.",
-    "pros": ["Tiết kiệm bộ nhớ O(b*d)", "Đơn giản", "Tìm nhanh một lời giải (không nhất thiết tối ưu)"],
-    "pros_en": ["Low memory consumption O(bd)", "Simple", "Finds a solution quickly (not necessarily optimal)"],
+    "application": "Implementation này dùng LIFO frontier cùng best_depth/reached để tránh lặp state. DFS có thể giải một số instance nhưng rất nhạy với action order, depth limit và resource limit; đường tìm được không được bảo đảm ngắn nhất.",
+    "application_en": "This implementation uses a LIFO frontier plus best_depth/reached state tracking. DFS can solve some instances but is highly sensitive to action order, depth limits, and resource limits; its path is not guaranteed shortest.",
+    "suitable": "Dùng làm baseline uninformed để quan sát LIFO và backtracking. Không phải lựa chọn thực dụng cho 15-puzzle sâu và không có chứng chỉ tối ưu.",
+    "suitable_en": "Useful as an uninformed LIFO/backtracking baseline. It is not a practical deep 15-puzzle solver and has no optimality certificate.",
+    "pros": ["Luật chọn node đơn giản", "Minh họa LIFO/backtracking rõ", "Có thể tìm lời giải nhanh với action order thuận lợi"],
+    "pros_en": ["Simple node-selection rule", "Clearly demonstrates LIFO/backtracking", "Can find a solution quickly under favorable action ordering"],
     "cons": ["Không tối ưu", "Không complete (với depth limit)", "Đường đi có thể rất dài"],
     "cons_en": ["Not optimal", "Not complete (with depth limit)", "Paths can be extremely long"],
-    "complexity": "Thời gian: O(b^m) với m=max depth, Bộ nhớ: O(b*d) với d là độ sâu lời giải",
-    "complexity_en": "Time: O(b^m) where m is max depth, Space: O(bd) where d is depth of current path",
+    "complexity": "Thời gian: O(b^m). Implementation graph-search này còn giữ frontier và best_depth/reached, nên bộ nhớ phụ thuộc số state đã ghi nhận; không phải tree-DFS chỉ giữ O(bm).",
+    "complexity_en": "Time: O(b^m). This graph-search implementation retains a frontier and best_depth/reached map, so memory depends on recorded states rather than the O(bm) tree-DFS bound.",
     "bad_example": "DFS có thể đi đường dài 100+ bước cho puzzle chỉ cần 10 bước tối ưu.",
     "bad_example_en": "DFS can generate a path of 100+ steps for a puzzle solvable in just 10 optimal steps.",
-    "comparison": "DFS tiết kiệm bộ nhớ hơn BFS rất nhiều nhưng đường đi tệ hơn. IDS kết hợp ưu điểm cả hai.",
-    "comparison_en": "Consumes far less memory than BFS but solutions are much worse. IDS combines the best of both.",
-    "exam_tips": "DFS ⇒ KHÔNG optimal, KHÔNG complete (với depth limit). DFS ⇒ tiết kiệm bộ nhớ. DFS ⇒ có thể bị kẹt nhánh sai.",
-    "exam_tips_en": "DFS is NOT optimal, NOT complete (with depth limit). DFS is memory efficient. DFS can get stuck in infinite loops/wrong branches.",
+    "comparison": "DFS ưu tiên depth bằng LIFO; IDS lặp depth-limited DFS để khôi phục tính complete/optimal trong mô hình unit-cost khi đủ giới hạn. Không dùng bound bộ nhớ tree-DFS để mô tả implementation có reached map này.",
+    "comparison_en": "DFS prioritizes depth through LIFO ordering; IDS repeats depth-limited DFS to recover completeness/optimality for unit costs when limits suffice. Do not apply the tree-DFS memory bound to this reached-map implementation.",
+    "exam_tips": "DFS không optimal; bounded DFS có thể dừng trước goal. Action order có thể làm kết quả thay đổi rất lớn. Resource-limit không phải algorithm crash.",
+    "exam_tips_en": "DFS is not optimal; a bounded run may stop before the goal. Action ordering can radically change the run. A resource limit is not an algorithm crash.",
 }
 
 THEORY["UCS"] = {
@@ -585,32 +585,6 @@ THEORY["Partially Observable"] = {
     "exam_tips": "Partial observable ⇒ observation thu hẹp belief state. Fitness function cho belief: số states trong belief.",
 }
 
-THEORY["LRTA*"] = {
-    "name": "Online Search — LRTA*",
-    "group": "Complex Environments",
-    "goal": "Agent tìm đường đi MÀ ĐI, cập nhật heuristic trong quá trình đi.",
-    "idea": "Không biết trước bản đồ. Tại mỗi state, chọn neighbor có cost + H nhỏ nhất. Sau khi đi, cập nhật H(current).",
-    "data_structure": "H-table: lưu heuristic đã cập nhật cho mỗi state đã thăm.",
-    "formula": "H(s) ban đầu = h(s). Chọn: argmin [c(s,a) + H(result(s,a))]. Cập nhật: H(s) = c(s,a) + H(s').",
-    "pseudocode": """LRTA*(start, goal, h):
-  H = {} # heuristic table
-  current = start
-  while current ≠ goal:
-    H[current] = max(H.get(current, h(current)),
-                     min(c(current,a) + H.get(result(current,a), h(result(current,a))) for a in actions))
-    next = argmin [c(current,a) + H.get(result(current,a), h(result(current,a)))]
-    move to next
-    current = next""",
-    "application": "Agent phải hành động TRONG KHI tìm hiểu môi trường. Mỗi bước vừa đi vừa học.",
-    "suitable": "Không phải thuật toán chuẩn cho 15-puzzle (vì 15-puzzle đã biết trước model). Minh họa online search.",
-    "pros": ["Không cần biết trước môi trường", "Học heuristic trong quá trình đi", "Tiến về goal dần dần"],
-    "cons": ["Có thể đi đường vòng", "Cần nhiều lần chạy để tối ưu", "Chậm hơn offline search"],
-    "complexity": "Phụ thuộc vào heuristic ban đầu và cấu trúc môi trường. Dần dần cải thiện.",
-    "bad_example": "LRTA* lần đầu có thể đi đường rất dài. Chỉ tối ưu sau nhiều lần chạy.",
-    "comparison": "LRTA* → online, học heuristic trong quá trình đi. A* → offline, biết trước toàn bộ môi trường.",
-    "exam_tips": "Online search ⇒ không biết trước môi trường. LRTA* cập nhật H(s) sau mỗi bước. Offline search (A*) ⇒ biết trước môi trường.",
-}
-
 _COMPLEX_ENVIRONMENT_ENGLISH = {
     "AND-OR": {
         "idea_en": "An OR node chooses an action; its AND node requires a subplan for every supported outcome.",
@@ -643,16 +617,6 @@ belief = {state for state in predicted if observe(state) == observation}""",
         "suitable_en": "Useful for belief-state teaching, but not the standard fully observable 15-puzzle solver.",
         "exam_tips_en": "Partial observation alternates prediction and observation-based belief filtering.",
     },
-    "LRTA*": {
-        "idea_en": "Act online, select the neighbor minimizing immediate cost plus learned H, then update H for the state just left.",
-        "pseudocode_en": """current = start
-while current != goal and steps < max_steps:
-  H[current] = min(cost(current, a) + H[result(current, a)])
-  current = argmin_result(cost(current, a) + H[result(current, a)])""",
-        "application_en": "Shows an agent learning while acting. In this UI the resource cap is the maximum number of online steps.",
-        "suitable_en": "An online-search demonstration; ordinary 15-puzzle solving already exposes the complete transition model.",
-        "exam_tips_en": "LRTA* updates learned heuristic values during execution; unlike offline A*, its first trial can be long.",
-    },
 }
 
 for _algorithm, _english_fields in _COMPLEX_ENVIRONMENT_ENGLISH.items():
@@ -660,13 +624,13 @@ for _algorithm, _english_fields in _COMPLEX_ENVIRONMENT_ENGLISH.items():
     _entry.update(_english_fields)
     _entry.update({
         "goal_en": _english_fields["idea_en"],
-        "data_structure_en": "Model-specific evidence: an AND-OR tree, a belief-state set, or a learned online H table.",
-        "formula_en": "Evaluate transitions using supported outcomes, belief updates, or learned online costs according to the selected environment model.",
+        "data_structure_en": "Model-specific evidence: an AND-OR tree, a conformant belief graph, or an observation policy.",
+        "formula_en": "Evaluate transitions using supported outcomes, belief prediction, and observation updates according to the selected environment model.",
         "pros_en": ["Exposes assumptions hidden by fully observable deterministic search", "Produces model-specific evidence"],
         "cons_en": ["Not the natural standard 15-puzzle model", "Can require much larger state representations"],
-        "complexity_en": "Depends on conditional-tree size, belief size, or the online step budget; worst cases can grow exponentially.",
+        "complexity_en": "Depends on conditional-tree or belief-state size; worst cases can grow exponentially.",
         "bad_example_en": "Treating model evidence as a certified linear solution path would overstate what the algorithm returned.",
-        "comparison_en": "Standard A* searches one known deterministic state; these extensions model outcomes, uncertainty, or online learning.",
+        "comparison_en": "Standard A* searches one known deterministic state; these extensions model outcomes and uncertainty.",
     })
 
 # ============================================================
@@ -776,25 +740,61 @@ THEORY["Global Constraints"].update({
 })
 
 THEORY["Backtracking Search"].update({
-    "idea": "Tăng bounded horizon và DFS trên legal successor states, sắp thứ tự giá trị bằng Manhattan Distance.",
-    "idea_en": "Increase a bounded horizon and depth-first search legal successor states ordered by Manhattan Distance.",
-    "application": "Trả legal path nếu tìm thấy trong giới hạn; fail không chứng minh unsolvable.",
-    "application_en": "Return a legal path when found within the bounds; failure does not prove unsolvability.",
-    "suitable": "Demo transition planning; implementation không có MRV, LCV hay forward checking đầy đủ.",
-    "suitable_en": "A transition-planning demo; this implementation does not provide full MRV, LCV, or forward checking.",
-    "exam_tips": "Gọi đúng là bounded DFS với heuristic value ordering, không gọi là CSP backtracking chuẩn có MRV/forward checking.",
-    "exam_tips_en": "Call it bounded DFS with heuristic value ordering, not full CSP backtracking with MRV or forward checking.",
+    "idea": "Gán lần lượt S[1]..S[T-1] trong state-chain CSP và quay lui ngay khi một transition không hợp lệ.",
+    "idea_en": "Assign S[1]..S[T-1] in the state-chain CSP and backtrack as soon as a transition is inconsistent.",
+    "application": "Trả exact legal state chain ở horizon T nếu tìm thấy; fail chỉ áp dụng cho horizon và resource bound hiện tại.",
+    "application_en": "Return an exact legal state chain at horizon T when found; failure applies only to the current horizon and resource bounds.",
+    "suitable": "CSP assignment search đúng trên bounded state chain; không phải shortest-path certificate khi chỉ chạy một horizon.",
+    "suitable_en": "A sound CSP assignment search on a bounded state chain, not a shortest-path certificate from one horizon.",
+    "exam_tips": "Chronological backtracking kiểm tra consistency sau mỗi assignment; cần phân biệt horizon failure với puzzle unsolvable.",
+    "exam_tips_en": "Chronological backtracking checks consistency after each assignment; distinguish horizon failure from puzzle unsolvability.",
 })
 
 THEORY["Min-Conflicts"].update({
-    "idea": "Chọn vị trí đang xung đột và đổi tile để giảm số vị trí sai trong assignment.",
-    "idea_en": "Choose a conflicted position and swap tiles to reduce misplaced values in the assignment.",
-    "application": "Minh họa local repair của CSP; swap có thể không phải legal blank move.",
-    "application_en": "Illustrate CSP local repair; a swap need not be a legal blank move.",
-    "suitable": "Có thể đạt goal assignment nhưng không tạo 15-puzzle solution path hợp lệ.",
-    "suitable_en": "It may reach the goal assignment without producing a legal 15-puzzle solution path.",
-    "exam_tips": "Success của model khác goal-path certificate; kiểm tra path_verified và goal_reached riêng.",
-    "exam_tips_en": "Model success differs from a goal-path certificate; inspect path_verified and goal_reached separately.",
+    "idea": "Khởi tạo complete assignment cho S[0]..S[T], chọn biến đang vi phạm transition và đổi value để giảm tổng conflict.",
+    "idea_en": "Start with a complete S[0]..S[T] assignment, choose a variable in a violated transition, and replace its value to reduce total conflicts.",
+    "application": "Chỉ trả replay path khi conflict bằng 0 và toàn bộ transition là legal blank moves.",
+    "application_en": "Return a replay path only when conflict reaches zero and every transition is a legal blank move.",
+    "suitable": "Local repair có seed trên bounded state-chain CSP; hết iteration chỉ trả repair evidence.",
+    "suitable_en": "Seeded local repair on a bounded state-chain CSP; an iteration stop returns repair evidence only.",
+    "exam_tips": "Min-Conflicts không chứng minh vô nghiệm hay tối ưu; success phải đi kèm exact assignment và legal-path verification.",
+    "exam_tips_en": "Min-Conflicts proves neither impossibility nor optimality; success requires an exact assignment and legal-path verification.",
+})
+
+THEORY["Backtracking"] = dict(THEORY["Backtracking Search"])
+THEORY["Backtracking"].update({
+    "name": "Backtracking",
+    "name_en": "Backtracking",
+})
+
+THEORY["Backtracking + Forward Checking"] = dict(THEORY["Backtracking"])
+THEORY["Backtracking + Forward Checking"].update({
+    "name": "Backtracking + Forward Checking",
+    "name_en": "Backtracking + Forward Checking",
+    "idea": "Sau mỗi assignment, loại khỏi domain kế tiếp mọi state không còn support; domain wipe-out gây backtrack ngay.",
+    "idea_en": "After each assignment, remove unsupported values from the next domain; a domain wipe-out triggers immediate backtracking.",
+    "data_structure": "Assignment stack, state domains và số value bị prune.",
+    "data_structure_en": "Assignment stack, state domains, and pruned-value counters.",
+    "formula": "D(next) ← {v ∈ D(next) | compatible(current, v)}.",
+    "formula_en": "D(next) ← {v ∈ D(next) | compatible(current, v)}.",
+    "application": "Dùng cùng variable/value ordering với Backtracking để so sánh tác dụng pruning công bằng.",
+    "application_en": "Use the same variable and value ordering as Backtracking for a fair pruning comparison.",
+    "pros": ["Phát hiện domain wipe-out sớm", "Không mở rộng nhiều assignment hơn Backtracking cùng ordering"],
+    "pros_en": ["Detects domain wipe-out early", "Expands no more assignments than Backtracking under the same ordering"],
+    "cons": ["Tốn chi phí duy trì domain", "Failure vẫn chỉ áp dụng cho bounded horizon"],
+    "cons_en": ["Maintaining domains adds work", "Failure still applies only to the bounded horizon"],
+    "exam_tips": "Forward checking chỉ nhìn constraint nối tới biến chưa gán; AC-3 tiếp tục lan truyền qua hàng đợi arc.",
+    "exam_tips_en": "Forward checking inspects constraints from the newest assignment; AC-3 propagates further through an arc queue.",
+})
+
+THEORY["AC-3"] = dict(THEORY["Constraint Propagation"])
+THEORY["AC-3"].update({
+    "name": "AC-3",
+    "name_en": "AC-3",
+    "data_structure": "Queue các directed arc và domain của S[0]..S[T].",
+    "data_structure_en": "A queue of directed arcs and domains for S[0]..S[T].",
+    "formula": "REVISE(Xi, Xj): x bị xóa nếu không tồn tại y ∈ D(Xj) hỗ trợ constraint Cij.",
+    "formula_en": "REVISE(Xi, Xj): remove x when no y in D(Xj) supports constraint Cij.",
 })
 
 THEORY["Constraint Graphs"].update({

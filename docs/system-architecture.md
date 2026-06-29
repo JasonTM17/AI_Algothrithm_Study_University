@@ -11,8 +11,10 @@ flowchart LR
     R --> M["SearchResult certificate"]
     C --> M
     P --> M
+    P --> G6["Group 6 Decision Lab"]
+    G6 --> E["Role frames + complexity evidence"]
     M --> V["Trace, readable tree, Graphviz evidence"]
-    A --> X["CSP / belief / LRTA* / game / tournament"]
+    A --> X["CSP / belief / game / tournament"]
     G["GIF generator"] --> D["README atlas + gallery + manifest"]
     G --> M
 ```
@@ -24,7 +26,7 @@ flowchart LR
 | UI | `app.py`, `ui/*.py` | Render controls, tabs, board/replay, theory, trace, readable tree. |
 | Domain | `core/puzzle.py`, `core/heuristics.py`, `core/metrics.py` | State validity, movement, heuristic, `SearchResult` certificate. |
 | Solver | `algorithms/*.py` | Public solver signatures stay stable and return `SearchResult`. |
-| Dispatch | `core/solver_dispatch.py` | UI params are translated to solver-specific kwargs. |
+| Dispatch | `core/solver_dispatch.py`, `ui/path_solver_runner.py`, `core/group6_decision_lab.py` | Play/Compare share the 13-algorithm linear runner; Group 6 uses a separate role-frame/fingerprint runner. |
 | Media | `scripts/readme_gif_*.py`, `ui/web_gif_capture.py`, `scripts/render_readme_docs.py` | GIFs, README atlas, gallery and manifest are generated from real solver/model evidence captured through the live Streamlit browser route. |
 
 ## SearchResult Evidence
@@ -47,12 +49,20 @@ The UI keeps two views:
 
 Large search trees are filtered by solution path, expanded neighborhood or first recorded nodes instead of being squeezed into one unreadable image.
 
+## Group 6 Decision Lab
+
+- `ui/group6_decision_lab.py` and `ui/group6_policy_comparison.py` own controls, role replay, two-lane policy comparison, depth sweep, stability sample and CSV/JSON export.
+- `core/group6_decision_lab.py` invokes the public adversarial solvers without changing their signatures and converts structured trace events into exact role frames.
+- Minimax/Alpha-Beta frames alternate MAX and worst-case MIN. Expectimax frames separate intended action from seeded CHANCE outcome.
+- Fingerprints prevent comparison across different Start/Goal/depth/order/probability contracts.
+- Space evidence is a proxy from generated/captured nodes and depth; the app does not report fabricated MB.
+
 ## Complex Environment Semantics
 
 - AND-OR returns a conditional plan, not a fake linear solution path.
-- No/Partial Observation decisions are based on belief set. Hidden actual state exists for debug evidence only.
-- Belief planner trace reports `planner_votes`, `fallback_votes`, `avg_h` and fallback reason when BFS/A*/Stochastic proposal cannot be used.
-- LRTA* is an online update demo; its max node control is treated as max online steps.
+- No Observation is conformant belief-state graph search: one action sequence must work for every represented belief state.
+- Partial Observation is contingent belief-state AND-OR search: every observation branch must have a subpolicy.
+- Hidden actual state exists only for audit/debug evidence; it is not used to choose actions.
 
 ## Media Pipeline
 
@@ -70,7 +80,7 @@ Profiles:
 
 - `hero`: 1280x720, used for the A* image replay.
 - `group`: 960x540, used for six group demos.
-- `algorithm`: 960x540, used for all 28 algorithm demos.
+- `algorithm`: 960x540, used for all 24 algorithm demos.
 
 Capture source:
 
@@ -82,7 +92,7 @@ Capture source:
 
 `scripts/render_readme_docs.py` renders `README.md` and `docs/algorithm-demo-gallery.md` from the same catalog and manifest, so docs stay aligned with generated GIFs.
 
-The Play solver stores a solved A* trajectory at index `0`. Manual Next advances exactly one state; Auto only enables the timed fragment, whose first scheduled tick advances one state. Number and image boards read the same replay state.
+The Play solver stores the selected algorithm trajectory at index `0`. Manual Next advances exactly one state; Auto only enables the timed fragment, whose first scheduled tick advances one state. Number and image boards read the same replay state. The Play comparison table ranks only runs with a verified legal path that reaches the selected goal.
 
 ## Deployment Shape
 

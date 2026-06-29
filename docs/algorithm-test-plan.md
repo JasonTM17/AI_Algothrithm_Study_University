@@ -11,7 +11,7 @@ Mục tiêu: chứng minh thuật toán, trace, UI học thuật, GIF README/gal
 | Goal reached | State cuối bằng `goal_state`. |
 | Optimality | Chỉ true khi thuật toán optimal, legal path, goal reached và termination là `goal`. |
 | Trace | Có action, `g/h/f`, frontier/reached, parent/child hoặc model-specific evidence. |
-| Extension caveat | CSP/AND-OR/belief/LRTA*/game/chance không bị gọi là solver chuẩn của 15-puzzle. |
+| Extension caveat | CSP/AND-OR/belief/game/chance không bị gọi là solver chuẩn của 15-puzzle. |
 | Media evidence | GIF README/gallery có manifest semantic, mở được, nonblank, đúng profile và sinh từ solver/model thật. |
 
 ## Nhóm Test Chính
@@ -21,9 +21,9 @@ Mục tiêu: chứng minh thuật toán, trace, UI học thuật, GIF README/gal
 | `tests/test_puzzle.py`, `tests/test_heuristics.py` | State, solvability, heuristic admissibility corpus. |
 | `tests/test_solvers.py`, `tests/test_optimality_corpus.py` | Solver correctness and optimality certificate. |
 | `tests/test_algorithm_contract_sweep.py` | Registry/dispatch sweep cho nhiều scramble depth, custom goal, false-claim guard. |
-| `tests/test_complex_models.py` | AND-OR, belief matrix, LRTA*, fallback votes/reasons. |
+| `tests/test_complex_models.py` | AND-OR, belief matrix, conformant search và contingent policy. |
 | `tests/test_search_tree_evidence.py` | Search tree edge legality and readable evidence. |
-| `tests/test_readme_gifs.py` | 6 nhóm/28 GIF specs, profile/theme manifest, README atlas, gallery references. |
+| `tests/test_readme_gifs.py` | 6 nhóm/24 GIF specs, profile/theme manifest, README atlas, gallery references. |
 | `tests/test_streamlit_app.py` | Streamlit AppTest cho Play/Run/Advanced workflows. |
 | `tests/test_academic.py`, `tests/test_text_quality.py`, `tests/test_localization.py` | Theory, wording, bilingual contract. |
 
@@ -33,7 +33,7 @@ Mục tiêu: chứng minh thuật toán, trace, UI học thuật, GIF README/gal
 |---|---:|---|
 | `hero` | 1280x720 | A* image replay ở đầu README. |
 | `group` | 960x540 | 6 GIF đại diện nhóm. |
-| `algorithm` | 960x540 | 28 GIF từng thuật toán. |
+| `algorithm` | 960x540 | 24 GIF từng thuật toán. |
 
 Themes:
 
@@ -65,7 +65,7 @@ Desktop 1440x900 and mobile 390x844:
 - Run AND-OR: control says deflection outcome support, not probability weight.
 - Advanced No/Partial Observation: known matrix with `_` unknown works and trace explains belief/fallback.
 - Theory Group 6: Minimax is worst-case robustness, not a real opponent.
-- README/Gallery: GIFs load, are readable and have direct 28-algorithm coverage.
+- README/Gallery: GIFs load, are readable and have direct 24-algorithm coverage.
 
 ## Pass Criteria
 
@@ -73,4 +73,4 @@ Desktop 1440x900 and mobile 390x844:
 - No raw localization key in UI.
 - No stale wording: AND-OR support is not probability weighting; Minimax MIN is not a real 15-puzzle opponent.
 - `python scripts/generate-readme-gifs.py --check --check-readability` passes against committed assets.
-- README contains 6 groups and 28 algorithms with real GIF references.
+- README contains 6 groups and 24 algorithms with real GIF references.

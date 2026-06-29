@@ -114,7 +114,7 @@ EXAM_ANSWER_TEMPLATES = {
     "Complex Environments": {
         "goal": "Explain search under nondeterminism, limited sensors, or online learning.",
         "frontier": "Conditional plans, belief states, or learned heuristic table.",
-        "evaluation": "Uses h(n), belief filtering, or LRTA* heuristic updates.",
+        "evaluation": "Uses h(n), belief prediction, observation filtering, or policy evaluation.",
         "guarantee": "Educational extension, not a natural standard solver.",
         "when_to_use": "Use for PEAS/environment discussion; AND-OR appears in Run as Group 3 alias for the syllabus.",
         "when_not_to_use": "Do not compare as if the environment matches standard 15-puzzle.",

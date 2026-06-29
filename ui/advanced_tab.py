@@ -6,19 +6,15 @@ import streamlit as st
 
 from algorithms.adversarial import alpha_beta_pruning, expectimax, minimax
 from algorithms.complex_env import (
-    BELIEF_PLANNERS,
     and_or_search,
     no_observation_search,
-    online_search_lrta,
     partially_observable_search,
 )
 from algorithms.csp import (
     backtracking_search,
+    backtracking_forward_checking,
     constraint_propagation,
-    csp_definition,
     min_conflicts,
-    path_consistency,
-    solve_csp_constraint_graphs,
 )
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable
@@ -41,26 +37,20 @@ from ui.run_and_or_panel import render_and_or_controls
 ADVANCED_TRACE_ROWS = 80
 ADVANCED_MODES = [
     "AI-vs-AI Tournament",
-    "CSP Definition & Propagation",
-    "Backtracking Search + Manhattan Distance heuristic",
-    "Constraint Graphs & Path Consistency",
+    "CSP Workbench",
     "AND-OR Search (Nondeterministic)",
     "No Observation (Belief State)",
     "Partially Observable",
-    "Online Search (LRTA*)",
     "Minimax Game",
     "Alpha-Beta Pruning Game",
     "Expectimax (Stochastic)",
 ]
 ADVANCED_MODE_CARDS = [
     ("AI-vs-AI Tournament", "adv_card_tournament_desc", "A* optimal reference"),
-    ("CSP Definition & Propagation", "adv_card_csp_desc", "AC-3 horizon evidence"),
-    ("Backtracking Search + Manhattan Distance heuristic", "adv_card_backtracking_desc", "Legal heuristic-ordered path"),
-    ("Constraint Graphs & Path Consistency", "adv_card_csp_desc", "CSP consistency evidence"),
+    ("CSP Workbench", "adv_card_csp_desc", "Backtracking / FC / AC-3 / Min-Conflicts"),
     ("AND-OR Search (Nondeterministic)", "adv_card_uncertainty_desc", "Contingency plan sample"),
     ("No Observation (Belief State)", "adv_card_uncertainty_desc", "Belief evidence only"),
     ("Partially Observable", "adv_card_uncertainty_desc", "Observation trace"),
-    ("Online Search (LRTA*)", "adv_card_online_desc", "Online trajectory"),
     ("Minimax Game", "adv_card_game_desc", "Artificial game tree"),
     ("Alpha-Beta Pruning Game", "adv_card_game_desc", "Pruned game tree"),
     ("Expectimax (Stochastic)", "adv_card_game_desc", "Chance outcome sample"),
@@ -193,8 +183,10 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     pending_mode = st.session_state.pop("advanced_pending_mode", None)
     if pending_mode:
         st.session_state["complex_mode_v2"] = pending_mode
-    if st.session_state.get("complex_mode_v2") in {"Backtracking", "Backtracking & Min-Conflicts"}:
-        st.session_state["complex_mode_v2"] = "Backtracking Search + Manhattan Distance heuristic"
+    current_mode = st.session_state.get("complex_mode_v2")
+    valid_modes = {mode_prompt, *ADVANCED_MODES}
+    if current_mode and current_mode not in valid_modes:
+        st.session_state["complex_mode_v2"] = "CSP Workbench"
     mode = st.selectbox(
         t("adv_model_select"),
         [mode_prompt, *ADVANCED_MODES],
@@ -210,62 +202,51 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
         return
 
     base_kw = dict(start=start, goal=goal)
-    csp_search_kw = dict(**base_kw, timeout=30.0)
     mode_key = _mode_key(mode)
 
-    if mode == "CSP Definition & Propagation":
-        horizon = st.number_input(t("adv_time_horizon"), 1, 5, 3, key="csp_t")
+    if mode == "CSP Workbench":
+        csp_algorithm = st.selectbox(
+            t("adv_csp_algorithm"),
+            (
+                "Backtracking",
+                "Backtracking + Forward Checking",
+                "AC-3",
+                "Min-Conflicts",
+            ),
+            key="advanced_csp_algorithm",
+        )
+        horizon = st.number_input(t("adv_time_horizon"), 1, 12, 3, key="csp_t")
+        csp_functions = {
+            "Backtracking": ("backtracking_search", backtracking_search),
+            "Backtracking + Forward Checking": (
+                "backtracking_forward_checking",
+                backtracking_forward_checking,
+            ),
+            "AC-3": ("constraint_propagation", constraint_propagation),
+            "Min-Conflicts": ("min_conflicts", min_conflicts),
+        }
         if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
-            variation = _next_variation("constraint_propagation")
+            function_name, solver = csp_functions[csp_algorithm]
+            variation = _next_variation(function_name)
+            kwargs = {
+                **base_kw,
+                "time_horizon": int(horizon),
+                "timeout": 30.0,
+                "action_order": variation.action_order,
+                "candidate_limit": 20_000,
+            }
+            if function_name in {
+                "backtracking_search",
+                "backtracking_forward_checking",
+            }:
+                kwargs["max_steps"] = 20_000
+            elif function_name == "min_conflicts":
+                kwargs["max_iterations"] = 20_000
+                kwargs["seed"] = variation.solver_seed
             _store_advanced_outputs(mode, [
                 _result_entry(
-                    "CSP Definition",
-                    _with_variation(
-                        csp_definition(time_horizon=horizon, **base_kw),
-                        variation,
-                        randomizes_path=False,
-                    ),
-                ),
-                _result_entry(
-                    "Constraint Propagation",
-                    _run_with_variation(
-                        variation,
-                        constraint_propagation,
-                        time_horizon=horizon,
-                        **base_kw,
-                    ),
-                ),
-            ])
-
-    elif mode == "Backtracking Search + Manhattan Distance heuristic":
-        st.subheader(t("adv_bounded_transition_planning"))
-        st.info(t("adv_bounded_transition_info"))
-        if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
-            planning_variation = _next_variation("backtracking_search")
-            _store_advanced_outputs(mode, [
-                _result_entry(
-                    t("adv_bounded_transition_planning"),
-                    _run_with_variation(
-                        planning_variation,
-                        backtracking_search,
-                        **csp_search_kw,
-                        max_steps=5000,
-                    ),
-                ),
-            ])
-
-    elif mode == "Constraint Graphs & Path Consistency":
-        horizon = st.number_input(t("adv_time_horizon"), 1, 3, 2, key="cg_t")
-        if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
-            variation = _next_variation("solve_csp_constraint_graphs")
-            _store_advanced_outputs(mode, [
-                _result_entry(
-                    "Constraint Graphs",
-                    _with_variation(solve_csp_constraint_graphs(time_horizon=horizon, **base_kw), variation),
-                ),
-                _result_entry(
-                    "Path Consistency",
-                    _with_variation(path_consistency(**base_kw), variation),
+                    csp_algorithm,
+                    _run_with_variation(variation, solver, **kwargs),
                 ),
             ])
 
@@ -293,15 +274,19 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     elif mode == "No Observation (Belief State)":
         count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="no_obs_n")
         steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="no_obs_steps")
+        max_beliefs = st.number_input(
+            t("adv_belief_limit"),
+            100,
+            20_000,
+            5_000,
+            step=100,
+            key="no_obs_max_beliefs",
+        )
         known_positions, known_error = render_known_positions_editor(
             t,
             key="no_obs_known_matrix",
             start=start,
             default_count=0,
-        )
-        planner = st.selectbox(
-            t("run_belief_planner"), list(BELIEF_PLANNERS), index=1,
-            key="no_obs_belief_planner", help=t("run_belief_planner_help"),
         )
         st.info(t("adv_no_observation_note"))
         if st.button(
@@ -317,7 +302,7 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                             num_belief_states=count,
                             max_steps=steps,
                             known_positions=known_positions,
-                            belief_planner=planner,
+                            max_beliefs=int(max_beliefs),
                             seed=variation.solver_seed,
                             timeout=30.0,
                             action_order=variation.action_order,
@@ -332,15 +317,19 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
     elif mode == "Partially Observable":
         count = st.number_input(t("adv_belief_states"), 2, 10, 5, key="po_n")
         steps = st.number_input(t("adv_max_steps"), 5, 50, 20, key="po_steps")
+        max_beliefs = st.number_input(
+            t("adv_policy_node_limit"),
+            100,
+            20_000,
+            5_000,
+            step=100,
+            key="po_max_beliefs",
+        )
         known_positions, known_error = render_known_positions_editor(
             t,
             key="po_known_matrix",
             start=start,
             default_count=2,
-        )
-        planner = st.selectbox(
-            t("run_belief_planner"), list(BELIEF_PLANNERS), index=1,
-            key="po_belief_planner", help=t("run_belief_planner_help"),
         )
         st.info(t("adv_partial_observation_note"))
         if st.button(
@@ -356,7 +345,7 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                             num_belief_states=count,
                             max_steps=steps,
                             known_positions=known_positions,
-                            belief_planner=planner,
+                            max_beliefs=int(max_beliefs),
                             seed=variation.solver_seed,
                             timeout=30.0,
                             action_order=variation.action_order,
@@ -365,27 +354,6 @@ def render_advanced_tab(start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STA
                         variation,
                     ),
                     note=t("adv_strict_certificate"),
-                ),
-            ])
-
-    elif mode == "Online Search (LRTA*)":
-        heuristic = st.selectbox(t("adv_heuristic"), list(HEURISTICS.keys()), key="lrta_h")
-        steps = st.number_input(t("adv_max_steps"), 100, 100000, 10000, key="lrta_steps")
-        if st.button(t("adv_run_model"), key=f"adv_run_{mode_key}", type="primary"):
-            variation = _next_variation("online_search_lrta")
-            _store_advanced_outputs(mode, [
-                _result_entry(
-                    "LRTA*",
-                    _with_variation(
-                        online_search_lrta(
-                            heuristic=heuristic,
-                            max_steps=steps,
-                            timeout=30.0,
-                            action_order=variation.action_order,
-                            **base_kw,
-                        ),
-                        variation,
-                    ),
                 ),
             ])
 

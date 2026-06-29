@@ -10,17 +10,13 @@ from algorithms.adversarial import alpha_beta_pruning, expectimax, minimax
 from algorithms.complex_env import (
     and_or_search,
     no_observation_search,
-    online_search_lrta,
     partially_observable_search,
 )
 from algorithms.csp import (
+    backtracking_forward_checking,
     backtracking_search,
     constraint_propagation,
-    csp_definition,
-    global_constraints,
     min_conflicts,
-    path_consistency,
-    solve_csp_constraint_graphs,
 )
 from algorithms.informed import a_star, greedy_best_first, ida_star
 from algorithms.local_search import (
@@ -55,9 +51,9 @@ _SOLVERS = (
     bfs, dfs, ucs, ids, greedy_best_first, a_star, ida_star,
     simple_hill_climbing, steepest_ascent_hill_climbing, stochastic_hill_climbing,
     random_restart_hill_climbing, local_beam_search, simulated_annealing,
-    and_or_search, no_observation_search, partially_observable_search, online_search_lrta,
-    csp_definition, constraint_propagation, path_consistency, global_constraints,
-    backtracking_search, min_conflicts, solve_csp_constraint_graphs,
+    and_or_search, no_observation_search, partially_observable_search,
+    backtracking_search, backtracking_forward_checking,
+    constraint_propagation, min_conflicts,
     minimax, alpha_beta_pruning, expectimax,
 )
 SOLVER_FUNCTIONS = {fn.__name__: fn for fn in _SOLVERS}
@@ -166,6 +162,7 @@ def test_every_displayed_solver_reports_requested_goal_and_safe_certificate(
 
 @pytest.mark.parametrize("depth", range(1, 6))
 @pytest.mark.parametrize("display_name, fn_name", _displayed_solver_cases())
+@pytest.mark.deep_algorithm_audit
 def test_algorithm_contract_sweep_on_shallow_scrambles(
     display_name: str,
     fn_name: str,
@@ -190,13 +187,7 @@ def test_algorithm_contract_sweep_on_shallow_scrambles(
 
 @pytest.mark.parametrize(
     "solver, kwargs",
-    [
-        (simulated_annealing, {"max_iterations": 1, "seed": 17}),
-        (
-            no_observation_search,
-            {"num_belief_states": 1, "max_steps": 1, "seed": 17},
-        ),
-    ],
+    [(simulated_annealing, {"max_iterations": 1, "seed": 17})],
 )
 def test_legal_non_goal_trajectory_is_not_certified_as_a_solution(solver, kwargs):
     start = scramble(goal=GOAL_STATE, depth=5, seed=5521)
@@ -249,6 +240,7 @@ def test_ai_vs_ai_tournament_scores_only_verified_goal_paths():
 
 @pytest.mark.parametrize("depth", range(0, 13))
 @pytest.mark.parametrize("name, solver, extra", OPTIMAL_SWEEP_SOLVERS)
+@pytest.mark.deep_algorithm_audit
 def test_optimal_solvers_replay_random_scrambles_depth_0_to_12(depth, name, solver, extra):
     start = scramble(goal=GOAL_STATE, depth=depth, seed=9000 + depth)
     kwargs = {

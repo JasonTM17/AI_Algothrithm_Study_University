@@ -6,11 +6,12 @@ App ưu tiên giao diện học thuật: người học phải thấy thuật to
 
 | Surface | File chính | Evidence phải thấy |
 |---|---|---|
-| Play number/image | `ui/play_tab.py`, `ui/components.py` | A* step index, previous/next action, board hiện tại, `g/h/f`, frontier/reached |
+| Play Solver Replay | `ui/play_tab.py`, `ui/path_solver_runner.py`, `ui/components.py` | 13 thuật toán tuyến tính có replay ảnh, runtime/số bước, frontier/reached hoặc candidate local |
+| Play Group 6 Lab | `ui/group6_decision_lab.py`, `ui/group6_tree_viewer.py` | MAX/worst-case/CHANCE role frames, root value, pruning, probability, profiler và board ảnh không số |
 | Run Algorithm | `ui/run_tab.py` | Selector 6 nhóm ở đầu, metrics, trace, trajectory, readable search tree |
-| Compare | `ui/compare_tab.py` | Legal path, reached goal, optimality, runtime, nodes, seed/action order |
+| Compare | `ui/compare_tab.py`, `ui/image_algorithm_race.py` | Legal path, reached goal, optimality, runtime, steps, synchronized image replay, seed/action order |
 | Theory | `ui/theory_tab.py` | Taxonomy, PEAS, pseudocode, transferable concept, caveat |
-| Advanced | `ui/advanced_tab.py`, `ui/belief_controls.py` | known-tile matrix, AND-OR support mode, LRTA* online step, Group 6 robustness |
+| Advanced | `ui/advanced_tab.py`, `ui/belief_controls.py` | known-tile matrix, AND-OR support mode, CSP workbench, Group 6 robustness |
 | GIF README | `ui/web_gif_capture.py`, `scripts/generate-readme-gifs.py` | live browser board, action, metrics, truth status, reason/caveat; profiles `hero/group/algorithm` |
 
 ## Search Tree Readability
@@ -43,3 +44,20 @@ python scripts/generate-readme-gifs.py --all --profile algorithm --theme dark
 ## Tile Palette
 
 Number tiles dùng neutral palette ổn định theo tile value band. Vị trí đúng chỉ dùng outline/indicator, không đổi màu toàn bộ tile theo hàng hiện tại. Điều này tránh lỗi “di chuyển là đổi màu” và làm UI chuyên nghiệp hơn.
+
+## Play Image Algorithm Comparison
+
+- Đổi ảnh mẫu trong sidebar cập nhật `image_tiles` ngay; benchmark state không bị mất nếu Start/Goal không đổi.
+- Play hiển thị đủ 6 nhóm canonical, nhưng chỉ dùng runner chung cho 13 thuật toán có khả năng sinh quỹ đạo tuyến tính để benchmark trên cùng Start/Goal/limit.
+- Bàn ảnh chính replay kết quả của thuật toán đang chọn, không phủ số khi người học muốn quan sát mảnh ảnh thuần.
+- Biểu đồ thời gian và số bước chỉ xếp hạng `path_verified=True` và `goal_reached=True`.
+- Legal partial trajectory, failure và model/conditional output được tách khỏi ranking; 6 nhóm/24 mục vẫn giữ trong taxonomy để học thuật không bị mất.
+
+## Group 6 Decision Evidence
+
+- Hai board biểu diễn vai trò trong cùng decision model, không phải hai solver độc lập.
+- Minimax/Alpha-Beta dùng MAX và worst-case MIN; Expectimax dùng intended action và CHANCE outcome.
+- Principal variation tăng một edge mỗi tick. Cycle được đánh dấu thay vì gọi là tiến bộ.
+- `Frontier/reached` hiển thị `N/A`; space proxy dùng generated nodes, captured trace/tree nodes, depth và prune count.
+- Tree viewer có principal variation, evaluated events, pruned events, zoom, pan và fullscreen.
+- Depth sweep chỉ so các run cùng fingerprint; expected value không được xếp trực tiếp với worst-case utility.

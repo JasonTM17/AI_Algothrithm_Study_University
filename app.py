@@ -54,6 +54,27 @@ if "benchmark_results" not in st.session_state:
 if "image_tiles" not in st.session_state:
     st.session_state.image_tiles = {}
 
+
+def _activate_selected_sample_image() -> None:
+    """Apply a built-in image immediately when its selector changes."""
+    sample_name = st.session_state.get("sample_select")
+    tiles = generate_sample_tiles(sample_name) if sample_name in SAMPLE_IMAGES else {}
+    if not tiles:
+        return
+
+    st.session_state.image_tiles = tiles
+    st.session_state.image_active = True
+    st.session_state.play_image_sample_name = sample_name
+    st.session_state.play_board_mode = "image"
+    st.session_state.pop("play_board_mode_choice_synced_to", None)
+    st.session_state.play_uploaded_image_signature = None
+    st.session_state.image_upload_version = int(
+        st.session_state.get("image_upload_version", 0)
+    ) + 1
+    st.session_state.show_numbers = False
+    st.session_state.show_numbers_checkbox = False
+    st.session_state.chk_show_numbers = False
+
 # Sidebar.
 st.session_state["global_lang_select"] = resolve_language(
     st.session_state.get("global_lang_select", VIETNAMESE)
@@ -111,6 +132,8 @@ tab_labels = [t(label_key) for _, label_key in TAB_ROUTES]
 active_tab_value = _coerce_tab_value(st.session_state.get("main_tab_value", "Play"))
 st.session_state.main_tab_value = active_tab_value
 active_tab_index = tab_values.index(active_tab_value)
+if pending_tab is not None:
+    st.session_state.main_tab_label = tab_labels[active_tab_index]
 
 selected_tab_label = st.sidebar.radio(
     t("demo_workflow"),
@@ -137,19 +160,16 @@ if st.session_state.image_active and not st.session_state.get("image_tiles"):
     st.session_state.image_tiles = generate_sample_tiles(default_img)
 
 with st.sidebar.expander(t("sidebar_image_setup"), expanded=False):
-    sample_choice = st.selectbox(
+    st.selectbox(
         t("sb_builtin"),
         list(SAMPLE_IMAGES.keys()),
         key="sample_select",
         index=0,
+        on_change=_activate_selected_sample_image,
     )
-    if st.button(t("sb_load_img"), key="btn_load_sample"):
-        st.session_state.image_tiles = generate_sample_tiles(sample_choice)
-        st.session_state.image_active = True
-        st.session_state.play_board_mode = "image"
 
     if "show_numbers" not in st.session_state:
-        st.session_state.show_numbers = True
+        st.session_state.show_numbers = False
     st.session_state.show_numbers = st.checkbox(
         t("sb_show_num"),
         value=st.session_state.show_numbers,

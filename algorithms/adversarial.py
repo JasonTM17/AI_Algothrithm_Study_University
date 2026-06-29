@@ -35,6 +35,75 @@ def _path_from_actions(start: tuple[int, ...], actions: list[str]) -> list[tuple
     return path
 
 
+def _append_root_summary(
+    trace: list[TraceStep],
+    *,
+    state: tuple[int, ...],
+    utility: float,
+    depth: int,
+    node_type: str = "MAX",
+) -> None:
+    """Record the backed-up root value as structured evidence."""
+    trace.append(
+        TraceStep(
+            step=0,
+            state=state,
+            node_type=node_type,
+            utility=utility,
+            depth=0,
+            depth_limit=depth,
+            event="root_summary",
+            node_id="pv-0",
+            reason=f"Root {node_type} value={utility:.1f} at depth={depth}",
+        )
+    )
+
+
+def _append_worst_case_variation(
+    trace: list[TraceStep],
+    *,
+    path: list[tuple[int, ...]],
+    actions: list[str],
+    game_tree: list,
+    depth: int,
+) -> None:
+    """Record the selected MAX/MIN variation without inventing a solution tree."""
+    if not path:
+        return
+    for index, action in enumerate(actions):
+        before = path[index]
+        after = path[index + 1]
+        role = "MAX" if index % 2 == 0 else "MIN"
+        event = "select_action" if role == "MAX" else "worst_case"
+        utility = None
+        if index < len(game_tree):
+            entry = game_tree[index]
+            if isinstance(entry, tuple) and len(entry) >= 3:
+                utility = float(entry[2])
+        trace.append(
+            TraceStep(
+                step=index + 1,
+                state=after,
+                node_state=before,
+                action=action,
+                intended_action=action,
+                realized_action=action,
+                node_type=role,
+                utility=utility,
+                depth=index + 1,
+                depth_limit=depth,
+                event=event,
+                node_id=f"pv-{index + 1}",
+                parent_id=f"pv-{index}",
+                reason=(
+                    f"{role} selected legal action {action}"
+                    if role == "MAX"
+                    else f"MIN selected worst-case legal continuation {action}"
+                ),
+            )
+        )
+
+
 def minimax(
     start: tuple[int, ...], goal: tuple[int, ...] = GOAL_STATE,
     depth: int = 3, heuristic: str = "Manhattan Distance",
@@ -131,6 +200,16 @@ def minimax(
     msg += f"Principal variation (not the full evaluated tree):\n{tree_lines}"
 
     selected_path = _path_from_actions(start, actions)
+    _append_root_summary(
+        trace, state=start, utility=utility, depth=depth, node_type="MAX"
+    )
+    _append_worst_case_variation(
+        trace,
+        path=selected_path,
+        actions=actions,
+        game_tree=game_tree,
+        depth=depth,
+    )
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Minimax", group="AI-vs-AI Tournament",
@@ -138,6 +217,9 @@ def minimax(
         cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
+        termination_reason=(
+            "goal" if solved else "timeout" if timed_out[0] else "depth_limit"
+        ),
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
 
@@ -212,6 +294,7 @@ def alpha_beta_pruning(
                         trace.append(TraceStep(
                             step=nodes_expanded[0], state=ns, action=action,
                             node_type="MAX", alpha=alpha, beta=beta,
+                            event="prune",
                             reason=f"PRUNE: β({beta:.1f})≤α({alpha:.1f})"))
                     break
             tree_entry = ("MAX", state, best_val, h_fn(state), children)
@@ -236,6 +319,7 @@ def alpha_beta_pruning(
                         trace.append(TraceStep(
                             step=nodes_expanded[0], state=ns, action=action,
                             node_type="MIN", alpha=alpha, beta=beta,
+                            event="prune",
                             reason=f"PRUNE: β({beta:.1f})≤α({alpha:.1f})"))
                     break
             tree_entry = ("MIN", state, best_val, h_fn(state), children)
@@ -273,6 +357,16 @@ def alpha_beta_pruning(
     msg += f"Principal variation (not the full evaluated tree):\n{tree_text}"
 
     selected_path = _path_from_actions(start, actions)
+    _append_root_summary(
+        trace, state=start, utility=utility, depth=depth, node_type="MAX"
+    )
+    _append_worst_case_variation(
+        trace,
+        path=selected_path,
+        actions=actions,
+        game_tree=game_tree,
+        depth=depth,
+    )
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Alpha-Beta Pruning", group="AI-vs-AI Tournament",
@@ -280,6 +374,9 @@ def alpha_beta_pruning(
         cost=len(actions), depth=len(actions),
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
+        termination_reason=(
+            "goal" if solved else "timeout" if timed_out[0] else "depth_limit"
+        ),
         uses_adversary=True, is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )
 
@@ -304,6 +401,7 @@ def expectimax(
     nodes_expanded = [0]
     nodes_generated = [1]
     timed_out = [False]
+    chance_calls = [0]
 
     def get_outcomes(state: tuple, action: str) -> list[tuple[tuple, str, float]]:
         """Return (new_state, actual_action, probability) for stochastic action."""
@@ -331,7 +429,7 @@ def expectimax(
     def expectimax_search(
         state: tuple, depth_left: int, node_type: str = "MAX",
         action_taken: Optional[str] = None,
-    ) -> tuple[float, list, list[str]]:
+    ) -> tuple[float, list, list[str], list[tuple[str, str, float, float]]]:
         """Return expected utility, displayed subtree, and one legal sample path.
 
         The sample path is not a deterministic guarantee in a stochastic model; it
@@ -342,18 +440,18 @@ def expectimax(
         if time.perf_counter() - t0 > timeout:
             timed_out[0] = True
             util = -h_fn(state)
-            return util, [(node_type, state, util, h_fn(state), 1.0)], []
+            return util, [(node_type, state, util, h_fn(state), 1.0)], [], []
         if state == goal:
             util = 1000.0
             h = 0
             node = (node_type, state, util, h, 1.0)
-            return util, [node], []
+            return util, [node], [], []
 
         if depth_left <= 0 and node_type != "CHANCE":
             util = -h_fn(state)
             h = h_fn(state)
             node = (node_type, state, util, h, 1.0)
-            return util, [node], []
+            return util, [node], [], []
 
         ps = PuzzleState(state)
         nodes_expanded[0] += 1
@@ -362,73 +460,109 @@ def expectimax(
             best_val = float("-inf")
             best_tree = []
             best_actions: list[str] = []
+            best_details: list[tuple[str, str, float, float]] = []
             neighbors = ps.get_neighbors(action_order)
 
             for ns, action, cost in neighbors:
                 nodes_generated[0] += 1
                 # Call CHANCE node to compute expected utility of this action
-                val, tree, child_actions = expectimax_search(state, depth_left - 1, "CHANCE", action_taken=action)
+                val, tree, child_actions, child_details = expectimax_search(
+                    state, depth_left - 1, "CHANCE", action_taken=action
+                )
                 if val > best_val:
                     best_val = val
                     best_tree = tree
                     best_actions = child_actions
+                    best_details = child_details
 
                 if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded[0], state=ns, action=action,
+                        node_state=state,
                         node_type="MAX", utility=val, h=h_fn(ns),
                         probability=success_prob,
+                        intended_action=action,
+                        event="evaluate_action",
                         reason=f"MAX: action={action}, ev={val:.1f}"))
 
             h = h_fn(state)
             node = ("MAX", state, best_val, h, 1.0)
-            return best_val, [node] + best_tree, best_actions
+            return best_val, [node] + best_tree, best_actions, best_details
 
         elif node_type == "CHANCE":
             # CHANCE node: computes expected value over outcomes of action_taken at state
+            chance_calls[0] += 1
+            chance_node_id = f"chance-{chance_calls[0]}"
             outcomes = get_outcomes(state, action_taken)
             if not outcomes:
                 util = -h_fn(state)
                 node = ("CHANCE", state, util, h_fn(state), 1.0)
-                return util, [node], []
+                return util, [node], [], []
 
             expected_value = 0.0
             children_trees = []
-            sample_candidates: list[tuple[float, str, list[str]]] = []
+            capture_outcomes = len(trace) + len(outcomes) <= 200
+            sample_candidates: list[
+                tuple[
+                    float,
+                    str,
+                    float,
+                    list[str],
+                    list[tuple[str, str, float, float]],
+                ]
+            ] = []
             for out_state, out_action, prob in outcomes:
                 nodes_generated[0] += 1
                 # Call MAX recursively on the outcome state
-                val, tree, child_actions = expectimax_search(out_state, depth_left - 1, "MAX")
+                val, tree, child_actions, child_details = expectimax_search(
+                    out_state, depth_left - 1, "MAX"
+                )
                 expected_value += prob * val
                 children_trees.extend(tree)
-                sample_candidates.append((prob, out_action, child_actions))
+                sample_candidates.append(
+                    (prob, out_action, val, child_actions, child_details)
+                )
 
-                if len(trace) < 200:
+                if capture_outcomes:
                     trace.append(TraceStep(
                         step=nodes_expanded[0], state=out_state, action=out_action,
+                        node_state=state,
                         node_type="CHANCE", utility=val, h=h_fn(out_state),
                         probability=prob,
+                        intended_action=action_taken,
+                        realized_action=out_action,
+                        event="chance_outcome_evaluated",
+                        node_id=chance_node_id,
                         reason=f"CHANCE: P({out_action})={prob:.2f}, ev={val:.1f}"))
 
             draw = rng.random()
             cumulative = 0.0
             sample_actions: list[str] = []
-            for prob, out_action, child_actions in sample_candidates:
+            sample_details: list[tuple[str, str, float, float]] = []
+            for prob, out_action, outcome_value, child_actions, child_details in sample_candidates:
                 cumulative += prob
                 if draw < cumulative:
                     sample_actions = [out_action] + child_actions
+                    sample_details = [
+                        (str(action_taken), out_action, prob, outcome_value)
+                    ] + child_details
                     break
             if not sample_actions and sample_candidates:
-                _, out_action, child_actions = sample_candidates[-1]
+                prob, out_action, outcome_value, child_actions, child_details = sample_candidates[-1]
                 sample_actions = [out_action] + child_actions
+                sample_details = [
+                    (str(action_taken), out_action, prob, outcome_value)
+                ] + child_details
 
             h = h_fn(state)
             node = ("CHANCE", state, expected_value, h, 1.0)
-            return expected_value, [node] + children_trees, sample_actions
+            return expected_value, [node] + children_trees, sample_actions, sample_details
 
-        return 0, [], []
+        return 0, [], [], []
 
-    utility, game_tree, actions = expectimax_search(start, depth, "MAX")
+    utility, game_tree, actions, sampled_details = expectimax_search(
+        start, depth, "MAX"
+    )
 
     tree_text = ""
     for i, node_data in enumerate(game_tree[:30]):
@@ -449,6 +583,40 @@ def expectimax(
     msg += f"Selected policy subtree (truncated, not the full evaluated tree):\n{tree_text}"
 
     selected_path = _path_from_actions(start, actions)
+    _append_root_summary(
+        trace, state=start, utility=utility, depth=depth, node_type="MAX"
+    )
+    for index, action in enumerate(actions):
+        before = selected_path[index]
+        after = selected_path[index + 1]
+        intended, realized, probability, outcome_value = (
+            sampled_details[index]
+            if index < len(sampled_details)
+            else (action, action, 1.0, float(-h_fn(after)))
+        )
+        trace.append(
+            TraceStep(
+                step=index + 1,
+                state=after,
+                node_state=before,
+                action=realized,
+                intended_action=intended,
+                realized_action=realized,
+                node_type="CHANCE",
+                utility=outcome_value,
+                h=h_fn(after),
+                probability=probability,
+                depth=index + 1,
+                depth_limit=depth,
+                event="chance_outcome",
+                node_id=f"pv-{index + 1}",
+                parent_id=f"pv-{index}",
+                reason=(
+                    f"MAX intended {intended}; CHANCE realized {realized} "
+                    f"with P={probability:.2f}"
+                ),
+            )
+        )
     solved = bool(selected_path and selected_path[-1] == goal and not timed_out[0])
     return SearchResult(
         success=solved, algorithm="Expectimax", group="AI-vs-AI Tournament",
@@ -456,6 +624,9 @@ def expectimax(
         cost=len(actions), depth=len(actions), random_seed=seed,
         nodes_expanded=nodes_expanded[0], nodes_generated=nodes_generated[0],
         runtime=time.perf_counter() - t0, message=msg, trace=trace,
+        termination_reason=(
+            "goal" if solved else "timeout" if timed_out[0] else "depth_limit"
+        ),
         uses_adversary=False, uses_probability=True, uses_randomness=True,
         is_complete=False, is_optimal=False, suitable_for_puzzle=False,
     )

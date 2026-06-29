@@ -15,6 +15,9 @@ from scripts.readme_gif_specs import build_specs
 from ui.styles import ALGORITHM_GROUPS
 
 
+STANDARD_SOLVER_ALGORITHMS = {"BFS", "UCS", "IDS", "A*", "IDA*"}
+
+
 def main() -> int:
     records = _manifest_records()
     specs = build_specs()
@@ -37,7 +40,7 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "[![Web quality](https://github.com/JasonTM17/AI_Algothrithm_Study_University/actions/workflows/quality.yml/badge.svg)](https://github.com/JasonTM17/AI_Algothrithm_Study_University/actions/workflows/quality.yml)",
         "![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)",
         "![Streamlit](https://img.shields.io/badge/Streamlit-app-FF4B4B?logo=streamlit&logoColor=white)",
-        "![28 algorithms](https://img.shields.io/badge/AI-28%20algorithms-7FAF6F)",
+        "![24 algorithms](https://img.shields.io/badge/AI-24%20algorithms-7FAF6F)",
         "",
         "**Tác giả:** JasonTM17",
         "",
@@ -50,10 +53,11 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "## Mục Lục",
         "",
         "- [Chạy Nhanh](#chạy-nhanh)",
+        "- [Kết Quả Quét Lại 24 Thuật Toán](#kết-quả-quét-lại-24-thuật-toán)",
         "- [Bản Đồ 6 Nhóm](#bản-đồ-6-nhóm)",
         "- [Cách Đọc Từng Nhóm](#cách-đọc-từng-nhóm)",
         "- [So Sánh Thuật Toán Trong Nhóm](#so-sánh-thuật-toán-trong-nhóm)",
-        "- [Atlas 28 Thuật Toán Có GIF Chạy Thật](#atlas-28-thuật-toán-có-gif-chạy-thật)",
+        "- [Atlas 24 Thuật Toán Có GIF Chạy Thật](#atlas-24-thuật-toán-có-gif-chạy-thật)",
         "- [Cách Đọc Evidence](#cách-đọc-evidence)",
         "- [Tài Liệu](#tài-liệu)",
         "",
@@ -84,9 +88,12 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "python -m pytest tests -q --cov=core --cov=algorithms --cov-report=term-missing --cov-fail-under=65",
         "```",
         "",
+    ]
+    lines += _run_audit_summary(specs, records)
+    lines += [
         "## Bản Đồ 6 Nhóm",
         "",
-        "`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 28 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.",
+        "`ALGORITHM_GROUPS` là contract chính: 6 nhóm, 24 thuật toán. Mỗi GIF dưới đây là live Streamlit browser capture, không phải mockup.",
         "",
     ]
     for group, items in ALGORITHM_GROUPS.items():
@@ -110,16 +117,16 @@ def _readme(specs, records: dict[str, dict]) -> str:
         "| Uninformed Search | So sánh FIFO, LIFO, cost queue và iterative deepening khi không có h(n). | Gọi DFS là optimal hoặc quên memory của BFS. |",
         "| Informed Search | Đọc h(n), g(n), f(n), admissible/consistent và certificate. | Gọi Greedy là optimal chỉ vì một run tình cờ ngắn. |",
         "| Local Search | Xem candidate được xét/chọn/từ chối và lý do dừng. | Nhầm legal trajectory thành solution path. |",
-        "| Complex Environments | Đọc belief, conditional plan, online update theo đúng mô hình mở rộng. | Ép AND-OR/belief thành đường đi tuyến tính giả. |",
+        "| Complex Environments | Đọc conditional, conformant và contingent policy theo đúng belief-state model. | Ép policy thành đường đi tuyến tính giả hoặc để hidden state điều khiển agent. |",
         "| CSP | Đọc variables, domains, constraints, propagation và horizon. | Gọi CSP model definition là shortest-path solver. |",
         "| AI-vs-AI Tournament | Đọc scoring, robustness, pruning và expected value. | Gọi MIN là đối thủ thật của 15-puzzle. |",
         "",
     ]
     lines += _group_comparison_sections()
     lines += [
-        "## Atlas 28 Thuật Toán Có GIF Chạy Thật",
+        "## Atlas 24 Thuật Toán Có GIF Chạy Thật",
         "",
-        "Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Trường `web_run_status` ghi trung thực: solved, partial/model, not solved hoặc tournament.",
+        "Mỗi mục dưới đây có GIF riêng. GIF được tạo từ `scripts/generate-readme-gifs.py`, mở app thật, chụp frame thật từ route `?capture_demo=...`, dùng start/goal/seed/resource limit cố định và được khóa bằng manifest semantic. Dòng **Kết luận chạy / độ phù hợp** nói rõ demo có tới goal hay không và thuật toán có được dùng làm solver chuẩn hay chỉ là mô hình giáo dục.",
         "",
     ]
     counter = 1
@@ -153,6 +160,7 @@ def _algorithm_section(index: int, spec, record: dict) -> list[str]:
         f"| Guarantee | {spec.guarantee} |",
         f"| Caveat | {spec.academic_caveat} |",
         f"| Phù hợp với 15-puzzle chuẩn | {_standard_15_puzzle_fit(spec, record)} |",
+        f"| Kết luận chạy / độ phù hợp | **{_run_fit_conclusion(spec, record)}** |",
         f"| Web capture source | `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}` |",
         f"| web_run_status | `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))} |",
         f"| Demo input | seed `{record['seed']}`, termination `{record['termination']}`, {param_text} |",
@@ -199,21 +207,17 @@ def _group_comparison_sections() -> list[str]:
         "| Thuật toán | Mô hình output | Evidence cần nhìn | Guarantee đúng | Caveat |",
         "|---|---|---|---|---|",
         "| AND-OR Search | Conditional plan/policy. | AND node, OR action, deflection support. | Plan hợp lệ trong depth/support đã chọn. | Không phải linear path giả; support switch không phải probability weight. |",
-        "| Searching with no observation | Belief-state reasoning. | belief size, planner votes, fallback reason. | Agent quyết định từ belief set. | Hidden actual state chỉ để debug. |",
-        "| Partially observable search | Known-tile matrix + belief update. | known tiles, observation, belief prune. | Trace reconstruction giáo dục. | Không biến thành solver chuẩn khi chỉ biết vài ô. |",
-        "| LRTA* | Online one-step learning. | H update, local successors, chosen action. | Online demo có legal moves. | Cap là max online steps, không phải node frontier chuẩn. |",
+        "| Searching with no observation | Conformant graph search trên belief state. | Predict(B,a), belief frontier/reached, duplicate rejection, goal coverage. | Một action sequence phải đúng cho mọi state được biểu diễn. | Belief hữu hạn là approximation; bounded failure không chứng minh impossible toàn cục. |",
+        "| Partially observable search | Contingent belief-state AND-OR. | predicted belief, observation partitions, updated beliefs, branch coverage. | Mọi observation branch phải có subpolicy. | Hidden actual state chỉ để audit, không xây policy. |",
         "",
         "### CSP",
         "",
         "| Thuật toán | CSP concept | Evidence cần nhìn | Output đúng | Caveat |",
         "|---|---|---|---|---|",
-        "| CSP Definition | Variables/domains/constraints. | variable count, domain endpoints. | Model definition. | Chưa phải solved trajectory. |",
-        "| Constraint Propagation | AC-3 style exact-horizon pruning. | arc checks, candidate states, domain wipe-out/goal. | Sound pruning for represented constraints. | Horizon parity quan trọng; `T=2` có thể wipe-out đúng logic. |",
-        "| Path Consistency | Triple support explanation. | consistency events, remaining supports. | Educational consistency evidence. | Illustration, không phải shortest-path solver. |",
-        "| Global Constraints | AllDifferent/structural rules. | global check summary. | Rules out invalid assignments. | Không thay thế graph search certificate. |",
-        "| Backtracking Search | DFS over bounded transition model. | assignment/backtrack reason, final path if found. | Can solve small exact horizon. | Dùng Manhattan ordering, không claim full MRV/forward checking. |",
-        "| Min-Conflicts | Local repair of CSP assignment. | conflict count, selected variable. | CSP repair concept. | Tile swaps không nhất thiết là legal blank moves. |",
-        "| Constraint Graphs | Network/factor view. | nodes, edges, high-arity relation. | Structural explanation. | Readability/evidence, not path optimality. |",
+        "| Backtracking | Chronological state-chain assignment. | assignments, consistency checks, backtracks. | Exact-T legal chain khi thành công. | Failure chỉ đúng trong horizon/resource bound. |",
+        "| Backtracking + Forward Checking | Assignment kèm prune domain kế tiếp. | values pruned, domain wipe-out, backtracks. | Cùng ordering để so sánh công bằng với Backtracking. | Worst case vẫn exponential. |",
+        "| AC-3 | Arc-consistency propagation trên state chain. | arc queue, REVISE, values removed, domain sizes. | Sound propagation; replay chỉ từ exact legal chain. | Arc-consistent không tự động nghĩa unique solution. |",
+        "| Min-Conflicts | Seeded local repair của complete state-chain assignment. | conflicted variable, conflict count, iteration. | Replay chỉ khi zero conflict và mọi move legal. | Không complete, không optimal. |",
         "",
         "### AI-vs-AI Tournament",
         "",
@@ -237,6 +241,83 @@ def _status_label(status: str) -> str:
     }.get(status, "unknown run status")
 
 
+def _run_fit_conclusion(spec, record: dict) -> str:
+    """State what the verified demo proved without overstating solver fitness."""
+
+    status = record.get("web_run_status", "unknown")
+    termination = record.get("termination", "unknown")
+    if status == "solved_optimal":
+        if spec.algorithm not in STANDARD_SOLVER_ALGORITHMS:
+            return _table_cell(
+                "TRẠNG THÁI KHÔNG NHẤT QUÁN — manifest báo tối ưu cho một thuật toán "
+                "không thuộc tập solver chuẩn; cần kiểm tra lại trước khi công bố."
+            )
+        return _table_cell(
+            "PHÙ HỢP LÀM SOLVER CHUẨN — Demo thật đã tới goal bằng legal path "
+            "và có chứng chỉ tối ưu cho cấu hình đã chạy."
+        )
+    if status == "solved_not_optimal":
+        return _table_cell(
+            "CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — "
+            "Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu."
+        )
+    if status == "not_solved_in_demo":
+        return _table_cell(
+            f"CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL — Run dừng có kiểm soát "
+            f"(`termination={termination}`), không phải crash; trajectory/evidence không được gọi là lời giải."
+        )
+    if status == "ran_model_not_goal_path":
+        if spec.algorithm == "AND-OR Search":
+            return _table_cell(
+                "CHẠY ĐƯỢC VÀ TRẢ CONDITIONAL PLAN — Output đúng là kế hoạch có nhánh, "
+                "không phải một linear path tới goal của 15-puzzle deterministic."
+            )
+        return _table_cell(
+            "CHẠY ĐƯỢC Ở CHẾ ĐỘ MÔ HÌNH/EVIDENCE — Không sinh legal solution path "
+            "tới goal; mục này dùng để minh họa khái niệm, không phải solver 15-puzzle chuẩn."
+        )
+    if status == "ran_tournament_model":
+        return _table_cell(
+            "CHẠY ĐƯỢC Ở CHẾ ĐỘ CHẤM ĐIỂM — Đây là benchmark hai agent, "
+            "không phải một thuật toán sinh solution path riêng."
+        )
+    return _table_cell(
+        "CHƯA CÓ KẾT LUẬN KIỂM CHỨNG — Không công bố khả năng giải trước khi "
+        "web_run_status và certificate được xác minh."
+    )
+
+
+def _run_audit_summary(specs, records: dict[str, dict]) -> list[str]:
+    by_status: dict[str, list[str]] = {}
+    for spec in specs:
+        status = records[spec.algorithm].get("web_run_status", "unknown")
+        by_status.setdefault(status, []).append(spec.algorithm)
+
+    optimal = by_status.get("solved_optimal", [])
+    reached = by_status.get("solved_not_optimal", [])
+    stopped = by_status.get("not_solved_in_demo", [])
+    model_only = by_status.get("ran_model_not_goal_path", [])
+    tournament = by_status.get("ran_tournament_model", [])
+    return [
+        "## Kết Quả Quét Lại 24 Thuật Toán",
+        "",
+        "Quét trực tiếp toàn bộ demo specs bằng cùng runner dùng để tạo GIF. "
+        "Kết quả hiện tại: **24/24 mục thực thi không phát sinh exception**. "
+        "`Không tới goal` không đồng nghĩa `không chạy được`; README tách riêng crash, "
+        "run dừng chưa giải xong, model evidence và solution path.",
+        "",
+        f"- **Solver chuẩn, demo tới goal và có chứng chỉ tối ưu ({len(optimal)}):** {', '.join(optimal)}.",
+        f"- **Demo tới goal nhưng không có chứng chỉ tối ưu ({len(reached)}):** {', '.join(reached)}.",
+        f"- **Chạy được nhưng demo không tới goal ({len(stopped)}):** {', '.join(stopped)}.",
+        f"- **Chỉ tạo model evidence/conditional plan, không tạo goal path ({len(model_only)}):** {', '.join(model_only)}.",
+        f"- **Chỉ chạy lớp chấm điểm tournament ({len(tournament)}):** {', '.join(tournament)}.",
+        "",
+        "Chỉ nhóm đầu được README gọi là **solver chuẩn có chứng chỉ tối ưu** cho cấu hình demo. "
+        "Các mục còn lại vẫn có giá trị học thuật, nhưng phải đọc đúng output và caveat ghi ngay tại từng thuật toán.",
+        "",
+    ]
+
+
 def _standard_15_puzzle_fit(spec, record: dict) -> str:
     notes = {
         "BFS": "Solver chuẩn cho ca nông: complete và optimal với unit step cost, nhưng frontier/reached tăng rất nhanh nên không hợp cho 15-puzzle sâu.",
@@ -253,16 +334,12 @@ def _standard_15_puzzle_fit(spec, record: dict) -> str:
         "Local Beam Search": "Không ổn làm solver chuẩn: giữ nhiều candidate giúp minh họa tìm kiếm cục bộ, nhưng beam nhỏ có thể bỏ mất route tốt.",
         "Simulated Annealing": "Không ổn làm solver chuẩn: có thể nhận bước xấu để thoát local optimum, nhưng legal trajectory không đồng nghĩa solved hoặc optimal.",
         "AND-OR Search": "Không phải solver tuyến tính của 15-puzzle deterministic: dùng để minh họa conditional plan khi môi trường có outcome lệch.",
-        "Searching with no observation": "Không phải solver chuẩn full-observation: dùng belief set khi agent không thấy trạng thái thật; hidden state chỉ để debug.",
-        "Searching for partially observable problems": "Không phải solver chuẩn khi chỉ biết vài ô: dùng known-tile matrix để thu hẹp belief, vẫn có thể mơ hồ.",
-        "LRTA*": "Không phải offline optimal solver: minh họa agent online cập nhật H(s) từng bước, cap là số bước hành động tối đa.",
-        "CSP Definition": "Không giải puzzle trực tiếp: chỉ dựng mô hình biến/domain/constraint để người học hiểu cách mã hóa bài toán.",
-        "Constraint Propagation": "Không thay thế graph search: propagation lọc domain trong horizon đã chọn, chỉ solved khi horizon khớp path demo.",
-        "Path Consistency": "Không giải 15-puzzle chuẩn: minh họa consistency trên ràng buộc, không sinh shortest path.",
-        "Global Constraints": "Không giải trực tiếp: kiểm tra ràng buộc toàn cục như AllDifferent, dùng để giải thích model CSP.",
-        "Backtracking Search": "Chỉ hợp demo horizon nhỏ: có thể tìm path trong mô hình bounded transition, không claim tối ưu toàn cục.",
-        "Min-Conflicts": "Không phù hợp 15-puzzle chuẩn: repair bằng tile swaps không nhất thiết là legal blank moves, nên không phải lời giải trượt ô.",
-        "Constraint Graphs": "Không giải trực tiếp: trình bày graph biến/ràng buộc để đọc cấu trúc CSP, không phải solver path.",
+        "Searching with no observation": "Không phải solver chuẩn full-observation: conformant sequence phải đúng cho mọi state trong belief hữu hạn và không được đọc hidden state.",
+        "Searching for partially observable problems": "Không phải linear solver chuẩn: output là contingent policy phân nhánh theo observation của blank và tile kề.",
+        "Backtracking": "CSP assignment search theo exact horizon: chỉ replay verified legal chain; không claim shortest path hoặc unsolvable toàn cục.",
+        "Backtracking + Forward Checking": "CSP assignment search có domain pruning; dùng cùng ordering với Backtracking để so sánh, nhưng worst case vẫn exponential.",
+        "AC-3": "Propagation trên exact-horizon state chain; arc consistency là evidence, chỉ replay khi trích được exact legal chain.",
+        "Min-Conflicts": "Local repair trên complete state-chain assignment; chỉ gọi thành công khi conflict bằng 0 và mọi transition là legal blank move.",
         "AI-vs-AI Tournament": "Không phải thuật toán giải puzzle: là lớp chấm điểm hai solver bằng A* reference và verified trajectory.",
         "Minimax": "Không phải solver tự nhiên của 15-puzzle: MIN là nhánh worst-case robustness, không phải đối thủ thật.",
         "Alpha-Beta Pruning": "Không phải solver tự nhiên của 15-puzzle: chỉ prune cây Minimax worst-case cùng root value, không đổi puzzle thành game hai người.",
@@ -328,7 +405,7 @@ def _gallery(specs, records: dict[str, dict]) -> str:
     lines = [
         "# Algorithm Demo Gallery",
         "",
-        "Trang này nhúng đủ 28 GIF chạy thật. Mỗi GIF lấy frame từ live Streamlit browser capture bằng `agent-browser screenshot` và có manifest semantic tại `docs/assets/algorithm-demos/manifest.json`.",
+        "Trang này nhúng đủ 24 GIF chạy thật. Mỗi GIF lấy frame từ live Streamlit browser capture bằng `agent-browser screenshot` và có manifest semantic tại `docs/assets/algorithm-demos/manifest.json`.",
         "",
     ]
     for group, group_specs in _by_group(specs).items():
@@ -347,6 +424,7 @@ def _gallery(specs, records: dict[str, dict]) -> str:
                 f"- **Guarantee:** {spec.guarantee}",
                 f"- **Caveat:** {spec.academic_caveat}",
                 f"- **Phù hợp với 15-puzzle chuẩn:** {_standard_15_puzzle_fit(spec, record)}",
+                f"- **Kết luận chạy / độ phù hợp:** **{_run_fit_conclusion(spec, record)}**",
                 f"- **Source:** `{record.get('source', 'unknown')}` via `{record.get('capture_tool', 'unknown')}`.",
                 f"- **web_run_status:** `{record.get('web_run_status', 'unknown')}` - {_status_label(record.get('web_run_status', 'unknown'))}.",
                 f"- **Result message:** {_table_cell(record.get('result_message', ''))}",

@@ -17,8 +17,8 @@ Tài liệu này tách rõ solver chuẩn, demo đối chiếu và extension. M�
 | Local | Local Beam Search | Beam trajectory | Không | Không | beam width, candidate h, stop reason |
 | Local | Simulated Annealing | Stochastic trajectory | Không | Không | temperature, probability, accepted flag |
 | Complex | AND-OR Search | Conditional plan | Không | Không | OR/AND branches, deflection support |
-| Complex | No/Partial Observation | Belief-driven actions | Không | Không | belief size, known tiles, fallback votes |
-| Complex | LRTA* | Online trace | Không | Không | H update, observed successor, step cap |
+| Complex | No Observation | Conformant belief action sequence | Không | Không | belief frontier/reached, goal coverage, known tiles |
+| Complex | Partial Observation | Contingent observation policy | Không | Không | predicted belief, observation partitions, updated branches |
 | CSP | CSP family | Model/assignment/horizon path | Không mặc định | Horizon-bound only | variables, domains, constraints |
 | AI-vs-AI | Tournament | Score report | Không | Reference-bound | A* reference, legal path, excess cost |
 | AI-vs-AI | Minimax/Alpha-Beta | Depth-limited robust action | Không | Depth-limited utility | MAX/MIN, utility, prune evidence |

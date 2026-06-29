@@ -5,22 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 
-CSP_EXPLANATORY_FUNCTIONS = {
-    "csp_definition",
-    "constraint_propagation",
-    "path_consistency",
-    "global_constraints",
-    "solve_csp_constraint_graphs",
-}
-
-CSP_TIME_HORIZON_FUNCTIONS = {
-    "csp_definition",
-    "constraint_propagation",
-    "solve_csp_constraint_graphs",
-}
-
-CSP_SEARCH_FUNCTIONS = {
+CSP_FUNCTIONS = {
     "backtracking_search",
+    "backtracking_forward_checking",
+    "constraint_propagation",
     "min_conflicts",
 }
 
@@ -39,10 +27,15 @@ def build_solver_kwargs(
     extra_params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build keyword arguments that match each solver function signature."""
-    if fn_name in CSP_EXPLANATORY_FUNCTIONS:
-        kwargs: dict[str, Any] = {"start": start, "goal": goal}
-    elif fn_name in CSP_SEARCH_FUNCTIONS:
-        kwargs = {"start": start, "goal": goal, "timeout": timeout}
+    if fn_name in CSP_FUNCTIONS:
+        kwargs: dict[str, Any] = {
+            "start": start,
+            "goal": goal,
+            "timeout": timeout,
+            "action_order": action_order,
+            "time_horizon": max(1, min(max_depth, 12)),
+            "candidate_limit": max_nodes,
+        }
     else:
         kwargs = {
             "start": start,
@@ -67,16 +60,10 @@ def build_solver_kwargs(
         kwargs["max_depth"] = max_depth
     elif fn_name in ("no_observation_search", "partially_observable_search"):
         kwargs["max_steps"] = max_depth
-    elif fn_name == "online_search_lrta":
-        kwargs["max_steps"] = max_nodes
-        kwargs["heuristic"] = heuristic
-    elif fn_name == "backtracking_search":
+    elif fn_name in ("backtracking_search", "backtracking_forward_checking"):
         kwargs["max_steps"] = max_nodes
     elif fn_name == "min_conflicts":
         kwargs["max_iterations"] = max_nodes
-    elif fn_name in CSP_TIME_HORIZON_FUNCTIONS:
-        horizon_cap = 3 if fn_name == "solve_csp_constraint_graphs" else 5
-        kwargs["time_horizon"] = max(1, min(max_depth, horizon_cap))
     elif fn_name in (
         "simple_hill_climbing",
         "steepest_ascent_hill_climbing",

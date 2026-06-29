@@ -38,6 +38,26 @@ def test_bfs_exposes_real_parent_child_edges():
     assert {event.event for event in result.trace} >= {"generate", "goal"}
 
 
+def test_bfs_tree_omits_rejected_reverse_edges_and_stops_at_goal():
+    result = bfs(START, timeout=5)
+    edge_pairs = {
+        (edge.parent_id, edge.child_id)
+        for edge in result.search_tree_edges
+    }
+
+    assert all((child_id, parent_id) not in edge_pairs for parent_id, child_id in edge_pairs)
+    assert result.search_tree_nodes[-1].state == result.goal_state
+    assert all(
+        event.g is None and event.h is None and event.f is None
+        for event in result.trace
+    )
+
+    dot = search_tree_to_dot(result)
+    assert " g=" not in dot
+    assert " h=" not in dot
+    assert " f=" not in dot
+
+
 def test_priority_frontier_snapshot_matches_pop_order():
     result = a_star(START, timeout=5)
     f_by_state = {event.state: event.f for event in result.trace}
@@ -125,7 +145,7 @@ def test_backtracking_search_exposes_generated_child_edges_without_reverse_paren
     nodes = {node.node_id: node for node in result.search_tree_nodes}
 
     assert result.search_tree_edges
-    assert result.nodes_generated > result.nodes_expanded
+    assert result.nodes_generated >= result.nodes_expanded
     for edge in result.search_tree_edges:
         parent = nodes[edge.parent_id]
         child = nodes[edge.child_id]
