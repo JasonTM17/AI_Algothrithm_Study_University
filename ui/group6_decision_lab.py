@@ -171,13 +171,13 @@ def render_group6_controls(
           <div class="ai-solver-header">
             <div class="ai-solver-title-container">
               <span class="ai-solver-badge">GROUP 6</span>
-              <h3>{escape(_text(t, "group6_lab_title", "AI Duel & Robustness Lab"))}</h3>
+              <h3>{escape(_text(t, "group6_lab_title", "Decision / Policy Lab"))}</h3>
             </div>
           </div>
           <p class="ai-solver-desc">{escape(_text(
               t,
               "group6_lab_desc",
-              "Decision-tree analysis on the current puzzle; not a natural two-player game.",
+              "Decision, robustness and chance analysis on the current puzzle; not a standard 15-puzzle solver.",
           ))}</p>
         </div>
         """,
@@ -187,7 +187,7 @@ def render_group6_controls(
         _text(
             t,
             "group6_lab_guardrail",
-            "Decision-tree model, not a natural two-player 15-puzzle game.",
+            "Decision-tree model, not a standard 15-puzzle solver.",
         )
     )
 

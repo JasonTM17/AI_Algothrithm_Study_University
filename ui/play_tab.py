@@ -39,6 +39,13 @@ from ui.group6_policy_comparison import (
     group6_policy_needs_tick,
     render_group6_policy_comparison,
 )
+from ui.group6_variant_labs import (
+    advance_group6_variant_tick,
+    clear_group6_variant_lab_state,
+    group6_variant_needs_tick,
+    render_group6_chance_lab,
+    render_group6_robustness_lab,
+)
 from ui.start_goal_state import apply_start_state
 from ui.styles import ALGORITHM_GROUPS, THEORY_KEY_MAP
 
@@ -56,10 +63,11 @@ PLAY_RUN_SETTINGS = PathRunSettings()
 def _clear_all_group6_state() -> None:
     clear_group6_lab_state()
     clear_group6_policy_state()
+    clear_group6_variant_lab_state()
 
 PLAY_TEXT_FALLBACKS = {
     "play_ai_solver": "Thuật toán từng bước",
-    "play_ai_desc": "A* mở rộng state có f(n)=g(n)+h(n) nhỏ nhất, với h(n) là Manhattan Distance.",
+    "play_ai_desc": "Thuật toán đã chọn tạo trajectory replay nếu output của nó là đường đi tuyến tính hợp lệ.",
     "play_ai_solve_btn": "Chạy thuật toán từng bước",
     "play_ai_algorithm_label": "Thuật toán",
     "play_ai_eval_label": "Hàm đánh giá",
@@ -70,7 +78,7 @@ PLAY_TEXT_FALLBACKS = {
     "play_ai_goal_value": "State hiện tại bằng goal đã chọn",
     "play_ai_optimality_label": "Tính tối ưu",
     "play_ai_optimality_value": "Đúng khi h(n) admissible/consistent và search không bị giới hạn tài nguyên",
-    "play_ai_current_step_title": "Bước replay A* hiện tại",
+    "play_ai_current_step_title": "Bước replay hiện tại",
     "play_ai_g_metric": "g(n)",
     "play_ai_h_metric": "h(n)",
     "play_ai_f_metric": "f(n)",
@@ -1224,12 +1232,15 @@ def _on_play_experience_mode_change() -> None:
     st.session_state.group6_lab_auto = False
     st.session_state.group6_sweep_active = False
     st.session_state.group6_policy_auto = False
+    st.session_state.group6_robustness_auto = False
+    st.session_state.group6_chance_auto = False
 
 
 def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     _advance_auto_replay_one_step()
     advance_group6_lab_tick()
     advance_group6_policy_tick()
+    advance_group6_variant_tick()
     experience_mode = st.segmented_control(
         t("play_experience_mode"),
         options=("solver", "group6"),
@@ -1247,19 +1258,44 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
 
     if experience_mode == "group6":
         group6_view = st.segmented_control(
-            "Chế độ Phòng thí nghiệm Nhóm 6",
-            options=("policy", "trace"),
+            t("group6_lab_title"),
+            options=("policy", "robustness", "chance"),
             default="policy",
             format_func=lambda value: (
-                "Policy Comparison"
+                t("group6_view_policy")
                 if value == "policy"
-                else "Decision Trace"
+                else (
+                    t("group6_view_robustness")
+                    if value == "robustness"
+                    else t("group6_view_chance")
+                )
             ),
             key="group6_play_view",
             width="stretch",
         ) or "policy"
+        st.warning(t("group6_decision_guardrail"))
         if group6_view == "policy":
             render_group6_policy_comparison(
+                t,
+                start=tuple(st.session_state.play_state),
+                goal=tuple(goal),
+                image_tiles=st.session_state.get("image_tiles") or {},
+            )
+            _render_play_status_controls(t, goal, solvable)
+            _render_start_goal_reference(t, goal, solvable)
+            return
+        if group6_view == "robustness":
+            render_group6_robustness_lab(
+                t,
+                start=tuple(st.session_state.play_state),
+                goal=tuple(goal),
+                image_tiles=st.session_state.get("image_tiles") or {},
+            )
+            _render_play_status_controls(t, goal, solvable)
+            _render_start_goal_reference(t, goal, solvable)
+            return
+        if group6_view == "chance":
+            render_group6_chance_lab(
                 t,
                 start=tuple(st.session_state.play_state),
                 goal=tuple(goal),
@@ -1309,6 +1345,7 @@ def _render_play_workbench(t, goal, solvable: bool) -> None:
             st.session_state.get("play_auto_run", False)
             or group6_lab_needs_tick()
             or group6_policy_needs_tick()
+            or group6_variant_needs_tick()
         )
         else None
     )

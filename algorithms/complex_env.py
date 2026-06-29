@@ -94,6 +94,71 @@ def _matches_known_positions(state: tuple[int, ...], known_positions: dict[int, 
     return all(state[pos] == value for pos, value in known_positions.items())
 
 
+def _known_position_contradiction(
+    state: tuple[int, ...],
+    known_positions: dict[int, int],
+) -> tuple[int, int, int] | None:
+    """Return the first clue that contradicts the hidden audit state."""
+    for pos, value in known_positions.items():
+        actual = state[pos]
+        if actual != value:
+            return pos, value, actual
+    return None
+
+
+def _empty_belief_evidence(known: dict[int, int]) -> dict[str, object]:
+    return {
+        "known_positions": known,
+        "initial_belief": {"size": 0, "sample": [], "omitted": 0},
+        "belief_history": [],
+        "goal_coverage": 0,
+        "finite_belief_approximation": True,
+        "hidden_state_used_for_policy": False,
+    }
+
+
+def _invalid_known_positions_result(
+    *,
+    algorithm: str,
+    capability: str,
+    goal: tuple[int, ...],
+    started: float,
+    known: dict[int, int],
+    contradiction: tuple[int, int, int],
+) -> SearchResult:
+    pos, expected, actual = contradiction
+    row, column = divmod(pos, 4)
+    message = (
+        "Known positions contradict the hidden audit start state: "
+        f"row={row}, column={column}, clue={expected}, actual={actual}. "
+        "The belief planner stops instead of falling back to the hidden state."
+    )
+    return SearchResult(
+        success=False,
+        algorithm=algorithm,
+        group="Complex Environments",
+        capability=capability,
+        goal_state=goal,
+        runtime=time.perf_counter() - started,
+        message=message,
+        model_evidence={
+            **_empty_belief_evidence(known),
+            "contradiction": {
+                "position": pos,
+                "row": row,
+                "column": column,
+                "clue": expected,
+                "actual": actual,
+            },
+        },
+        termination_reason="invalid_input",
+        uses_randomness=True,
+        is_complete=False,
+        is_optimal=False,
+        suitable_for_puzzle=False,
+    )
+
+
 def _sample_state_from_known_positions(
     goal: tuple[int, ...],
     rng: random.Random,
@@ -144,7 +209,31 @@ def _build_belief_from_known_positions(
         if _matches_known_positions(candidate, known) and is_solvable(candidate, goal):
             belief.add(candidate)
 
-    return belief or {hidden_state}
+    return belief
+
+
+def _policy_observation_summary(
+    policy: dict[str, object] | None,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    if not policy or policy.get("type") != "OR":
+        return [], []
+    branches = policy.get("observation_branches") or {}
+    if not isinstance(branches, dict):
+        return [], []
+    partitions: list[dict[str, object]] = []
+    updated: list[dict[str, object]] = []
+    for observation, branch in branches.items():
+        branch_payload = branch if isinstance(branch, dict) else {}
+        belief_payload = branch_payload.get("belief") or {}
+        partitions.append({
+            "observation": observation,
+            "belief": belief_payload,
+        })
+        updated.append({
+            "observation": observation,
+            "updated_belief": belief_payload,
+        })
+    return partitions, updated
 
 
 def and_or_search(
@@ -355,15 +444,49 @@ def no_observation_search(
     started = time.perf_counter()
     rng = random.Random(seed)
     known = _normalize_known_positions(known_positions)
-    initial = BeliefState(
-        _build_belief_from_known_positions(
-            start,
-            goal,
-            num_belief_states,
-            rng,
-            known,
-            include_hidden=True,
+    contradiction = _known_position_contradiction(tuple(start), known)
+    if contradiction is not None:
+        return _invalid_known_positions_result(
+            algorithm="Searching with no observation",
+            capability="conformant_plan",
+            goal=goal,
+            started=started,
+            known=known,
+            contradiction=contradiction,
         )
+    belief_states = _build_belief_from_known_positions(
+        start,
+        goal,
+        num_belief_states,
+        rng,
+        known,
+        include_hidden=True,
+    )
+    if not belief_states:
+        return SearchResult(
+            success=False,
+            algorithm="Searching with no observation",
+            group="Complex Environments",
+            capability="conformant_plan",
+            goal_state=goal,
+            random_seed=seed,
+            runtime=time.perf_counter() - started,
+            message=(
+                "Known-position reconstruction produced an empty finite belief set. "
+                "The conformant planner stops instead of falling back to a hidden state."
+            ),
+            model_evidence={
+                **_empty_belief_evidence(known),
+                "illegal_action_semantics": "no-op",
+            },
+            termination_reason="invalid_belief",
+            uses_randomness=True,
+            is_complete=False,
+            is_optimal=False,
+            suitable_for_puzzle=False,
+        )
+    initial = BeliefState(
+        belief_states
     )
     outcome = conformant_belief_search(
         initial,
@@ -432,6 +555,16 @@ def partially_observable_search(
     started = time.perf_counter()
     rng = random.Random(seed)
     known = _normalize_known_positions(known_positions)
+    contradiction = _known_position_contradiction(tuple(start), known)
+    if contradiction is not None:
+        return _invalid_known_positions_result(
+            algorithm="Searching for partially observable problems",
+            capability="contingent_policy",
+            goal=goal,
+            started=started,
+            known=known,
+            contradiction=contradiction,
+        )
     candidates = _build_belief_from_known_positions(
         start,
         goal,
@@ -446,7 +579,33 @@ def partially_observable_search(
         for state in candidates
         if observe_blank_and_neighbors(state) == initial_observation
     }
-    initial = BeliefState(filtered or {tuple(start)})
+    if not filtered:
+        return SearchResult(
+            success=False,
+            algorithm="Searching for partially observable problems",
+            group="Complex Environments",
+            capability="contingent_policy",
+            goal_state=goal,
+            random_seed=seed,
+            runtime=time.perf_counter() - started,
+            message=(
+                "Initial observation filtered the represented belief set to zero states. "
+                "No A* fallback or hidden-state fallback was used."
+            ),
+            model_evidence={
+                **_empty_belief_evidence(known),
+                "initial_observation": initial_observation,
+                "candidates_before_observation": len(candidates),
+                "observation_partitions": [],
+                "updated_beliefs": [],
+            },
+            termination_reason="invalid_belief",
+            uses_randomness=True,
+            is_complete=False,
+            is_optimal=False,
+            suitable_for_puzzle=False,
+        )
+    initial = BeliefState(filtered)
     outcome = contingent_belief_search(
         initial,
         tuple(goal),
@@ -456,6 +615,11 @@ def partially_observable_search(
         action_order=action_order,
     )
     del belief_planner
+    observation_partitions, updated_beliefs = _policy_observation_summary(
+        outcome.evidence.get("policy")
+        if isinstance(outcome.evidence, dict)
+        else None
+    )
     return SearchResult(
         success=outcome.success,
         algorithm="Searching for partially observable problems",
@@ -482,6 +646,8 @@ def partially_observable_search(
             "known_positions": known,
             "finite_belief_approximation": True,
             "hidden_state_used_for_policy": False,
+            "observation_partitions": observation_partitions,
+            "updated_beliefs": updated_beliefs,
         },
         trace=outcome.trace,
         termination_reason=outcome.termination_reason,

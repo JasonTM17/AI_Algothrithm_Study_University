@@ -5,8 +5,10 @@
 | File | Vai trò |
 |---|---|
 | `app.py` | Streamlit entrypoint, page config, sidebar, language selector, start/goal controls và tab router. |
-| `ui/play_tab.py` | Board số/ảnh và router hai mode: Solver Replay hoặc Group 6 Decision Lab. |
-| `ui/group6_decision_lab.py`, `ui/group6_tree_viewer.py` | Replay role MAX/MIN/CHANCE trên board ảnh không số, profiler depth, stability, export và tree zoom/pan. |
+| `ui/play_tab.py` | Board số/ảnh và router hai mode: Solver Replay hoặc Decision / Policy Lab. |
+| `ui/group6_policy_comparison.py` | Hai lane policy độc lập cho Minimax, Alpha-Beta và Expectimax trên cùng Start/Goal. |
+| `ui/group6_variant_labs.py` | Robustness Game Variant một board MAX/MIN và Chance Outcome Lab cho Expectimax, đều dùng puzzle ảnh không số. |
+| `ui/group6_decision_lab.py`, `ui/group6_tree_viewer.py` | Replay role MAX/MIN/CHANCE, profiler depth, stability, export và tree zoom/pan cho decision trace. |
 | `ui/run_tab.py` | Chạy một thuật toán, metrics, trace, trajectory, readable tree và Graphviz evidence. |
 | `ui/compare_tab.py` | Benchmark nhiều solver cùng start/goal/seed/limit; chọn nhanh toàn bộ thuật toán có quỹ đạo so sánh được. |
 | `ui/image_algorithm_race.py` | Biểu đồ runtime/bước và replay đồng bộ nhiều quỹ đạo bằng cùng puzzle ảnh, không phủ số. |
@@ -26,6 +28,7 @@
 | `core/randomness.py` | Seed, action order, stochastic solver metadata. |
 | `core/ai_vs_ai_tournament.py` | A* reference, score, tie-break và per-round evidence. |
 | `core/group6_decision_lab.py` | Settings, fingerprint, role frames, space proxy và runner Minimax/Alpha-Beta/Expectimax cho Play. |
+| `core/group6_policy_comparison.py`, `core/group6_variant_labs.py` | Policy comparison, robustness game variant, chance outcome lab, turn frames, stability sample và JSON-safe evidence. |
 | `core/academic.py`, `core/academic_proofs.py`, `core/theory.py` | Taxonomy, PEAS, theory cards, pseudocode và exam notes. |
 
 ## Algorithms

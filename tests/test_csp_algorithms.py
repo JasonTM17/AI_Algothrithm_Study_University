@@ -42,6 +42,13 @@ def test_csp_algorithms_return_exact_one_move_chain(solver, capability):
     assert result.path_verified and result.goal_reached
     assert result.path == [ONE_MOVE, GOAL_STATE]
     assert result.actions == ["R"]
+    evidence = result.model_evidence
+    assert evidence["horizon"] == 1
+    assert evidence["variables"] == ["S[0]", "S[1]"]
+    assert evidence["domain_sizes"] == [1, 1]
+    assert evidence["complete_assignment"] == [list(ONE_MOVE), list(GOAL_STATE)]
+    assert evidence["constraint_checks"]
+    assert all(check["legal"] for check in evidence["constraint_checks"])
 
 
 def test_forward_checking_does_not_try_more_assignments_than_backtracking():
@@ -55,6 +62,8 @@ def test_forward_checking_does_not_try_more_assignments_than_backtracking():
     assert plain.success and forward.success
     assert forward.model_evidence["assignments"] <= plain.model_evidence["assignments"]
     assert forward.model_evidence["values_pruned"] >= 0
+    assert "partial_assignment" in forward.model_evidence
+    assert "complete_assignment" in forward.model_evidence
 
 
 def test_ac3_arc_consistency_has_support_for_every_remaining_value():
@@ -62,6 +71,10 @@ def test_ac3_arc_consistency_has_support_for_every_remaining_value():
     model = build_state_chain_csp(start, GOAL_STATE, horizon=3)
     result = constraint_propagation(start, time_horizon=3, timeout=5)
     assert result.termination_reason in {"goal", "arc_consistent"}
+    assert result.model_evidence["arc_checks"] >= 1
+    assert result.model_evidence["variables"] == ["S[0]", "S[1]", "S[2]", "S[3]"]
+    assert len(result.model_evidence["domain_sizes"]) == 4
+    assert any(step.event == "revise" for step in result.trace)
     for index in range(model.horizon):
         for left in model.domains[index]:
             assert any(model.compatible(left, right) for right in model.domains[index + 1])
@@ -107,3 +120,6 @@ def test_min_conflicts_fixed_seed_is_reproducible():
     assert first.path == second.path
     assert first.actions == second.actions
     assert first.model_evidence == second.model_evidence
+    if first.success:
+        assert first.model_evidence["conflicts"] == 0
+        assert first.model_evidence["complete_assignment"]

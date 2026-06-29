@@ -430,6 +430,18 @@ def render_start_goal_contract(
         render_start_goal_editor(key_prefix="active_contract", expanded=True)
 
 
+def result_message_summary(message: object, max_chars: int = 320) -> str:
+    """Return one concise status line while preserving structured details elsewhere."""
+    text = str(message or "").strip()
+    if not text:
+        return ""
+    summary = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if len(summary) <= max_chars:
+        return summary
+    clipped = summary[: max_chars - 3].rsplit(" ", 1)[0].rstrip()
+    return f"{clipped or summary[: max_chars - 3]}..."
+
+
 def render_result_metrics(result):
     """Render search result as metric cards."""
     if result is None:
@@ -508,10 +520,166 @@ def render_result_metrics(result):
         )
     )
 
-    if result.message:
+    if result.message and result.capability != "conditional_plan":
         msg_cls = "result-success" if success else "result-failure"
-        safe_message = escape(str(result.message))
+        message = str(result.message).strip()
+        summary = result_message_summary(message)
+        safe_message = escape(summary)
         st.markdown(f'<div class="{msg_cls}">{safe_message}</div>', unsafe_allow_html=True)
+        if message != summary:
+            with st.expander(t("result_message_details"), expanded=False):
+                st.text(message)
+
+
+def _assignment_cell(value: object) -> str:
+    if value is None or value == []:
+        return "-"
+    if isinstance(value, (list, tuple)) and len(value) == 16:
+        rows = [" ".join(str(item) for item in value[index:index + 4]) for index in range(0, 16, 4)]
+        return " / ".join(rows)
+    return str(value)
+
+
+def render_csp_assignment_evidence(result) -> None:
+    """Render bounded state-chain CSP evidence from model_evidence."""
+    if result is None or not str(getattr(result, "capability", "")).startswith("csp_"):
+        return
+    evidence = getattr(result, "model_evidence", {}) or {}
+    variables = evidence.get("variables") or []
+    if not variables:
+        return
+
+    domain_sizes = evidence.get("domain_sizes") or []
+    partial = evidence.get("partial_assignment") or []
+    complete = evidence.get("complete_assignment") or []
+    rows = []
+    for index, variable in enumerate(variables):
+        rows.append({
+            t("evidence_variable"): variable,
+            t("evidence_domain_size"): domain_sizes[index] if index < len(domain_sizes) else "-",
+            t("evidence_partial_assignment"): _assignment_cell(
+                partial[index] if index < len(partial) else None
+            ),
+            t("evidence_complete_assignment"): _assignment_cell(
+                complete[index] if index < len(complete) else None
+            ),
+        })
+
+    with st.expander(t("csp_assignment_evidence_title"), expanded=True):
+        st.caption(t("csp_assignment_evidence_caption"))
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+
+        summary_cols = st.columns(4)
+        summary_cols[0].metric(t("evidence_horizon"), evidence.get("horizon", "-"))
+        summary_cols[1].metric(
+            t("evidence_constraint_checks"),
+            evidence.get("checks", evidence.get("arc_checks", "-")),
+        )
+        summary_cols[2].metric(
+            t("evidence_values_pruned_removed"),
+            evidence.get("values_pruned", evidence.get("values_removed", "-")),
+        )
+        summary_cols[3].metric(t("evidence_conflicts"), evidence.get("conflicts", "-"))
+
+        checks = evidence.get("constraint_checks") or []
+        if checks:
+            st.markdown(t("evidence_constraint_checks_heading"))
+            st.dataframe(pd.DataFrame(checks), hide_index=True, width="stretch")
+        if complete:
+            st.success(t("evidence_complete_assignment_success"))
+        elif result.success:
+            st.info(t("evidence_csp_success_without_path"))
+        else:
+            st.warning(t("evidence_no_complete_assignment"))
+
+
+def _belief_sample_cell(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return "-"
+    sample = payload.get("sample") or []
+    if not sample:
+        return "-"
+    first = sample[0]
+    return _assignment_cell(first)
+
+
+def render_belief_state_evidence(result) -> None:
+    """Render Group 4 belief-state evidence without relying on prose messages."""
+    if result is None or getattr(result, "capability", "") not in {
+        "conformant_plan",
+        "contingent_policy",
+    }:
+        return
+    evidence = getattr(result, "model_evidence", {}) or {}
+    initial = evidence.get("initial_belief") or {}
+    if not initial:
+        return
+
+    with st.expander(t("belief_evidence_title"), expanded=True):
+        st.caption(t("belief_evidence_caption"))
+        cols = st.columns(4)
+        cols[0].metric(t("belief_initial"), initial.get("size", 0))
+        cols[1].metric(t("belief_goal_coverage"), evidence.get("goal_coverage", "-"))
+        cols[2].metric(
+            t("belief_hidden_used_for_policy"),
+            str(evidence.get("hidden_state_used_for_policy", "-")),
+        )
+        cols[3].metric(
+            t("belief_finite_approximation"),
+            str(evidence.get("finite_belief_approximation", "-")),
+        )
+
+        history = evidence.get("belief_history") or []
+        if history:
+            st.markdown(t("belief_history_heading"))
+            st.dataframe(
+                pd.DataFrame(
+                    {
+                        t("tc_step"): index,
+                        t("mc_belief_size"): payload.get("size", 0),
+                        t("belief_sample_state"): _belief_sample_cell(payload),
+                        t("belief_omitted"): payload.get("omitted", 0),
+                    }
+                    for index, payload in enumerate(history)
+                    if isinstance(payload, dict)
+                ),
+                hide_index=True,
+                width="stretch",
+            )
+
+        partitions = evidence.get("observation_partitions") or []
+        if partitions:
+            st.markdown(t("belief_partitions_heading"))
+            st.dataframe(
+                pd.DataFrame(
+                    {
+                        t("tc_observation"): item.get("observation", "-"),
+                        t("mc_belief_size"): (item.get("belief") or {}).get("size", "-"),
+                        t("belief_sample_state"): _belief_sample_cell(item.get("belief")),
+                    }
+                    for item in partitions
+                    if isinstance(item, dict)
+                ),
+                hide_index=True,
+                width="stretch",
+            )
+
+        updated = evidence.get("updated_beliefs") or []
+        if updated:
+            st.markdown(t("belief_updated_heading"))
+            st.dataframe(
+                pd.DataFrame(
+                    {
+                        t("tc_observation"): item.get("observation", "-"),
+                        t("belief_updated_size"): (item.get("updated_belief") or {}).get("size", "-"),
+                        t("belief_sample_state"): _belief_sample_cell(item.get("updated_belief")),
+                    }
+                    for item in updated
+                    if isinstance(item, dict)
+                ),
+                hide_index=True,
+                width="stretch",
+            )
 
 
 def render_trace_table(trace: list, max_rows: int = 100):

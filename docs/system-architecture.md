@@ -11,8 +11,8 @@ flowchart LR
     R --> M["SearchResult certificate"]
     C --> M
     P --> M
-    P --> G6["Group 6 Decision Lab"]
-    G6 --> E["Role frames + complexity evidence"]
+    P --> G6["Decision / Policy Lab"]
+    G6 --> E["Policy comparison + robustness + chance evidence"]
     M --> V["Trace, readable tree, Graphviz evidence"]
     A --> X["CSP / belief / game / tournament"]
     G["GIF generator"] --> D["README atlas + gallery + manifest"]
@@ -49,11 +49,16 @@ The UI keeps two views:
 
 Large search trees are filtered by solution path, expanded neighborhood or first recorded nodes instead of being squeezed into one unreadable image.
 
-## Group 6 Decision Lab
+## Group 6 Decision / Policy Lab
 
-- `ui/group6_decision_lab.py` and `ui/group6_policy_comparison.py` own controls, role replay, two-lane policy comparison, depth sweep, stability sample and CSV/JSON export.
+- `ui/group6_policy_comparison.py` owns two independent policy lanes for Minimax, Alpha-Beta and Expectimax.
+- `ui/group6_variant_labs.py` owns the single-board Robustness Game Variant and the Expectimax Chance Outcome Lab.
+- `ui/group6_decision_lab.py` remains the role-frame decision trace/depth-sweep surface.
 - `core/group6_decision_lab.py` invokes the public adversarial solvers without changing their signatures and converts structured trace events into exact role frames.
+- `core/group6_variant_labs.py` adds variant state, fingerprints, turn frames and export payloads without image/base64 data.
 - Minimax/Alpha-Beta frames alternate MAX and worst-case MIN. Expectimax frames separate intended action from seeded CHANCE outcome.
+- Robustness Game Variant is an artificial MAX/MIN environment model on one board; it is not the standard 15-puzzle definition.
+- Chance Outcome Lab has no MIN player; it samples stochastic outcomes from an explicit probability model.
 - Fingerprints prevent comparison across different Start/Goal/depth/order/probability contracts.
 - Space evidence is a proxy from generated/captured nodes and depth; the app does not report fabricated MB.
 

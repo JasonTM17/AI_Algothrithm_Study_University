@@ -11,6 +11,16 @@ from core.group6_decision_lab import (
     compare_minimax_alpha_beta,
     run_group6_algorithm,
 )
+from core.group6_variant_labs import (
+    Group6ChanceSettings,
+    Group6RobustnessSettings,
+    advance_chance_lab,
+    advance_robustness_game,
+    chance_outcome_distribution,
+    create_chance_lab,
+    create_robustness_game,
+    run_chance_stability_sample,
+)
 from core.puzzle import GOAL_STATE, _move_blank, scramble
 
 
@@ -112,3 +122,90 @@ def test_group6_fingerprint_changes_with_model_settings_but_not_algorithm_pairin
     assert minimax_result.run_fingerprint != alpha_beta_result.run_fingerprint
     assert minimax_result.baseline_fingerprint != deeper.baseline_fingerprint
     assert compare_minimax_alpha_beta(deeper, alpha_beta_result) is None
+
+
+def test_robustness_game_alternates_max_min_and_uses_legal_moves():
+    settings = Group6RobustnessSettings(
+        algorithm="Minimax",
+        depth=2,
+        per_turn_timeout=10.0,
+        max_turns=4,
+    )
+    game = create_robustness_game(start=START, goal=GOAL_STATE, settings=settings)
+
+    advance_robustness_game(game)
+    advance_robustness_game(game)
+
+    assert [frame.role for frame in game.frames[:2]] == ["MAX", "MIN"]
+    for frame in game.frames:
+        assert _move_blank(frame.before_state, frame.realized_action) == frame.after_state
+        assert frame.mode == "robustness_game_variant"
+    assert "image" not in json.dumps(game.export_summary()).lower()
+    assert "base64" not in json.dumps(game.export_summary()).lower()
+
+
+def test_robustness_game_rejects_expectimax():
+    settings = Group6RobustnessSettings(algorithm="Expectimax")
+    try:
+        create_robustness_game(start=START, goal=GOAL_STATE, settings=settings)
+    except ValueError as exc:
+        assert "Minimax" in str(exc)
+    else:
+        raise AssertionError("Expectimax must not be accepted in robustness mode")
+
+
+def test_chance_outcome_distribution_is_normalized_and_legal():
+    intended = next(action for action in "LRUD" if _move_blank(START, action) is not None)
+    outcomes = chance_outcome_distribution(
+        START,
+        intended,
+        success_probability=0.7,
+        action_order="LRUD",
+    )
+
+    assert outcomes
+    assert abs(sum(probability for _, _, probability in outcomes) - 1.0) < 1e-9
+    for action, state, _ in outcomes:
+        assert _move_blank(START, action) == state
+
+
+def test_chance_lab_fixed_seed_is_stable_and_records_expected_value():
+    settings = Group6ChanceSettings(
+        depth=2,
+        per_turn_timeout=10.0,
+        max_turns=3,
+        success_probability=0.65,
+        seed=77,
+    )
+    first = create_chance_lab(start=START, goal=GOAL_STATE, settings=settings)
+    second = create_chance_lab(start=START, goal=GOAL_STATE, settings=settings)
+    for _ in range(3):
+        advance_chance_lab(first)
+        advance_chance_lab(second)
+
+    assert first.history == second.history
+    assert [frame.realized_action for frame in first.frames] == [
+        frame.realized_action for frame in second.frames
+    ]
+    assert all(frame.role == "CHANCE" for frame in first.frames)
+    assert all(frame.expected_utility is not None for frame in first.frames)
+
+
+def test_chance_stability_stats_and_export_contract():
+    settings = Group6ChanceSettings(
+        depth=1,
+        per_turn_timeout=10.0,
+        max_turns=2,
+        sample_count=3,
+        seed=5,
+    )
+    sample = run_chance_stability_sample(start=START, goal=GOAL_STATE, settings=settings)
+    assert len(sample["rows"]) == 3
+    assert sample["stats"]["min_runtime"] <= sample["stats"]["mean_runtime"]
+    assert sample["stats"]["goal_reached_count"] >= 0
+
+    lab = create_chance_lab(start=START, goal=GOAL_STATE, settings=settings)
+    advance_chance_lab(lab)
+    encoded = json.dumps(lab.export_summary()).lower()
+    assert "image" not in encoded
+    assert "base64" not in encoded

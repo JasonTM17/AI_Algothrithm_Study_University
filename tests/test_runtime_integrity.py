@@ -43,8 +43,23 @@ def test_search_tree_renderer_has_no_legacy_trace_fallback():
 def test_result_message_is_escaped_before_html_render():
     components_source = (ROOT / "ui" / "components.py").read_text(encoding="utf-8")
 
-    assert "safe_message = escape(str(result.message))" in components_source
+    assert "summary = result_message_summary(message)" in components_source
+    assert "safe_message = escape(summary)" in components_source
     assert "{result.message}</div>" not in components_source
+
+
+def test_result_message_summary_keeps_structured_plan_out_of_status_card():
+    from ui.components import result_message_summary
+
+    message = (
+        "Conditional plan found (depth limit=20).\n"
+        "OR: choose action U (h=10.0)\n"
+        "  IF intended (action=U):\n"
+        "    GOAL reached"
+    )
+
+    assert result_message_summary(message) == "Conditional plan found (depth limit=20)."
+    assert "OR: choose action" not in result_message_summary(message)
 
 
 def test_search_tree_readable_view_has_legend_and_filters():
@@ -202,6 +217,21 @@ def test_run_completion_notice_does_not_overstate_model_success():
     assert model_level == "info"
     assert "did not certify a standard path" in model_text
     assert run_completion_notice("BFS", failed) == ("warning", "BFS: Node limit reached")
+
+    conditional_plan = SearchResult(
+        success=True,
+        algorithm="AND-OR Search",
+        capability="conditional_plan",
+        message=(
+            "Conditional plan found (depth limit=20).\n"
+            "OR: choose action U (h=10.0)\n"
+            "  IF intended (action=U): GOAL reached"
+        ),
+    )
+    notice_level, notice_text = run_completion_notice("AND-OR Search", conditional_plan)
+    assert notice_level == "info"
+    assert "Conditional plan found" in notice_text
+    assert "OR: choose action" not in notice_text
 
 
 def test_run_solver_solvability_guard_is_relative_to_goal():

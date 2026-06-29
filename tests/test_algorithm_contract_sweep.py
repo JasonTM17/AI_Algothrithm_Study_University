@@ -39,6 +39,11 @@ from ui.styles import ALGORITHM_FN_MAP, ALGORITHM_GROUPS
 
 CUSTOM_GOAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 OPPOSITE_PARITY_GOAL = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
+CUSTOM_GOAL_CASES = (
+    ("standard", GOAL_STATE),
+    ("blank-left", CUSTOM_GOAL),
+    ("scrambled-goal", scramble(goal=GOAL_STATE, depth=5, seed=731)),
+)
 PROVEN_OPTIMAL_ON_ONE_MOVE = {"BFS", "UCS", "IDS", "A*", "IDA*"}
 OPTIMAL_SWEEP_SOLVERS = (
     ("BFS", bfs, {}),
@@ -185,6 +190,36 @@ def test_algorithm_contract_sweep_on_shallow_scrambles(
         assert result.goal_reached
 
 
+@pytest.mark.parametrize("goal_name, goal", CUSTOM_GOAL_CASES)
+@pytest.mark.parametrize("depth", (0, 1, 3))
+@pytest.mark.parametrize("display_name, fn_name", _displayed_solver_cases())
+@pytest.mark.deep_algorithm_audit
+def test_every_algorithm_preserves_custom_start_goal_contract(
+    display_name: str,
+    fn_name: str,
+    goal_name: str,
+    goal: tuple[int, ...],
+    depth: int,
+):
+    start = scramble(goal=goal, depth=depth, seed=12_000 + depth)
+    result = _call_from_dispatch(fn_name, start, goal)
+
+    assert isinstance(result, SearchResult), (display_name, goal_name, depth)
+    assert result.algorithm == display_name
+    assert result.goal_state == goal
+    assert result.runtime >= 0
+    if result.path:
+        _assert_legal_recorded_path(result, start)
+    else:
+        assert not result.path_verified
+        assert not result.goal_reached
+    if result.optimality_proven:
+        assert result.success
+        assert result.path_verified
+        assert result.goal_reached
+        assert result.path[-1] == goal
+
+
 @pytest.mark.parametrize(
     "solver, kwargs",
     [(simulated_annealing, {"max_iterations": 1, "seed": 17})],
@@ -236,6 +271,29 @@ def test_ai_vs_ai_tournament_scores_only_verified_goal_paths():
         assert score.path_verified
         assert score.goal_reached
         assert score.status in {"optimal", "suboptimal"}
+
+
+@pytest.mark.parametrize("goal_name, goal", CUSTOM_GOAL_CASES)
+@pytest.mark.deep_algorithm_audit
+def test_tournament_preserves_custom_goal(goal_name: str, goal: tuple[int, ...]):
+    start = scramble(goal=goal, depth=3, seed=13_003)
+    result = run_ai_vs_ai_tournament(
+        TournamentAgentConfig("Reference", "a_star"),
+        TournamentAgentConfig("Baseline", "greedy_best_first"),
+        start=start,
+        goal=goal,
+        rounds=1,
+        timeout=5,
+        max_nodes=10_000,
+    )
+
+    round_result = result.rounds[0]
+    assert round_result.goal_state == goal, goal_name
+    assert round_result.optimal_cost is not None
+    for score in (round_result.agent_a, round_result.agent_b):
+        assert score is not None
+        assert score.path_verified
+        assert score.goal_reached
 
 
 @pytest.mark.parametrize("depth", range(0, 13))

@@ -82,6 +82,9 @@ def build_solver_kwargs(
         kwargs["heuristic"] = heuristic
 
     if extra_params:
-        kwargs.update(extra_params)
+        solver_params = dict(extra_params)
+        for runner_key in ("max_depth", "max_nodes", "timeout"):
+            solver_params.pop(runner_key, None)
+        kwargs.update(solver_params)
 
     return kwargs

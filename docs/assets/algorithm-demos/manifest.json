@@ -353,7 +353,7 @@
         540
       ],
       "file_bytes": 300039,
-      "web_run_status": "solved_not_optimal",
+      "web_run_status": "decision_policy_demo",
       "result_success": true,
       "result_message": "Alpha-Beta Pruning (depth=2)\nCompleted depth 2\nBest utility: 1000.0\nNodes expanded: 8\nCutoff events: 1\nMIN branch models worst-case legal continuations, not a real opponent.\nWith identical ordering, no timeout, and a completed depth, Alpha-"
     },
@@ -715,7 +715,7 @@
         540
       ],
       "file_bytes": 322203,
-      "web_run_status": "solved_not_optimal",
+      "web_run_status": "decision_policy_demo",
       "result_success": true,
       "result_message": "Expectimax (depth=2, success_prob=0.75)\nCompleted depth 2\nExpected utility from start: 749.5\nNodes expanded: 4\n\nComparison with Minimax:\n  Minimax: evaluates WORST-CASE legal continuations\n  Expectimax: computes EXPECTED outcome with CHANCE"
     },
@@ -1145,7 +1145,7 @@
         540
       ],
       "file_bytes": 352098,
-      "web_run_status": "solved_not_optimal",
+      "web_run_status": "decision_policy_demo",
       "result_success": true,
       "result_message": "Minimax (depth=2)\nCompleted depth 2\nBest utility: 1000.0\nMAX selects the most promising legal move.\nMIN branch models worst-case legal continuations, not a real opponent.\nStandard 15-puzzle has no natural adversary; this is robustness analy"
     },

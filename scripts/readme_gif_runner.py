@@ -42,14 +42,17 @@ def run_demo(spec: DemoSpec) -> DemoEvidence:
         return _run_tournament(spec)
 
     fn = _load_function(spec.function_name)
+    timeout = float(spec.params.get("timeout", 10.0))
+    max_nodes = int(spec.params.get("max_nodes", 8000))
+    max_depth = int(spec.params.get("max_depth", 10))
     kwargs = build_solver_kwargs(
         spec.function_name,
         start=spec.start,
         goal=spec.goal,
-        timeout=10.0,
+        timeout=timeout,
         action_order="LRUD",
-        max_nodes=8000,
-        max_depth=int(spec.params.get("max_depth", 10)),
+        max_nodes=max_nodes,
+        max_depth=max_depth,
         heuristic="Manhattan Distance",
         extra_params=dict(spec.params),
     )

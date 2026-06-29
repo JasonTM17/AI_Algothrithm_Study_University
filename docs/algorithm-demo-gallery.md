@@ -344,7 +344,9 @@ Trang này nhúng đủ 24 GIF chạy thật. Mỗi GIF lấy frame từ live St
 
 ## AI-vs-AI Tournament
 
-**Mục tiêu:** Compare agents, robustness and chance models without pretending the puzzle has a natural opponent.
+**Mục tiêu:** Decision / Policy Lab: scored benchmark, policy comparison, robustness game variant and chance outcome lab without pretending standard 15-puzzle has a natural opponent.
+
+Play tách Group 6 thành ba mode: Policy Comparison dùng hai board độc lập, Robustness Game Variant dùng một board chung MAX/MIN nhân tạo, Chance Outcome Lab dùng Expectimax với probability model và seed. Không mode nào được gọi là solver chuẩn hay shortest-path certificate.
 
 ### AI-vs-AI Tournament
 
@@ -371,10 +373,10 @@ Trang này nhúng đủ 24 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Trace evidence:** MAX/MIN nodes, utility and selected root action.
 - **Guarantee:** Depth-limited worst-case decision rule.
 - **Caveat:** Both sides share legal blank moves because 15-puzzle has no natural adversary.
-- **Phù hợp với 15-puzzle chuẩn:** Không phải solver tự nhiên của 15-puzzle: MIN là nhánh worst-case robustness, không phải đối thủ thật.
-- **Kết luận chạy / độ phù hợp:** **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.**
+- **Phù hợp với 15-puzzle chuẩn:** Không phải solver tự nhiên của 15-puzzle: MIN là nhánh worst-case robustness, không phải đối thủ thật. GIF là root decision / policy evidence; nếu variation tới goal thì đó vẫn không phải solver certificate.
+- **Kết luận chạy / độ phù hợp:** **DECISION / POLICY EVIDENCE — Demo may move through legal puzzle states, but the output is root decision / policy evidence, not a shortest solver certificate.**
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
-- **web_run_status:** `solved_not_optimal` - reached goal without an optimality certificate.
+- **web_run_status:** `decision_policy_demo` - root decision / policy evidence, not a shortest solver certificate.
 - **Result message:** Minimax (depth=2) Completed depth 2 Best utility: 1000.0 MAX selects the most promising legal move. MIN branch models worst-case legal continuations, not a real opponent. Standard 15-puzzle has no natural adversary; this is robustness analy
 - **Manifest:** termination `goal`, profile `algorithm`, frames `6`, verified `2026-06-29`.
 
@@ -387,10 +389,10 @@ Trang này nhúng đủ 24 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Trace evidence:** alpha, beta, pruned branches and root utility.
 - **Guarantee:** Same root value as full Minimax for the searched tree.
 - **Caveat:** Pruning saves nodes; it does not turn the puzzle into a real two-player game.
-- **Phù hợp với 15-puzzle chuẩn:** Không phải solver tự nhiên của 15-puzzle: chỉ prune cây Minimax worst-case cùng root value, không đổi puzzle thành game hai người.
-- **Kết luận chạy / độ phù hợp:** **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.**
+- **Phù hợp với 15-puzzle chuẩn:** Không phải solver tự nhiên của 15-puzzle: chỉ prune cây Minimax worst-case cùng root value, không đổi puzzle thành game hai người. GIF là root decision / policy evidence; nếu variation tới goal thì đó vẫn không phải solver certificate.
+- **Kết luận chạy / độ phù hợp:** **DECISION / POLICY EVIDENCE — Demo may move through legal puzzle states, but the output is root decision / policy evidence, not a shortest solver certificate.**
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
-- **web_run_status:** `solved_not_optimal` - reached goal without an optimality certificate.
+- **web_run_status:** `decision_policy_demo` - root decision / policy evidence, not a shortest solver certificate.
 - **Result message:** Alpha-Beta Pruning (depth=2) Completed depth 2 Best utility: 1000.0 Nodes expanded: 8 Cutoff events: 1 MIN branch models worst-case legal continuations, not a real opponent. With identical ordering, no timeout, and a completed depth, Alpha-
 - **Manifest:** termination `goal`, profile `algorithm`, frames `6`, verified `2026-06-29`.
 
@@ -403,10 +405,10 @@ Trang này nhúng đủ 24 GIF chạy thật. Mỗi GIF lấy frame từ live St
 - **Trace evidence:** CHANCE nodes, probabilities and expected utility.
 - **Guarantee:** Depth-limited expected-value policy under the chosen probability model.
 - **Caveat:** Probability model is educational and must be stated before interpreting the result.
-- **Phù hợp với 15-puzzle chuẩn:** Không phải solver chuẩn: dùng CHANCE/probability model để so expected value, xác suất là mô hình giáo dục.
-- **Kết luận chạy / độ phù hợp:** **CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu.**
+- **Phù hợp với 15-puzzle chuẩn:** Không phải solver chuẩn: dùng CHANCE/probability model để so expected value, xác suất là mô hình giáo dục. GIF là root decision / policy evidence; nếu variation tới goal thì đó vẫn không phải solver certificate.
+- **Kết luận chạy / độ phù hợp:** **DECISION / POLICY EVIDENCE — Demo may move through legal puzzle states, but the output is root decision / policy evidence, not a shortest solver certificate.**
 - **Source:** `live_streamlit_browser_capture` via `agent-browser screenshot`.
-- **web_run_status:** `solved_not_optimal` - reached goal without an optimality certificate.
+- **web_run_status:** `decision_policy_demo` - root decision / policy evidence, not a shortest solver certificate.
 - **Result message:** Expectimax (depth=2, success_prob=0.75) Completed depth 2 Expected utility from start: 749.5 Nodes expanded: 4  Comparison with Minimax:   Minimax: evaluates WORST-CASE legal continuations   Expectimax: computes EXPECTED outcome with CHANCE
 - **Manifest:** termination `goal`, profile `algorithm`, frames `6`, verified `2026-06-29`.
 

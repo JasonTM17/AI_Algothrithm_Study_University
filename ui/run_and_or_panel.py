@@ -70,5 +70,6 @@ def render_and_or_result_explanation(result: SearchResult, t: Callable[[str], st
         st.metric(t("run_andor_output_type"), t("run_andor_conditional_plan"))
 
     if result.message:
-        with st.expander(t("run_andor_plan_output"), expanded=True):
-            st.code(result.message, language="text")
+        _, separator, plan_text = result.message.partition("\n")
+        with st.expander(t("run_andor_plan_output"), expanded=False):
+            st.code(plan_text if separator else result.message, language="text")

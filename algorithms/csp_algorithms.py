@@ -24,6 +24,60 @@ def _capability_for(algorithm: str) -> str:
     return "csp_assignment_search"
 
 
+def _variables(horizon: int) -> list[str]:
+    return [f"S[{index}]" for index in range(horizon + 1)]
+
+
+def _state_payload(state: State | None) -> list[int] | None:
+    return list(state) if state is not None else None
+
+
+def _assignment_payload(assignment: list[State | None] | tuple[State | None, ...]) -> list[list[int] | None]:
+    return [_state_payload(state) for state in assignment]
+
+
+def _constraint_checks(
+    model: StateChainCSP,
+    assignment: list[State | None] | tuple[State | None, ...],
+) -> list[dict[str, object]]:
+    checks: list[dict[str, object]] = []
+    for index, (left, right) in enumerate(zip(assignment, assignment[1:])):
+        action = None
+        legal = False
+        if left is not None and right is not None:
+            action = model.action_between(left, right)
+            legal = action is not None
+        checks.append({
+            "from": f"S[{index}]",
+            "to": f"S[{index + 1}]",
+            "action": action,
+            "legal": legal,
+        })
+    return checks
+
+
+def _assignment_evidence(
+    model: StateChainCSP,
+    domains: list[set[State]],
+    *,
+    partial_assignment: list[State | None] | tuple[State | None, ...] | None = None,
+    complete_assignment: list[State] | tuple[State, ...] | None = None,
+    **extra: object,
+) -> dict[str, object]:
+    partial = list(partial_assignment or [])
+    complete = list(complete_assignment or [])
+    check_source: list[State | None] = complete if complete else partial
+    return {
+        "horizon": model.horizon,
+        "variables": _variables(model.horizon),
+        "domain_sizes": [len(domain) for domain in domains],
+        "partial_assignment": _assignment_payload(partial),
+        "complete_assignment": [list(state) for state in complete],
+        "constraint_checks": _constraint_checks(model, check_source),
+        **extra,
+    }
+
+
 def _model_failure(
     algorithm: str,
     goal: State,
@@ -274,13 +328,16 @@ def _backtracking_result(
         algorithm=algorithm,
         group="CSP",
         capability=_capability_for(algorithm),
-        model_evidence={
-            "horizon": time_horizon,
-            "assignments": assignments_tried,
-            "checks": checks,
-            "backtracks": backtracks,
-            "values_pruned": values_pruned,
-        },
+        model_evidence=_assignment_evidence(
+            model,
+            domains,
+            partial_assignment=assignment,
+            complete_assignment=path,
+            assignments=assignments_tried,
+            checks=checks,
+            backtracks=backtracks,
+            values_pruned=values_pruned,
+        ),
         path=path,
         actions=actions,
         goal_state=goal,
@@ -419,13 +476,14 @@ def ac3(
                 algorithm="AC-3",
                 group="CSP",
                 capability="csp_propagation",
-                model_evidence={
-                    "horizon": time_horizon,
-                    "arc_checks": arc_checks,
-                    "revisions": revisions,
-                    "values_removed": removed_total,
-                    "domain_sizes": [len(domain) for domain in domains],
-                },
+                model_evidence=_assignment_evidence(
+                    model,
+                    domains,
+                    partial_assignment=[next(iter(domain), None) for domain in domains],
+                    arc_checks=arc_checks,
+                    revisions=revisions,
+                    values_removed=removed_total,
+                ),
                 goal_state=goal,
                 nodes_expanded=arc_checks,
                 nodes_generated=model.candidate_states,
@@ -461,13 +519,15 @@ def ac3(
         algorithm="AC-3",
         group="CSP",
         capability="csp_propagation",
-        model_evidence={
-            "horizon": time_horizon,
-            "arc_checks": arc_checks,
-            "revisions": revisions,
-            "values_removed": removed_total,
-            "domain_sizes": [len(domain) for domain in domains],
-        },
+        model_evidence=_assignment_evidence(
+            model,
+            domains,
+            partial_assignment=path or [next(iter(domain), None) for domain in domains],
+            complete_assignment=path,
+            arc_checks=arc_checks,
+            revisions=revisions,
+            values_removed=removed_total,
+        ),
         path=path,
         actions=actions,
         goal_state=goal,
@@ -541,11 +601,14 @@ def min_conflicts_state_chain(
                 algorithm="Min-Conflicts",
                 group="CSP",
                 capability="csp_local_repair",
-                model_evidence={
-                    "horizon": time_horizon,
-                    "iterations": iteration,
-                    "conflicts": 0,
-                },
+                model_evidence=_assignment_evidence(
+                    model,
+                    [set(domain) for domain in model.domains],
+                    partial_assignment=assignment,
+                    complete_assignment=path,
+                    iterations=iteration,
+                    conflicts=0,
+                ),
                 path=path,
                 actions=actions,
                 goal_state=goal,
@@ -598,11 +661,13 @@ def min_conflicts_state_chain(
         algorithm="Min-Conflicts",
         group="CSP",
         capability="csp_local_repair",
-        model_evidence={
-            "horizon": time_horizon,
-            "iterations": min(max_iterations, len(trace)),
-            "conflicts": final_conflicts,
-        },
+        model_evidence=_assignment_evidence(
+            model,
+            [set(domain) for domain in model.domains],
+            partial_assignment=assignment,
+            iterations=min(max_iterations, len(trace)),
+            conflicts=final_conflicts,
+        ),
         goal_state=goal,
         random_seed=seed,
         nodes_expanded=min(max_iterations, len(trace)),

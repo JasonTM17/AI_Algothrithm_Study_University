@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from html import escape
 
 import streamlit as st
 
 from core.heuristics import HEURISTICS
+from core.puzzle import parse_state
 from scripts.readme_gif_runner import DemoEvidence, run_demo
 from scripts.readme_gif_specs import get_spec
 from ui.components import render_puzzle_board
@@ -219,11 +220,19 @@ class _ProgressEvidence:
     linear_step: int | None = None
 
 
-def render_web_gif_capture(slug: str, frame: int, *, image_mode: bool = False) -> None:
+def render_web_gif_capture(
+    slug: str,
+    frame: int,
+    *,
+    image_mode: bool = False,
+    start_text: str | None = None,
+    goal_text: str | None = None,
+    run_params: dict[str, object] | None = None,
+) -> None:
     """Render one browser-capturable frame from a real algorithm run."""
     st.markdown(CAPTURE_CSS, unsafe_allow_html=True)
     try:
-        spec = get_spec(slug)
+        spec = _capture_spec(slug, start_text, goal_text, run_params)
         evidence = run_demo(spec)
     except Exception as exc:  # Keep capture route honest instead of crashing.
         st.markdown(_error_page(slug, exc), unsafe_allow_html=True)
@@ -271,6 +280,36 @@ def render_web_gif_capture(slug: str, frame: int, *, image_mode: bool = False) -
         """,
         unsafe_allow_html=True,
     )
+
+
+def _capture_spec(
+    slug: str,
+    start_text: str | None,
+    goal_text: str | None,
+    run_params: dict[str, object] | None,
+):
+    """Build the registered demo spec, with optional URL-provided run inputs."""
+    spec = get_spec(slug)
+    start = parse_state(start_text) if start_text else spec.start
+    goal = parse_state(goal_text) if goal_text else spec.goal
+    params = dict(spec.params)
+    if run_params:
+        params.update(_coerce_run_params(run_params))
+    return replace(spec, start=start, goal=goal, params=params)
+
+
+def _coerce_run_params(run_params: dict[str, object]) -> dict[str, object]:
+    coerced: dict[str, object] = {}
+    for key, value in run_params.items():
+        if value in (None, ""):
+            continue
+        if key in {"max_depth", "max_nodes"}:
+            coerced[key] = int(value)
+        elif key == "timeout":
+            coerced[key] = float(value)
+        else:
+            coerced[key] = value
+    return coerced
 
 
 def _status(evidence: DemoEvidence) -> tuple[str, str, str]:

@@ -60,6 +60,64 @@ def test_and_or_deterministic_support_finds_conditional_plan():
     assert "not probability-weighted" in result.message
 
 
+@pytest.mark.parametrize(
+    "goal",
+    (
+        GOAL_STATE,
+        ONE_MOVE,
+        scramble(goal=GOAL_STATE, depth=5, seed=731),
+    ),
+)
+@pytest.mark.parametrize("depth", range(0, 6))
+@pytest.mark.deep_algorithm_audit
+def test_and_or_intended_support_handles_multiple_start_goal_pairs(goal, depth):
+    start = scramble(goal=goal, depth=depth, seed=9_000 + depth)
+    result = and_or_search(
+        start,
+        goal=goal,
+        max_depth=max(1, depth + 2),
+        nondet_prob=0.0,
+        timeout=5,
+        action_order="LRUD",
+    )
+
+    assert result.success
+    assert result.goal_state == goal
+    assert result.capability == "conditional_plan"
+    assert result.model_evidence["conditional_plan"]
+    assert not result.path
+    assert not result.goal_reached
+    assert not result.optimality_proven
+
+
+@pytest.mark.parametrize(
+    "goal",
+    (
+        GOAL_STATE,
+        ONE_MOVE,
+        scramble(goal=GOAL_STATE, depth=5, seed=731),
+    ),
+)
+@pytest.mark.deep_algorithm_audit
+def test_and_or_deflection_support_stops_honestly_when_depth_is_insufficient(goal):
+    start = scramble(goal=goal, depth=1, seed=9_101)
+    result = and_or_search(
+        start,
+        goal=goal,
+        max_depth=2,
+        nondet_prob=1.0,
+        timeout=2,
+        action_order="LRUD",
+    )
+
+    assert not result.success
+    assert result.goal_state == goal
+    assert result.capability == "conditional_plan"
+    assert result.termination_reason == "depth_limit"
+    assert not result.goal_reached
+    assert not result.optimality_proven
+
+
 def test_and_or_requires_every_supported_outcome():
     result = and_or_search(ONE_MOVE, GOAL_STATE, max_depth=1, nondet_prob=1.0)
     assert not result.success
@@ -124,6 +182,24 @@ def test_no_observation_singleton_returns_conformant_sequence_not_hidden_path():
     assert result.model_evidence["illegal_action_semantics"] == "no-op"
 
 
+@pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
+def test_belief_search_rejects_known_positions_that_contradict_start(solver):
+    result = solver(
+        ONE_MOVE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        seed=42,
+        known_positions={0: 9},
+    )
+    assert not result.success
+    assert result.termination_reason == "invalid_input"
+    assert result.model_evidence["known_positions"] == {0: 9}
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert result.model_evidence["initial_belief"]["size"] == 0
+    assert "contradict" in result.message
+
+
 def test_conformant_plan_replays_on_every_initial_belief_state():
     result = no_observation_search(
         ONE_MOVE,
@@ -168,6 +244,9 @@ def test_partial_observation_returns_policy_not_linear_path():
     assert result.success
     assert result.capability == "contingent_policy"
     assert result.model_evidence["policy"]["type"] == "OR"
+    assert "predicted_belief" in result.model_evidence["policy"]
+    assert result.model_evidence["observation_partitions"]
+    assert result.model_evidence["updated_beliefs"]
     assert result.model_evidence["hidden_state_used_for_policy"] is False
     assert not result.path
 

@@ -84,6 +84,7 @@ def test_committed_gifs_match_manifest_and_are_nonblank():
     allowed_statuses = {
         "solved_optimal",
         "solved_not_optimal",
+        "decision_policy_demo",
         "ran_model_not_goal_path",
         "not_solved_in_demo",
         "ran_tournament_model",
@@ -125,8 +126,11 @@ def test_readme_is_academic_atlas_with_all_algorithm_gifs():
     assert "Backtracking + Forward Checking" in readme
     assert "AC-3" in readme
     assert "state-chain" in readme
+    assert "Complete assignment" in readme
     assert "Frontier/decision rule" in readme
     assert "Same root value as full Minimax" in readme
+    assert "decision_policy_demo" in readme
+    assert "root decision / policy evidence" in readme
     assert "support switch không phải probability weight" in readme
     for group in ALGORITHM_GROUPS:
         assert group in readme
@@ -177,10 +181,14 @@ def test_web_run_status_distinguishes_solution_model_failure_and_tournament():
     assert statuses["BFS"] == "solved_optimal"
     assert statuses["A*"] == "solved_optimal"
     assert statuses["AI-vs-AI Tournament"] == "ran_tournament_model"
+    assert statuses["Minimax"] == "decision_policy_demo"
+    assert statuses["Alpha-Beta Pruning"] == "decision_policy_demo"
+    assert statuses["Expectimax"] == "decision_policy_demo"
     assert any(status == "ran_model_not_goal_path" for status in statuses.values())
     assert set(statuses.values()) <= {
         "solved_optimal",
         "solved_not_optimal",
+        "decision_policy_demo",
         "ran_model_not_goal_path",
         "not_solved_in_demo",
         "ran_tournament_model",
@@ -212,6 +220,9 @@ def test_each_algorithm_has_an_explicit_truthful_run_and_fit_conclusion():
         elif status == "solved_not_optimal":
             assert "DEMO TỚI GOAL" in conclusion
             assert "KHÔNG CÓ CHỨNG CHỈ TỐI ƯU" in conclusion
+        elif status == "decision_policy_demo":
+            assert "DECISION / POLICY EVIDENCE" in conclusion
+            assert "shortest solver" in conclusion
         elif status == "not_solved_in_demo":
             assert "CHẠY ĐƯỢC NHƯNG DEMO KHÔNG TỚI GOAL" in conclusion
             assert "không phải crash" in conclusion
@@ -226,6 +237,7 @@ def test_each_algorithm_has_an_explicit_truthful_run_and_fit_conclusion():
     assert len(conclusions) == 24
     assert sum(value == "not_solved_in_demo" for value in statuses.values()) == 5
     assert sum(value == "ran_model_not_goal_path" for value in statuses.values()) == 3
+    assert sum(value == "decision_policy_demo" for value in statuses.values()) == 3
 
 
 def test_number_tile_palette_stays_restrained():

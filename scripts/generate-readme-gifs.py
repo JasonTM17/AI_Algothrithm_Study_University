@@ -11,7 +11,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from PIL import Image, ImageSequence
 
@@ -151,6 +151,7 @@ def _capture_gif(
     image_mode: bool,
     theme: str,
     output_root: Path,
+    query_params: dict[str, str] | None = None,
 ) -> dict:
     render_profile = PROFILES[profile]
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -162,10 +163,14 @@ def _capture_gif(
     _browser(["set", "viewport", str(render_profile.width), str(render_profile.height)])
     frames: list[Image.Image] = []
     for index in range(len(evidence.states)):
-        url = (
-            f"{base_url}/?capture_demo={quote(evidence.spec.slug)}"
-            f"&capture_frame={index}&capture_image={'1' if image_mode else '0'}"
-        )
+        params = {
+            "capture_demo": evidence.spec.slug,
+            "capture_frame": str(index),
+            "capture_image": "1" if image_mode else "0",
+        }
+        if query_params:
+            params.update(query_params)
+        url = f"{base_url}/?{urlencode(params, quote_via=quote)}"
         frame_path = frame_dir / f"frame-{index:02d}.png"
         _browser(["open", url])
         _browser(["wait", "--text", f"capture-ready-{evidence.spec.slug}-{index}"])
@@ -208,6 +213,8 @@ def _web_run_status(evidence: DemoEvidence) -> str:
     result = evidence.result
     if result is None:
         return "ran_tournament_model"
+    if evidence.spec.algorithm in {"Minimax", "Alpha-Beta Pruning", "Expectimax"}:
+        return "decision_policy_demo"
     if result.success and result.goal_reached:
         return "solved_optimal" if result.optimality_proven else "solved_not_optimal"
     if result.success:

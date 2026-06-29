@@ -212,6 +212,8 @@ def _group_comparison_sections() -> list[str]:
         "",
         "### CSP",
         "",
+        "Complete assignment = `{S[0]=Start, ..., S[T]=Goal}` với mọi cạnh `S[t] -> S[t+1]` là một legal blank move.",
+        "",
         "| Thuật toán | CSP concept | Evidence cần nhìn | Output đúng | Caveat |",
         "|---|---|---|---|---|",
         "| Backtracking | Chronological state-chain assignment. | assignments, consistency checks, backtracks. | Exact-T legal chain khi thành công. | Failure chỉ đúng trong horizon/resource bound. |",
@@ -235,6 +237,7 @@ def _status_label(status: str) -> str:
     return {
         "solved_optimal": "reached goal with an optimality certificate",
         "solved_not_optimal": "reached goal without an optimality certificate",
+        "decision_policy_demo": "root decision / policy evidence, not a shortest solver certificate",
         "ran_model_not_goal_path": "ran successfully as model evidence, not a solved path",
         "not_solved_in_demo": "web demo completed without a solution claim",
         "ran_tournament_model": "scored tournament model, not one solution path",
@@ -260,6 +263,11 @@ def _run_fit_conclusion(spec, record: dict) -> str:
         return _table_cell(
             "CHẠY ĐƯỢC, DEMO TỚI GOAL NHƯNG KHÔNG CÓ CHỨNG CHỈ TỐI ƯU — "
             "Không dùng run này để claim shortest path hoặc solver chuẩn tối ưu."
+        )
+    if status == "decision_policy_demo":
+        return _table_cell(
+            "DECISION / POLICY EVIDENCE — Demo may move through legal puzzle states, but the output "
+            "is root decision / policy evidence, not a shortest solver certificate."
         )
     if status == "not_solved_in_demo":
         return _table_cell(
@@ -297,6 +305,7 @@ def _run_audit_summary(specs, records: dict[str, dict]) -> list[str]:
     reached = by_status.get("solved_not_optimal", [])
     stopped = by_status.get("not_solved_in_demo", [])
     model_only = by_status.get("ran_model_not_goal_path", [])
+    decision_policy = by_status.get("decision_policy_demo", [])
     tournament = by_status.get("ran_tournament_model", [])
     return [
         "## Kết Quả Quét Lại 24 Thuật Toán",
@@ -310,6 +319,7 @@ def _run_audit_summary(specs, records: dict[str, dict]) -> list[str]:
         f"- **Demo tới goal nhưng không có chứng chỉ tối ưu ({len(reached)}):** {', '.join(reached)}.",
         f"- **Chạy được nhưng demo không tới goal ({len(stopped)}):** {', '.join(stopped)}.",
         f"- **Chỉ tạo model evidence/conditional plan, không tạo goal path ({len(model_only)}):** {', '.join(model_only)}.",
+        f"- **Decision-policy demo, output chính là root decision / policy evidence ({len(decision_policy)}):** {', '.join(decision_policy)}.",
         f"- **Chỉ chạy lớp chấm điểm tournament ({len(tournament)}):** {', '.join(tournament)}.",
         "",
         "Chỉ nhóm đầu được README gọi là **solver chuẩn có chứng chỉ tối ưu** cho cấu hình demo. "
@@ -351,6 +361,8 @@ def _standard_15_puzzle_fit(spec, record: dict) -> str:
         note += " GIF ghi trung thực rằng demo không tạo solution claim."
     elif status == "ran_model_not_goal_path":
         note += " GIF là model evidence, không phải path tới goal."
+    elif status == "decision_policy_demo":
+        note += " GIF là root decision / policy evidence; nếu variation tới goal thì đó vẫn không phải solver certificate."
     return _table_cell(note)
 
 

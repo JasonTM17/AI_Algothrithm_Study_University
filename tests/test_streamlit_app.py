@@ -1,5 +1,7 @@
 """Streamlit integration tests for the web-only learning flow."""
 
+from pathlib import Path
+
 from streamlit.testing.v1 import AppTest
 
 from core.academic_proofs import BENCHMARK_PRESETS
@@ -272,6 +274,14 @@ def test_play_ai_solver_panel_exposes_visible_replay_controls():
     assert not app.exception
 
 
+def test_play_copy_uses_selected_algorithm_not_hardcoded_a_star():
+    text = Path("ui/localization.py").read_text(encoding="utf-8")
+    assert "ask A* to solve" not in text
+    assert "cho A* giải" not in text
+    assert "Solver tham chiếu của trang Play: A*" not in text
+    assert "selected algorithm" in text
+
+
 def test_play_shows_non_linear_groups_without_fake_image_replay():
     app = AppTest.from_file("app.py", default_timeout=15)
     app.session_state["global_lang_select"] = "English"
@@ -298,11 +308,16 @@ def test_play_group6_policy_comparison_starts_two_lanes_and_moves_one_step():
 
     assert tuple(app.segmented_control(key="play_experience_mode").options) == (
         "Solver Replay",
-        "Group 6 Decision Lab",
+        "Decision / Policy Lab",
     )
     app.segmented_control(key="play_experience_mode").set_value("group6").run()
 
     assert app.segmented_control(key="group6_play_view").value == "policy"
+    assert tuple(app.segmented_control(key="group6_play_view").options) == (
+        "Policy Comparison",
+        "Robustness Game Variant",
+        "Chance Outcome Lab",
+    )
     assert app.selectbox(key="group6_policy_algorithm_a").value == "Minimax"
     assert app.selectbox(key="group6_policy_algorithm_b").value == "Alpha-Beta Pruning"
     comparison = app.session_state.group6_policy_comparison
@@ -313,6 +328,49 @@ def test_play_group6_policy_comparison_starts_two_lanes_and_moves_one_step():
     assert comparison.turn == 1
     assert len(comparison.lane_a.history) <= 2
     assert len(comparison.lane_b.history) <= 2
+    assert not app.exception
+
+
+def test_play_group6_robustness_variant_uses_shared_board_and_excludes_expectimax():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    app.segmented_control(key="group6_play_view").set_value("robustness").run()
+
+    assert app.selectbox(key="group6_robustness_algorithm").value == "Minimax"
+    assert "Expectimax" not in app.selectbox(key="group6_robustness_algorithm").options
+    app.button(key="btn_group6_robustness_next").click().run()
+    game = app.session_state.group6_robustness_game
+    assert len(game.frames) == 1
+    assert game.frames[0].role == "MAX"
+    assert not app.exception
+
+
+def test_play_group6_chance_lab_runs_expectimax_outcome_and_stability():
+    app = AppTest.from_file("app.py", default_timeout=30)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    app.segmented_control(key="group6_play_view").set_value("chance").run()
+    app.number_input(key="group6_chance_sample_count").set_value(2).run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    assert "Expected Utility" in markdown_text
+    app.button(key="btn_group6_chance_next").click().run()
+    lab = app.session_state.group6_chance_lab
+    assert len(lab.frames) == 1
+    assert lab.frames[0].algorithm == "Expectimax"
+    assert lab.frames[0].probability is not None
+
+    app.button(key="btn_group6_chance_stability").click().run()
+    assert len(app.session_state.group6_chance_stability["rows"]) == 2
     assert not app.exception
 
 
@@ -894,11 +952,25 @@ def test_run_and_or_deterministic_support_outputs_conditional_plan_without_goal_
 
     result = app.session_state.last_result
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    completion_notices = [
+        getattr(info, "value", "")
+        for info in app.info
+        if getattr(info, "value", "").startswith("AND-OR Search:")
+    ]
 
     assert result.algorithm == "AND-OR Search"
     assert result.success
     assert "Conditional plan found" in result.message
     assert "OR: choose action" in result.message
+    assert len(completion_notices) == 1
+    assert "Conditional plan found" in completion_notices[0]
+    assert "OR: choose action" not in completion_notices[0]
+    assert not [
+        item
+        for item in app.markdown
+        if "result-success" in getattr(item, "value", "")
+        and "Conditional plan found" in getattr(item, "value", "")
+    ]
     assert not result.goal_reached
     assert not result.optimality_proven
     assert result.actions == []
@@ -1476,6 +1548,7 @@ def test_advanced_partial_observation_renders_observation_evidence():
     assert any(step.observation for step in result.trace)
     assert result.model_evidence["known_positions"] == {0: 1, 1: 2}
     assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert "Belief-State Evidence" in [expander.label for expander in app.expander]
     assert "Strict criterion" in info_values
     assert "Belief Size" in metric_labels
     assert "Observation" in metric_labels
@@ -1502,6 +1575,7 @@ def test_advanced_csp_ac3_produces_replayable_exact_horizon_path():
     assert propagation.goal_reached
     assert propagation.search_tree_edges
     assert propagation.capability == "csp_propagation"
+    assert "CSP Assignment Evidence" in [expander.label for expander in app.expander]
     assert "Search Tree Visualization" in [expander.label for expander in app.expander]
     assert "AC-3" in propagation.message
     assert not app.exception

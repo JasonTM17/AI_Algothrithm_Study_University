@@ -19,9 +19,12 @@ from core.randomness import activate_run_variation, apply_run_variation, make_ru
 from core.solver_dispatch import build_solver_kwargs
 from ui.academic_panels import render_academic_header, render_algorithm_role_card, render_exam_path
 from ui.components import (
+    render_belief_state_evidence,
+    render_csp_assignment_evidence,
     render_algorithm_evaluation,
     render_path_animation,
     render_result_metrics,
+    result_message_summary,
     render_search_detail_table,
     render_search_tree,
     render_start_goal_contract,
@@ -63,6 +66,9 @@ EXTENSION_MODEL_FUNCTIONS = {
 
 def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple[str, str]:
     """Return the UI notice level/text without overstating model success as a solution."""
+    message_summary = result_message_summary(result.message) or (
+        result.termination_reason or "No result details."
+    )
     if result.success and result.goal_reached:
         if t:
             return "success", t("run_success", algo=algo_name)
@@ -80,7 +86,7 @@ def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple
         CSP_PROPAGATION,
         CSP_LOCAL_REPAIR,
     } and result.success:
-        return "info", f"{algo_name}: {result.message}"
+        return "info", f"{algo_name}: {message_summary}"
     if result.success:
         if t:
             return "info", t("run_model_success_no_goal", algo=algo_name)
@@ -90,8 +96,8 @@ def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple
             "but it did not certify a standard path to the requested goal.",
         )
     if result.termination_reason in {"arc_consistent", "inconsistent", "horizon_infeasible"}:
-        return "info", f"{algo_name}: {result.message}"
-    return "warning", f"{algo_name}: {result.message}"
+        return "info", f"{algo_name}: {message_summary}"
+    return "warning", f"{algo_name}: {message_summary}"
 
 
 def render_run_algorithm_tab(t=None) -> None:
@@ -355,6 +361,8 @@ def render_run_algorithm_tab(t=None) -> None:
     if "last_result" in st.session_state and st.session_state.last_result:
         result = st.session_state.last_result
         render_result_metrics(result)
+        render_belief_state_evidence(result)
+        render_csp_assignment_evidence(result)
         render_and_or_result_explanation(result, tx)
 
         with st.expander(tx("run_eval_section"), expanded=False):

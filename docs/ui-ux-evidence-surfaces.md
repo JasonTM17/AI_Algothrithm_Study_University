@@ -53,11 +53,13 @@ Number tiles dùng neutral palette ổn định theo tile value band. Vị trí 
 - Biểu đồ thời gian và số bước chỉ xếp hạng `path_verified=True` và `goal_reached=True`.
 - Legal partial trajectory, failure và model/conditional output được tách khỏi ranking; 6 nhóm/24 mục vẫn giữ trong taxonomy để học thuật không bị mất.
 
-## Group 6 Decision Evidence
+## Group 6 Decision / Policy Lab
 
-- Hai board biểu diễn vai trò trong cùng decision model, không phải hai solver độc lập.
-- Minimax/Alpha-Beta dùng MAX và worst-case MIN; Expectimax dùng intended action và CHANCE outcome.
-- Principal variation tăng một edge mỗi tick. Cycle được đánh dấu thay vì gọi là tiến bộ.
+- Policy Comparison dùng hai board độc lập để so chính sách, không gọi là hai người chơi cùng một bàn.
+- Robustness Game Variant dùng một board chung: MAX cố giảm Manhattan, MIN là worst-case environment branch.
+- Chance Outcome Lab chỉ dành cho Expectimax: MAX chọn intended action, CHANCE sample outcome theo probability/seed.
+- Puzzle ảnh trong cả ba mode không phủ số; mỗi tick chỉ áp dụng tối đa một legal blank move.
+- Cycle được đánh dấu thay vì gọi là tiến bộ.
 - `Frontier/reached` hiển thị `N/A`; space proxy dùng generated nodes, captured trace/tree nodes, depth và prune count.
 - Tree viewer có principal variation, evaluated events, pruned events, zoom, pan và fullscreen.
 - Depth sweep chỉ so các run cùng fingerprint; expected value không được xếp trực tiếp với worst-case utility.

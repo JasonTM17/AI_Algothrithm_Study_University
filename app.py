@@ -40,7 +40,19 @@ if capture_demo:
     except (TypeError, ValueError):
         capture_frame = 0
     capture_image = str(st.query_params.get("capture_image", "0")) == "1"
-    render_web_gif_capture(str(capture_demo), capture_frame, image_mode=capture_image)
+    capture_run_params = {
+        "max_depth": st.query_params.get("capture_max_depth"),
+        "max_nodes": st.query_params.get("capture_max_nodes"),
+        "timeout": st.query_params.get("capture_timeout"),
+    }
+    render_web_gif_capture(
+        str(capture_demo),
+        capture_frame,
+        image_mode=capture_image,
+        start_text=st.query_params.get("capture_start"),
+        goal_text=st.query_params.get("capture_goal"),
+        run_params=capture_run_params,
+    )
     st.stop()
 
 

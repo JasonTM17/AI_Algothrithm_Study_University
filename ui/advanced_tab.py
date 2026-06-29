@@ -23,6 +23,8 @@ from ui.action_states import render_action_state
 from ui.academic_panels import render_academic_header, render_extension_warning
 from ui.ai_vs_ai_tournament import render_ai_vs_ai_tournament
 from ui.components import (
+    render_belief_state_evidence,
+    render_csp_assignment_evidence,
     render_result_metrics,
     render_path_animation,
     render_search_tree,
@@ -123,6 +125,8 @@ def _render_advanced_outputs(outputs: list[dict]) -> None:
         if entry.get("note"):
             st.info(entry["note"])
         render_result_metrics(result)
+        render_belief_state_evidence(result)
+        render_csp_assignment_evidence(result)
         if result.message:
             with st.expander(t("adv_model_evidence"), expanded=not bool(result.path)):
                 st.text(result.message)

@@ -116,6 +116,7 @@ def _check_manifest_metadata(records: list[dict]) -> None:
     allowed_statuses = {
         "solved_optimal",
         "solved_not_optimal",
+        "decision_policy_demo",
         "ran_model_not_goal_path",
         "not_solved_in_demo",
         "ran_tournament_model",
