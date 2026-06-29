@@ -14,6 +14,7 @@ from ui.sample_images import generate_sample_tiles
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
 LOCAL_PARTIAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 12, 13, 10, 0, 15)
+BELIEF_DEMO_START = (0, 2, 3, 4, 1, 6, 7, 8, 5, 10, 11, 12, 9, 13, 14, 15)
 
 
 def state_text(state):
@@ -25,6 +26,23 @@ def matrix_state_text(state):
         " ".join(str(tile) for tile in state[row_start:row_start + 4])
         for row_start in range(0, 16, 4)
     )
+
+
+def find_dataframe_with_columns(app, required_columns):
+    required = set(required_columns)
+    for element in app.dataframe:
+        frame = element.value
+        if required.issubset(set(frame.columns)):
+            return frame
+    raise AssertionError(f"No dataframe contained columns: {sorted(required)}")
+
+
+def rendered_text(app):
+    parts = []
+    for element_type in ("markdown", "caption", "info", "warning", "success"):
+        for element in getattr(app, element_type, []):
+            parts.append(getattr(element, "value", ""))
+    return "\n".join(parts)
 
 
 def test_web_app_initial_playground_renders_without_exception():
@@ -328,6 +346,79 @@ def test_play_group6_policy_comparison_starts_two_lanes_and_moves_one_step():
     assert comparison.turn == 1
     assert len(comparison.lane_a.history) <= 2
     assert len(comparison.lane_b.history) <= 2
+    summary_frame = find_dataframe_with_columns(
+        app,
+        {
+            "Lane",
+            "Last root value",
+            "Last turn runtime (s)",
+            "Last action",
+            "Stop reason",
+            "Goal reached",
+        },
+    )
+    evidence_frame = find_dataframe_with_columns(
+        app,
+        {
+            "Lane",
+            "Algorithm",
+            "Turn",
+            "Intended",
+            "Realized",
+            "Root value",
+            "Turn runtime (s)",
+            "Expanded",
+            "Generated",
+            "Pruned",
+            "Final Manhattan",
+            "Probability",
+            "Termination",
+        },
+    )
+    page_text = rendered_text(app)
+    assert "Last decision evidence" in page_text
+    assert "Per-turn policy evidence" in page_text
+    assert "not an optimal solver certificate" in page_text
+    assert set(evidence_frame["Lane"]) == {"A", "B"}
+    assert set(evidence_frame["Termination"]) == {"applied"}
+    assert all(value != "-" for value in evidence_frame["Root value"])
+    assert all(value != "-" for value in evidence_frame["Turn runtime (s)"])
+
+    summary_by_lane = summary_frame.set_index("Lane")
+    evidence_by_lane = evidence_frame.set_index("Lane")
+    assert evidence_by_lane.loc["A", "Root value"] == evidence_by_lane.loc["B", "Root value"]
+    assert summary_by_lane.loc["B", "Expanded"] <= summary_by_lane.loc["A", "Expanded"]
+    assert not app.exception
+
+
+def test_play_group6_policy_expectimax_exposes_probability_evidence():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+
+    app.segmented_control(key="play_experience_mode").set_value("group6").run()
+    app.selectbox(key="group6_policy_algorithm_b").set_value("Expectimax").run()
+    app.button(key="btn_group6_policy_next").click().run()
+
+    evidence_frame = find_dataframe_with_columns(
+        app,
+        {
+            "Lane",
+            "Algorithm",
+            "Root value",
+            "Probability",
+            "Termination",
+        },
+    )
+    expectimax_rows = evidence_frame[evidence_frame["Algorithm"] == "Expectimax"]
+    assert not expectimax_rows.empty
+    assert all(value != "-" for value in expectimax_rows["Root value"])
+    assert all(value != "-" for value in expectimax_rows["Probability"])
+    page_text = rendered_text(app)
+    assert "not an optimal solver certificate" in page_text
+    assert "does not run adversarial algorithms against each other" in page_text
     assert not app.exception
 
 
@@ -347,6 +438,7 @@ def test_play_group6_robustness_variant_uses_shared_board_and_excludes_expectima
     game = app.session_state.group6_robustness_game
     assert len(game.frames) == 1
     assert game.frames[0].role == "MAX"
+    assert "Chart appears after at least two recorded turns." in rendered_text(app)
     assert not app.exception
 
 
@@ -368,6 +460,7 @@ def test_play_group6_chance_lab_runs_expectimax_outcome_and_stability():
     assert len(lab.frames) == 1
     assert lab.frames[0].algorithm == "Expectimax"
     assert lab.frames[0].probability is not None
+    assert "Chart appears after at least two recorded turns." in rendered_text(app)
 
     app.button(key="btn_group6_chance_stability").click().run()
     assert len(app.session_state.group6_chance_stability["rows"]) == 2
@@ -390,8 +483,8 @@ def test_play_group6_image_mode_forces_number_overlays_off():
     assert app.session_state.play_board_mode == "image"
     assert app.session_state.show_numbers is False
     assert '<span class="play-tile-number">' not in markdown_text
-    assert "AI A / Policy A" in markdown_text
-    assert "AI B / Policy B" in markdown_text
+    assert "Policy A / independent copy" in markdown_text
+    assert "Policy B / independent copy" in markdown_text
     assert not app.exception
 
 
@@ -588,6 +681,23 @@ def test_play_image_mode_is_available_in_the_main_workbench():
     assert "interactive-board-container-image" in markdown_text
     assert app.session_state["image_tiles"]
     assert app.session_state["image_active"] is True
+    assert app.session_state["play_board_mode"] == "image"
+    assert app.session_state["play_board_mode_choice"] == "Image puzzle"
+    assert not app.exception
+
+
+def test_play_board_mode_radio_recovers_from_stale_widget_choice():
+    app = AppTest.from_file("app.py", default_timeout=15)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["play_board_mode"] = "image"
+    app.session_state["play_board_mode_choice"] = "Number board"
+    app.session_state["play_board_mode_choice_synced_to"] = "number"
+    app.session_state["image_tiles"] = generate_sample_tiles("Cyberpunk City")
+    app.session_state["image_active"] = True
+    app.run()
+
+    assert app.radio(key="play_board_mode_choice").value == "Image puzzle"
     assert app.session_state["play_board_mode"] == "image"
     assert app.session_state["play_board_mode_choice"] == "Image puzzle"
     assert not app.exception
@@ -1064,6 +1174,84 @@ def test_run_no_observation_uses_known_tile_belief_controls():
     assert result.capability == "conformant_plan"
     assert result.model_evidence["known_positions"] == {0: 1, 1: 2}
     assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert result.termination_reason == "resource_limit"
+    assert "Resource limit (bounded run)" in [
+        getattr(metric, "value", "") for metric in app.metric
+    ]
+    assert "not a crash" in rendered_text(app)
+    assert not app.exception
+
+
+def test_run_belief_success_demo_sets_start_goal_and_reaches_model_success():
+    cases = [
+        (
+            "Searching with no observation",
+            "no_observation_search",
+            "conformant_plan",
+        ),
+        (
+            "Searching for partially observable problems",
+            "partially_observable_search",
+            "contingent_policy",
+        ),
+    ]
+    for label, fn_name, capability in cases:
+        app = AppTest.from_file("app.py", default_timeout=20)
+        app.session_state["global_lang_select"] = "English"
+        app.session_state["main_tab_label"] = "Run Algorithm"
+        app.run()
+        app.selectbox(key="algo_group").set_value("Complex Environments").run()
+        app.selectbox(key="algo_name").set_value(label).run()
+
+        app.button(key=f"btn_{fn_name}_belief_success_demo").click().run()
+
+        assert tuple(app.session_state.start_state) == BELIEF_DEMO_START
+        assert tuple(app.session_state.goal_state) == GOAL_STATE
+        assert app.number_input(key=f"{fn_name}_belief_size").value == 1
+        assert app.text_area(key=f"{fn_name}_known_matrix").value == matrix_state_text(BELIEF_DEMO_START)
+
+        app.button(key="btn_run").click().run()
+
+        result = app.session_state.last_result
+        assert result.algorithm == label
+        assert result.capability == capability
+        assert result.success
+        assert result.termination_reason == "model_success"
+        if fn_name == "no_observation_search":
+            assert result.actions == ["D", "D", "D", "R", "R", "R"]
+            assert result.reached_size < 500
+        else:
+            assert result.reached_size < 50
+        assert result.model_evidence["hidden_state_used_for_policy"] is False
+        assert "Model success" in [
+            getattr(metric, "value", "") for metric in app.metric
+        ]
+        assert "Goal reached flag is reserved" in rendered_text(app)
+        assert not app.exception
+
+
+def test_run_belief_demo_forced_action_order_does_not_leak_to_bfs():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Run Algorithm"
+    app.run()
+    app.selectbox(key="algo_group").set_value("Complex Environments").run()
+    app.selectbox(key="algo_name").set_value("Searching with no observation").run()
+
+    app.button(key="btn_no_observation_search_belief_success_demo").click().run()
+    assert app.session_state["run_forced_action_order"] == "DRUL"
+    assert app.session_state["run_forced_action_order_for"] == "no_observation_search"
+
+    app.session_state["last_run_variation_action_order"] = "DRUL"
+    app.selectbox(key="algo_group").set_value("Uninformed Search").run()
+    app.selectbox(key="algo_name").set_value("BFS").run()
+    app.button(key="btn_run").click().run()
+
+    result = app.session_state.last_result
+    assert result.algorithm == "BFS"
+    assert result.variation_action_order != "DRUL"
+    assert "run_forced_action_order" not in app.session_state
+    assert "run_forced_action_order_for" not in app.session_state
     assert not app.exception
 
 

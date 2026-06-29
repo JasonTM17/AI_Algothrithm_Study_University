@@ -1,15 +1,20 @@
 """Academic contracts for the three complex-environment models."""
 
+import random
+
 import pytest
 
 from algorithms.belief_search import (
     BeliefState,
+    conformant_belief_search,
+    contingent_belief_search,
     observe_blank_and_neighbors,
     partition_by_observation,
     predict_belief,
 )
 from algorithms.complex_env import (
     AND_OR_EXPANSION_CAP,
+    _build_belief_from_known_positions,
     and_or_search,
     default_known_positions,
     format_known_positions_matrix,
@@ -58,6 +63,14 @@ def test_and_or_deterministic_support_finds_conditional_plan():
     assert not result.path
     assert not result.uses_probability
     assert "not probability-weighted" in result.message
+
+
+def test_and_or_trivial_goal_is_success_even_with_zero_timeout():
+    result = and_or_search(GOAL_STATE, GOAL_STATE, max_depth=0, timeout=0.0)
+
+    assert result.success
+    assert result.termination_reason == "model_success"
+    assert result.model_evidence["conditional_plan"]["type"] == "goal"
 
 
 @pytest.mark.parametrize(
@@ -151,6 +164,19 @@ def test_predict_belief_uses_documented_illegal_action_noop():
     assert _move_blank(ONE_MOVE, "R") in predicted
 
 
+def test_belief_builder_can_represent_goal_when_clues_require_it():
+    belief = _build_belief_from_known_positions(
+        GOAL_STATE,
+        GOAL_STATE,
+        1,
+        random.Random(0),
+        {index: value for index, value in enumerate(GOAL_STATE)},
+        include_hidden=False,
+    )
+
+    assert belief == {GOAL_STATE}
+
+
 def test_observation_partitions_are_disjoint_and_cover_prediction():
     belief = BeliefState({GOAL_STATE, ONE_MOVE, scramble(GOAL_STATE, 2, seed=9)})
     predicted = predict_belief(belief, "L")
@@ -182,6 +208,37 @@ def test_no_observation_singleton_returns_conformant_sequence_not_hidden_path():
     assert result.model_evidence["illegal_action_semantics"] == "no-op"
 
 
+def test_conformant_belief_search_processes_goal_at_exact_belief_cap():
+    outcome = conformant_belief_search(
+        BeliefState({ONE_MOVE}),
+        GOAL_STATE,
+        max_depth=1,
+        max_beliefs=2,
+        timeout=5,
+        action_order="R",
+    )
+
+    assert outcome.success
+    assert outcome.termination_reason == "model_success"
+    assert outcome.actions == ["R"]
+    assert outcome.reached_size == 2
+
+
+def test_conformant_trivial_goal_is_success_even_with_zero_timeout():
+    outcome = conformant_belief_search(
+        BeliefState({GOAL_STATE}),
+        GOAL_STATE,
+        max_depth=0,
+        max_beliefs=1,
+        timeout=0.0,
+        action_order="LRUD",
+    )
+
+    assert outcome.success
+    assert outcome.termination_reason == "model_success"
+    assert outcome.actions == []
+
+
 @pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
 def test_belief_search_rejects_known_positions_that_contradict_start(solver):
     result = solver(
@@ -198,6 +255,29 @@ def test_belief_search_rejects_known_positions_that_contradict_start(solver):
     assert result.model_evidence["hidden_state_used_for_policy"] is False
     assert result.model_evidence["initial_belief"]["size"] == 0
     assert "contradict" in result.message
+
+
+@pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])
+def test_belief_search_rejects_unsolvable_hidden_start_before_sampling(solver):
+    unsolvable_start = (2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+    partial_clues = {index: unsolvable_start[index] for index in range(2, 16)}
+
+    result = solver(
+        unsolvable_start,
+        GOAL_STATE,
+        num_belief_states=1,
+        max_steps=1,
+        timeout=5,
+        action_order="RULD",
+        seed=7,
+        known_positions=partial_clues,
+    )
+
+    assert not result.success
+    assert result.termination_reason == "unsolvable"
+    assert result.model_evidence["initial_belief"]["size"] == 0
+    assert result.model_evidence["hidden_state_used_for_policy"] is False
+    assert "not solvable" in result.message
 
 
 def test_conformant_plan_replays_on_every_initial_belief_state():
@@ -261,6 +341,36 @@ def test_partial_observation_start_at_goal_returns_goal_policy():
     )
     assert result.success
     assert result.model_evidence["policy"]["type"] == "goal"
+
+
+def test_contingent_belief_search_rejects_empty_initial_belief():
+    outcome = contingent_belief_search(
+        BeliefState(),
+        GOAL_STATE,
+        max_depth=0,
+        max_beliefs=10,
+        timeout=5,
+        action_order="LRUD",
+    )
+
+    assert not outcome.success
+    assert outcome.termination_reason == "invalid_belief"
+    assert outcome.evidence["initial_belief"]["size"] == 0
+
+
+def test_contingent_trivial_goal_is_success_even_with_zero_timeout():
+    outcome = contingent_belief_search(
+        BeliefState({GOAL_STATE}),
+        GOAL_STATE,
+        max_depth=0,
+        max_beliefs=1,
+        timeout=0.0,
+        action_order="LRUD",
+    )
+
+    assert outcome.success
+    assert outcome.termination_reason == "model_success"
+    assert outcome.evidence["policy"]["type"] == "goal"
 
 
 @pytest.mark.parametrize("solver", [no_observation_search, partially_observable_search])

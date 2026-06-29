@@ -1,7 +1,10 @@
 """Single algorithm runner tab."""
 
+from dataclasses import replace
+
 import streamlit as st
 
+from algorithms.complex_env import format_known_positions_matrix
 from core.academic import (
     CONDITIONAL_PLAN,
     CONFORMANT_PLAN,
@@ -24,7 +27,7 @@ from ui.components import (
     render_algorithm_evaluation,
     render_path_animation,
     render_result_metrics,
-    result_message_summary,
+    friendly_result_message,
     render_search_detail_table,
     render_search_tree,
     render_start_goal_contract,
@@ -40,6 +43,7 @@ from ui.run_and_or_panel import (
     run_algorithm_groups,
 )
 from ui.styles import ALGORITHM_FN_MAP
+from ui.start_goal_state import apply_goal_state, apply_start_state
 
 
 RUN_MAX_NODES_MIN = 1000
@@ -50,6 +54,12 @@ RUN_TIMEOUT_CAP = 120
 RUN_TRACE_ROWS = 60
 RUN_DETAIL_ROWS = 30
 RUN_TREE_NODES = 24
+BELIEF_SUCCESS_DEMO_START = (
+    0, 2, 3, 4,
+    1, 6, 7, 8,
+    5, 10, 11, 12,
+    9, 13, 14, 15,
+)
 EXTENSION_MODEL_FUNCTIONS = {
     "and_or_search",
     "no_observation_search",
@@ -64,9 +74,55 @@ EXTENSION_MODEL_FUNCTIONS = {
 }
 
 
+def _full_known_positions(state: tuple[int, ...]) -> dict[int, int]:
+    return {position: value for position, value in enumerate(state)}
+
+
+def _apply_belief_success_demo(selected_fn_name: str) -> None:
+    """Install a stable belief-state demo that has a real model-success outcome."""
+    apply_goal_state(GOAL_STATE)
+    apply_start_state(BELIEF_SUCCESS_DEMO_START)
+    matrix_key = f"{selected_fn_name}_known_matrix"
+    st.session_state[matrix_key] = format_known_positions_matrix(
+        _full_known_positions(BELIEF_SUCCESS_DEMO_START)
+    )
+    st.session_state[f"{matrix_key}_source_state"] = BELIEF_SUCCESS_DEMO_START
+    belief_size_key = f"{selected_fn_name}_belief_size"
+    st.session_state[belief_size_key] = 1
+    st.session_state["run_forced_action_order"] = "DRUL"
+    st.session_state["run_forced_action_order_for"] = selected_fn_name
+    st.session_state["run_belief_demo_applied"] = True
+
+
+def _seed_belief_size_state(belief_size_key: str, default: int = 5) -> None:
+    """Seed the belief-size widget without fighting Streamlit Session State."""
+    if belief_size_key not in st.session_state:
+        st.session_state[belief_size_key] = default
+
+
+def _consume_forced_action_order(selected_fn_name: str) -> str | None:
+    """Use a demo-forced action order only for the algorithm that installed it."""
+    forced_for = st.session_state.pop("run_forced_action_order_for", None)
+    forced_action_order = st.session_state.pop("run_forced_action_order", None)
+    if forced_for == selected_fn_name:
+        return None if forced_action_order is None else str(forced_action_order)
+    return None
+
+
 def run_completion_notice(algo_name: str, result: SearchResult, t=None) -> tuple[str, str]:
     """Return the UI notice level/text without overstating model success as a solution."""
-    message_summary = result_message_summary(result.message) or (
+    if result.termination_reason == "resource_limit" and t:
+        return (
+            "warning",
+            t(
+                "run_resource_limit_notice",
+                algo=algo_name,
+                reached=result.reached_size,
+                frontier=result.max_frontier_size,
+            ),
+        )
+
+    message_summary = friendly_result_message(result.message) or (
         result.termination_reason or "No result details."
     )
     if result.success and result.goal_reached:
@@ -246,18 +302,29 @@ def render_run_algorithm_tab(t=None) -> None:
             )
         if algo_name in {NO_OBSERVATION_ALGORITHM, PARTIALLY_OBSERVABLE_ALGORITHM}:
             default_known = 0 if algo_name == NO_OBSERVATION_ALGORITHM else 2
+            if st.session_state.pop("run_belief_demo_applied", False):
+                st.success(tx("run_belief_demo_success"))
+            st.info(tx("run_belief_demo_help"))
+            st.button(
+                tx("run_belief_demo_apply"),
+                key=f"btn_{selected_fn_name}_belief_success_demo",
+                on_click=_apply_belief_success_demo,
+                args=(selected_fn_name,),
+                width="stretch",
+            )
             known_positions, belief_input_error = render_known_positions_editor(
                 tx,
                 key=f"{selected_fn_name}_known_matrix",
                 start=tuple(st.session_state.start_state),
                 default_count=default_known,
             )
+            belief_size_key = f"{selected_fn_name}_belief_size"
+            _seed_belief_size_state(belief_size_key)
             extra_params["num_belief_states"] = st.number_input(
                 tx("run_belief_candidate_count"),
                 min_value=1,
                 max_value=20,
-                value=5,
-                key=f"{selected_fn_name}_belief_size",
+                key=belief_size_key,
             )
             extra_params["max_beliefs"] = min(int(max_nodes), 5_000)
             extra_params["known_positions"] = known_positions
@@ -322,6 +389,12 @@ def render_run_algorithm_tab(t=None) -> None:
                         previous_action_order=st.session_state.get("last_run_variation_action_order"),
                         previous_tie_breaker=st.session_state.get("last_run_variation_tie_breaker"),
                     )
+                    forced_action_order = _consume_forced_action_order(fn_name)
+                    if forced_action_order is not None:
+                        variation = replace(
+                            variation,
+                            action_order=str(forced_action_order),
+                        )
                     run_extra_params = dict(extra_params)
                     if variation.solver_seed is not None:
                         run_extra_params["seed"] = variation.solver_seed

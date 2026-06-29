@@ -79,7 +79,26 @@ def conformant_belief_search(
     """Find one fixed action sequence that sends every possible state to the goal."""
     started = time.perf_counter()
     if not initial_belief:
-        return BeliefSearchOutcome(False, "invalid_belief")
+        return BeliefSearchOutcome(
+            False,
+            "invalid_belief",
+            evidence={"initial_belief": _belief_payload(initial_belief)},
+        )
+    if all(state == goal for state in initial_belief):
+        return BeliefSearchOutcome(
+            True,
+            "model_success",
+            trace=[],
+            nodes_expanded=0,
+            nodes_generated=1,
+            max_frontier=1,
+            reached_size=1,
+            evidence={
+                "initial_belief": _belief_payload(initial_belief),
+                "belief_history": [_belief_payload(initial_belief)],
+                "goal_coverage": len(initial_belief),
+            },
+        )
 
     frontier = deque([(initial_belief, [], [initial_belief])])
     reached = {initial_belief}
@@ -116,7 +135,8 @@ def conformant_belief_search(
             predicted = predict_belief(belief, action)
             generated += 1
             accepted = predicted not in reached
-            if accepted:
+            over_budget = accepted and len(reached) + 1 > max_beliefs
+            if accepted and not over_budget:
                 reached.add(predicted)
                 frontier.append((predicted, actions + [action], history + [predicted]))
                 max_frontier = max(max_frontier, len(frontier))
@@ -127,7 +147,13 @@ def conformant_belief_search(
                         step=expanded,
                         state=representative,
                         action=action,
-                        event="generate_belief" if accepted else "reject_duplicate_belief",
+                        event=(
+                            "resource_limit_belief"
+                            if over_budget
+                            else "generate_belief"
+                            if accepted
+                            else "reject_duplicate_belief"
+                        ),
                         belief_size=len(predicted),
                         frontier_size=len(frontier),
                         reached_size=len(reached),
@@ -137,7 +163,7 @@ def conformant_belief_search(
                         ),
                     )
                 )
-            if len(reached) >= max_beliefs:
+            if over_budget:
                 return BeliefSearchOutcome(
                     False, "resource_limit", trace=trace,
                     nodes_expanded=expanded, nodes_generated=generated,
@@ -164,6 +190,16 @@ def contingent_belief_search(
 ) -> BeliefSearchOutcome:
     """Build a bounded policy whose branches cover every possible observation."""
     started = time.perf_counter()
+    if not initial_belief:
+        return BeliefSearchOutcome(
+            False,
+            "invalid_belief",
+            evidence={
+                "initial_belief": _belief_payload(initial_belief),
+                "policy": None,
+                "sensor": "blank position and tiles adjacent to the blank",
+            },
+        )
     trace: list[TraceStep] = []
     expanded = 0
     generated = 1
@@ -186,10 +222,12 @@ def contingent_belief_search(
         path: frozenset[BeliefState],
     ) -> dict[str, object] | None:
         nonlocal expanded, generated
-        if not check_budget():
+        if not belief:
             return None
         if all(state == goal for state in belief):
             return {"type": "goal", "belief": _belief_payload(belief)}
+        if not check_budget():
+            return None
         if depth <= 0 or belief in path:
             return None
 
@@ -264,4 +302,3 @@ def contingent_belief_search(
             "sensor": "blank position and tiles adjacent to the blank",
         },
     )
-

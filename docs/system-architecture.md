@@ -35,7 +35,7 @@ flowchart LR
 
 - `path_verified`: every action is a legal blank move.
 - `goal_reached`: final path state equals `goal_state`.
-- `termination_reason`: `goal`, `model_success`, `timeout`, `resource_limit`, `depth_limit`, `exhausted` or `stopped`.
+- `termination_reason`: `goal`, `model_success`, `timeout`, `resource_limit`, `depth_limit`, `invalid_input`, `invalid_belief`, `unsolvable`, `exhausted` or `stopped`.
 - `optimality_proven`: only true for suitable optimal algorithms with legal path, goal reached and `goal` termination.
 
 This separation avoids false claims such as "legal path means solution" or "success means optimal".

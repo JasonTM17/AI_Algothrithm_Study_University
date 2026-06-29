@@ -159,6 +159,37 @@ def _invalid_known_positions_result(
     )
 
 
+def _unsolvable_hidden_state_result(
+    *,
+    algorithm: str,
+    capability: str,
+    goal: tuple[int, ...],
+    started: float,
+    known: dict[int, int],
+    seed: Optional[int],
+) -> SearchResult:
+    """Reject impossible hidden audit states instead of sampling around them."""
+    return SearchResult(
+        success=False,
+        algorithm=algorithm,
+        group="Complex Environments",
+        capability=capability,
+        goal_state=goal,
+        random_seed=seed,
+        runtime=time.perf_counter() - started,
+        message=(
+            "Hidden audit start state is not solvable relative to the selected goal. "
+            "The belief planner stops instead of substituting a different solvable state."
+        ),
+        model_evidence=_empty_belief_evidence(known),
+        termination_reason="unsolvable",
+        uses_randomness=True,
+        is_complete=False,
+        is_optimal=False,
+        suitable_for_puzzle=False,
+    )
+
+
 def _sample_state_from_known_positions(
     goal: tuple[int, ...],
     rng: random.Random,
@@ -199,7 +230,7 @@ def _build_belief_from_known_positions(
     while len(belief) < target_size and attempts < max_attempts:
         attempts += 1
         candidate = _sample_state_from_known_positions(goal, rng, known)
-        if candidate != goal and is_solvable(candidate, goal):
+        if is_solvable(candidate, goal):
             belief.add(candidate)
 
     fill_attempts = 0
@@ -293,10 +324,10 @@ def and_or_search(
         return results
 
     def or_search(state: tuple, depth: int, visited: set) -> Optional[dict]:
-        check_budget()
-        nodes_expanded[0] += 1
         if state == goal:
             return {"type": "goal"}
+        check_budget()
+        nodes_expanded[0] += 1
         if depth <= 0 or state in visited:
             return None
 
@@ -454,6 +485,15 @@ def no_observation_search(
             known=known,
             contradiction=contradiction,
         )
+    if not is_solvable(tuple(start), goal):
+        return _unsolvable_hidden_state_result(
+            algorithm="Searching with no observation",
+            capability="conformant_plan",
+            goal=goal,
+            started=started,
+            known=known,
+            seed=seed,
+        )
     belief_states = _build_belief_from_known_positions(
         start,
         goal,
@@ -564,6 +604,15 @@ def partially_observable_search(
             started=started,
             known=known,
             contradiction=contradiction,
+        )
+    if not is_solvable(tuple(start), goal):
+        return _unsolvable_hidden_state_result(
+            algorithm="Searching for partially observable problems",
+            capability="contingent_policy",
+            goal=goal,
+            started=started,
+            known=known,
+            seed=seed,
         )
     candidates = _build_belief_from_known_positions(
         start,

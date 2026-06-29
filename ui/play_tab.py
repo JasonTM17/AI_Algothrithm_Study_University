@@ -496,10 +496,9 @@ def _render_play_board_panel(
     )
     current_choice = st.session_state.get("play_board_mode_choice")
     current_choice_mode = mode_options.get(current_choice)
-    synced_mode = st.session_state.get("play_board_mode_choice_synced_to")
-    if current_choice_mode is None or synced_mode != stored_mode:
-        st.session_state.play_board_mode_choice = selected_label
-        st.session_state.play_board_mode_choice_synced_to = stored_mode
+    if current_choice is not None and current_choice_mode != stored_mode:
+        st.session_state.pop("play_board_mode_choice", None)
+        st.session_state.pop("play_board_mode_choice_synced_to", None)
 
     mode_label = st.radio(
         t("play_board_mode"),

@@ -442,6 +442,25 @@ def result_message_summary(message: object, max_chars: int = 320) -> str:
     return f"{clipped or summary[: max_chars - 3]}..."
 
 
+def termination_reason_label(reason: str | None) -> str:
+    """Render internal termination codes as learner-facing labels."""
+    if not reason:
+        return "-"
+    key = f"termination_{reason}"
+    label = t(key)
+    return reason.replace("_", " ") if label == key else label
+
+
+def friendly_result_message(message: object) -> str:
+    """Replace raw internal termination codes in a one-line result message."""
+    summary = result_message_summary(message)
+    if not summary:
+        return ""
+    for reason in ("resource_limit", "depth_limit", "timeout", "model_success"):
+        summary = summary.replace(reason, termination_reason_label(reason))
+    return summary
+
+
 def render_result_metrics(result):
     """Render search result as metric cards."""
     if result is None:
@@ -483,7 +502,19 @@ def render_result_metrics(result):
     with cert_cols[2]:
         st.metric(t("mc_optimality_proven"), t("tc_yes") if result.optimality_proven else t("tc_no"))
     with cert_cols[3]:
-        st.metric(t("mc_termination"), result.termination_reason or "-")
+        st.metric(t("mc_termination"), termination_reason_label(result.termination_reason))
+
+    if result.termination_reason == "resource_limit":
+        st.warning(
+            t(
+                "run_resource_limit_help",
+                reached=result.reached_size,
+                frontier=result.max_frontier_size,
+            )
+        )
+
+    if result.capability in {"conformant_plan", "contingent_policy", "conditional_plan"}:
+        st.caption(t("run_model_goal_flag_note"))
 
     model_evidence = next(
         (
@@ -514,7 +545,7 @@ def render_result_metrics(result):
     st.caption(
         t(
             "run_certificate_caption",
-            termination=result.termination_reason or "-",
+            termination=termination_reason_label(result.termination_reason),
             legal_path=evidence_status,
             optimality=optimality_status,
         )
@@ -523,7 +554,7 @@ def render_result_metrics(result):
     if result.message and result.capability != "conditional_plan":
         msg_cls = "result-success" if success else "result-failure"
         message = str(result.message).strip()
-        summary = result_message_summary(message)
+        summary = friendly_result_message(message)
         safe_message = escape(summary)
         st.markdown(f'<div class="{msg_cls}">{safe_message}</div>', unsafe_allow_html=True)
         if message != summary:

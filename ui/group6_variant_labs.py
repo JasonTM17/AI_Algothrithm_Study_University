@@ -200,8 +200,17 @@ def _frames_table(frames) -> pd.DataFrame:
     )
 
 
-def _render_variant_charts(frames, *, title_prefix: str) -> None:
+def _render_variant_charts(t, frames, *, title_prefix: str) -> None:
     if not frames:
+        return
+    if len(frames) < 2:
+        st.caption(
+            _tx(
+                t,
+                "group6_chart_waiting",
+                "Chart appears after at least two recorded turns.",
+            )
+        )
         return
     frame = pd.DataFrame(
         {
@@ -323,7 +332,7 @@ def render_group6_robustness_lab(
             st.session_state.group6_robustness_view_turn = selected
             st.rerun()
         st.dataframe(_frames_table(game.frames), hide_index=True, width="stretch")
-        _render_variant_charts(game.frames, title_prefix="Robustness")
+        _render_variant_charts(t, game.frames, title_prefix="Robustness")
     else:
         st.caption(
             _tx(
@@ -469,7 +478,7 @@ def render_group6_chance_lab(
             st.session_state.group6_chance_view_turn = selected
             st.rerun()
         st.dataframe(_frames_table(lab.frames), hide_index=True, width="stretch")
-        _render_variant_charts(lab.frames, title_prefix="Chance")
+        _render_variant_charts(t, lab.frames, title_prefix="Chance")
 
     stability = st.session_state.get("group6_chance_stability")
     if stability:

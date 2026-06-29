@@ -18,6 +18,11 @@ from core.group6_policy_comparison import (
 )
 from core.heuristics import get_heuristic
 from ui.components import render_image_board, render_puzzle_board
+from ui.group6_policy_evidence import (
+    comparison_rows,
+    render_last_decision_evidence,
+    turn_evidence_rows,
+)
 
 
 POLICY_STATE_KEYS = (
@@ -161,25 +166,7 @@ def _render_lane_metrics(
         _tx(t, "group6_pruned", "Pruned"),
         lane.cumulative_pruned,
     )
-
-
-def _comparison_rows(
-    comparison: Group6PolicyComparison,
-) -> list[dict[str, object]]:
-    return [
-        {
-            "Lane": label,
-            "Algorithm": lane.algorithm,
-            "Status": lane.status,
-            "Turns": len(lane.turns),
-            "Runtime (s)": lane.cumulative_runtime,
-            "Expanded": lane.cumulative_expanded,
-            "Generated": lane.cumulative_generated,
-            "Pruned": lane.cumulative_pruned,
-            "Goal turn": lane.goal_turn,
-        }
-        for label, lane in (("A", comparison.lane_a), ("B", comparison.lane_b))
-    ]
+    render_last_decision_evidence(t, lane)
 
 
 def _render_history_chart(t, comparison: Group6PolicyComparison) -> None:
@@ -201,6 +188,15 @@ def _render_history_chart(t, comparison: Group6PolicyComparison) -> None:
     if not rows:
         return
     frame = pd.DataFrame(rows)
+    if frame["Turn"].nunique() < 2:
+        st.caption(
+            _tx(
+                t,
+                "group6_chart_waiting",
+                "Chart appears after at least two recorded turns.",
+            )
+        )
+        return
     charts = st.columns(2)
     with charts[0]:
         st.markdown(f"**{_tx(t, 'group6_policy_runtime_chart', 'Runtime tích lũy theo lượt')}**")
@@ -230,10 +226,24 @@ def render_group6_policy_comparison(
             "Hai policy chạy trên hai bản sao độc lập của cùng puzzle; đây không phải game hai người cùng tác động lên một board.",
         )
     )
+    st.caption(
+        _tx(
+            t,
+            "group6_policy_metric_note",
+            "Root value is the depth-limited decision utility. Runtime is empirical per decision, not an optimal solver certificate.",
+        )
+    )
+    st.info(
+        _tx(
+            t,
+            "group6_policy_independent_note",
+            "This screen does not run adversarial algorithms against each other. Lane A and lane B each receive a cloned puzzle; use Robustness Game Variant for the MAX/MIN worst-case environment.",
+        )
+    )
     selectors = st.columns(2)
     with selectors[0]:
         st.selectbox(
-            _tx(t, "group6_policy_a", "Thuật toán A"),
+            _tx(t, "group6_policy_a", "Policy A (independent copy)"),
             GROUP6_LAB_ALGORITHMS,
             index=0,
             key="group6_policy_algorithm_a",
@@ -241,7 +251,7 @@ def render_group6_policy_comparison(
         )
     with selectors[1]:
         st.selectbox(
-            _tx(t, "group6_policy_b", "Thuật toán B"),
+            _tx(t, "group6_policy_b", "Policy B (independent copy)"),
             GROUP6_LAB_ALGORITHMS,
             index=1,
             key="group6_policy_algorithm_b",
@@ -327,7 +337,7 @@ def render_group6_policy_comparison(
     with board_columns[0]:
         _render_lane_board(
             t,
-            "AI A / Policy A",
+            _tx(t, "group6_policy_lane_a_title", "Policy A / independent copy"),
             comparison.lane_a,
             _state_at_turn(comparison.lane_a, view_turn),
             goal=goal,
@@ -338,7 +348,7 @@ def render_group6_policy_comparison(
     with board_columns[1]:
         _render_lane_board(
             t,
-            "AI B / Policy B",
+            _tx(t, "group6_policy_lane_b_title", "Policy B / independent copy"),
             comparison.lane_b,
             _state_at_turn(comparison.lane_b, view_turn),
             goal=goal,
@@ -412,10 +422,28 @@ def render_group6_policy_comparison(
     elif comparison.complete:
         st.info(_tx(t, "group6_policy_no_winner", "Hai lane đã dừng nhưng chưa có policy nào tới goal."))
     st.dataframe(
-        pd.DataFrame(_comparison_rows(comparison)),
+        pd.DataFrame(comparison_rows(comparison)),
         hide_index=True,
         width="stretch",
     )
+    st.markdown(
+        f"**{_tx(t, 'group6_policy_turn_evidence', 'Per-turn policy evidence')}**"
+    )
+    turn_rows = turn_evidence_rows(comparison)
+    if turn_rows:
+        st.dataframe(
+            pd.DataFrame(turn_rows),
+            hide_index=True,
+            width="stretch",
+        )
+    else:
+        st.caption(
+            _tx(
+                t,
+                "group6_policy_turn_evidence_empty",
+                "Press Next to record per-turn root value, runtime, action and termination evidence.",
+            )
+        )
     _render_history_chart(t, comparison)
     st.download_button(
         _tx(t, "group6_policy_export", "Tải evidence JSON"),

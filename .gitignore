@@ -62,6 +62,7 @@ DRAFT*.md
 .streamlit/secrets.toml
 streamlit-ui-review*.log
 streamlit-*.log
+tmp_streamlit_*
 .streamlit-smoke.pid
 
 # Test / coverage
