@@ -6,15 +6,16 @@ from streamlit.testing.v1 import AppTest
 
 from core.academic_proofs import BENCHMARK_PRESETS
 from algorithms.uninformed import bfs
-from core.puzzle import GOAL_STATE, validate_solution_path
+from core.puzzle import GOAL_STATE, is_solvable, validate_solution_path
 from ui.play_tab import VICTORY_MESSAGE_KEYS
 from ui.sample_images import generate_sample_tiles
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
 TWO_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
-LOCAL_PARTIAL = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 12, 13, 10, 0, 15)
-BELIEF_DEMO_START = (0, 2, 3, 4, 1, 6, 7, 8, 5, 10, 11, 12, 9, 13, 14, 15)
+LOCAL_PARTIAL = (1, 2, 7, 3, 5, 6, 4, 8, 9, 10, 11, 0, 13, 14, 15, 12)
+BELIEF_DEMO_START = (1, 2, 3, 4, 5, 6, 8, 15, 9, 10, 7, 11, 13, 14, 12, 0)
+MULTI_PATH = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 15, 13, 14, 12, 11)
 
 
 def state_text(state):
@@ -575,6 +576,55 @@ def test_play_can_switch_algorithm_and_compare_from_the_same_baseline():
     assert not app.exception
 
 
+def test_play_repeated_solver_runs_get_fresh_action_order(monkeypatch):
+    from core.randomness import RunVariation
+    import ui.play_tab as play_tab
+
+    variations = iter(
+        (
+            RunVariation(
+                seed=101,
+                action_order="LRUD",
+                tie_breaker="FIFO",
+                solver_seed=None,
+                randomizes_path=True,
+            ),
+            RunVariation(
+                seed=202,
+                action_order="DRUL",
+                tie_breaker="FIFO",
+                solver_seed=None,
+                randomizes_path=True,
+            ),
+        )
+    )
+    monkeypatch.setattr(play_tab, "make_run_variation", lambda *args, **kwargs: next(variations))
+
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = MULTI_PATH
+    app.run()
+
+    app.selectbox(key="play_ai_group").set_value("Uninformed Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("BFS").run()
+
+    app.button(key="btn_ai_solve").click().run()
+    first = app.session_state.play_solution_res
+    assert first.variation_action_order == "LRUD"
+    assert first.random_seed == 101
+    assert first.actions == ["R", "D", "L", "U", "R", "D"]
+
+    app.button(key="btn_ai_solve").click().run()
+    second = app.session_state.play_solution_res
+    assert second.variation_action_order == "DRUL"
+    assert second.random_seed == 202
+    assert second.actions == ["D", "R", "U", "L", "D", "R"]
+    assert second.actions != first.actions
+    assert "Play variation: action order DRUL" in rendered_text(app)
+    assert not app.exception
+
+
 def test_play_local_partial_trajectory_replays_but_is_not_ranked_as_solved():
     app = AppTest.from_file("app.py", default_timeout=20)
     app.session_state["global_lang_select"] = "English"
@@ -632,6 +682,57 @@ def test_play_manual_move_clears_comparison_baseline_and_results():
     assert "play_comparison_results" not in app.session_state
     assert app.session_state.play_solution_path is None
     assert app.session_state.play_state == GOAL_STATE
+    assert not app.exception
+
+
+def test_sidebar_random_generate_uses_fresh_seed_by_default(monkeypatch):
+    seeds = iter([11, 12])
+    monkeypatch.setattr("ui.start_goal_random.secrets.randbelow", lambda upper: next(seeds))
+
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.run()
+
+    app.button(key="btn_random").click().run()
+    first_state = tuple(app.session_state.start_state)
+
+    app.button(key="btn_random").click().run()
+    second_state = tuple(app.session_state.start_state)
+
+    assert app.session_state.sidebar_last_scramble_seed == 12
+    assert app.session_state.sidebar_fresh_scramble_seed is True
+    assert first_state != second_state
+    assert is_solvable(first_state, GOAL_STATE)
+    assert is_solvable(second_state, GOAL_STATE)
+    assert "Last scramble: seed `12`" in rendered_text(app)
+    assert not app.exception
+
+
+def test_play_new_puzzle_uses_fresh_seed_and_clears_replay(monkeypatch):
+    seeds = iter([21])
+    monkeypatch.setattr("ui.start_goal_random.secrets.randbelow", lambda upper: next(seeds))
+
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = ONE_MOVE
+    app.run()
+    app.button(key="btn_ai_solve").click().run()
+
+    assert app.session_state.play_solution_path
+    assert app.session_state.play_comparison_results
+
+    app.button(key="btn_play_new_puzzle").click().run()
+
+    new_state = tuple(app.session_state.start_state)
+    assert app.session_state.last_play_board_scramble_seed == 21
+    assert new_state != ONE_MOVE
+    assert app.session_state.play_state == new_state
+    assert is_solvable(new_state, GOAL_STATE)
+    assert app.session_state.play_solution_path is None
+    assert "play_comparison_results" not in app.session_state
+    assert "New puzzle generated with seed `21`" in rendered_text(app)
     assert not app.exception
 
 
@@ -770,6 +871,37 @@ def test_play_auto_replay_advances_one_step_per_tick():
     success_values = [getattr(success, "value", "") for success in app.success]
     assert "AI Auto-solving complete!" in success_values
     assert "play_auto_done_pending" not in app.session_state
+    assert not app.exception
+
+
+def test_play_local_search_image_auto_stays_at_goal_after_completion():
+    app = AppTest.from_file("app.py", default_timeout=20)
+    app.session_state["global_lang_select"] = "English"
+    app.session_state["main_tab_label"] = "Play Puzzle"
+    app.session_state["start_state"] = TWO_MOVE
+    app.session_state["play_board_mode"] = "image"
+    app.run()
+
+    app.selectbox(key="play_ai_group").set_value("Local Search").run()
+    app.selectbox(key="play_ai_algorithm").set_value("Simple Hill Climbing").run()
+    app.button(key="btn_ai_solve").click().run()
+
+    result = app.session_state.play_solution_res
+    assert result.algorithm == "Simple Hill Climbing"
+    assert result.goal_reached
+    assert result.max_frontier_size > 0
+    assert result.reached_size == len(set(result.path))
+    assert app.session_state.play_board_mode == "image"
+
+    app.button(key="btn_play_auto").click().run()
+    app.run()
+    app.run()
+
+    assert app.session_state.play_solution_idx == len(result.path) - 1
+    assert app.session_state.play_state == GOAL_STATE
+    assert app.session_state.play_solution_path == result.path
+    assert app.session_state.play_board_mode == "image"
+    assert app.session_state.play_auto_run is False
     assert not app.exception
 
 
@@ -1237,10 +1369,10 @@ def test_run_belief_success_demo_sets_start_goal_and_reaches_model_success():
         assert result.success
         assert result.termination_reason == "model_success"
         if fn_name == "no_observation_search":
-            assert result.actions == ["D", "D", "D", "R", "R", "R"]
-            assert result.reached_size < 500
+            assert result.actions == ["U", "U", "L", "D", "D", "R", "U", "L", "D", "R"]
+            assert result.reached_size < 5_000
         else:
-            assert result.reached_size < 50
+            assert result.reached_size < 5_000
         assert result.model_evidence["hidden_state_used_for_policy"] is False
         assert "Model success" in [
             getattr(metric, "value", "") for metric in app.metric

@@ -15,6 +15,7 @@ from ui.path_solver_runner import (
 
 
 ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+MULTI_PATH = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 15, 13, 14, 12, 11)
 EXPECTED_GROUPS = {
     "Uninformed Search": ("BFS", "DFS", "UCS", "IDS"),
     "Informed Search": ("Greedy Best-First", "A*", "IDA*"),
@@ -80,3 +81,24 @@ def test_path_runner_solves_one_move_contract_for_each_play_algorithm(algorithm:
 def test_path_runner_rejects_non_linear_extension_algorithms():
     with pytest.raises(ValueError, match="Unsupported path algorithm"):
         run_path_algorithm("AND-OR Search", start=ONE_MOVE, goal=GOAL_STATE)
+
+
+def test_path_runner_respects_action_order_for_equal_cost_paths():
+    lrud = run_path_algorithm(
+        "BFS",
+        start=MULTI_PATH,
+        goal=GOAL_STATE,
+        settings=PathRunSettings(action_order="LRUD", timeout=2, max_nodes=5_000),
+    )
+    drul = run_path_algorithm(
+        "BFS",
+        start=MULTI_PATH,
+        goal=GOAL_STATE,
+        settings=PathRunSettings(action_order="DRUL", timeout=2, max_nodes=5_000),
+    )
+
+    assert lrud.path_verified and lrud.goal_reached
+    assert drul.path_verified and drul.goal_reached
+    assert lrud.actions == ["R", "D", "L", "U", "R", "D"]
+    assert drul.actions == ["D", "R", "U", "L", "D", "R"]
+    assert lrud.actions != drul.actions

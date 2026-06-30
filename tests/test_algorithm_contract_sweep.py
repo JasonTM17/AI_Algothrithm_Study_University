@@ -30,6 +30,7 @@ from algorithms.local_search import (
 from algorithms.uninformed import bfs, dfs, ids, ucs
 from core.academic import ALGORITHM_TAXONOMY
 from core.ai_vs_ai_tournament import TournamentAgentConfig, run_ai_vs_ai_tournament
+from core.heuristics import manhattan_distance
 from core.metrics import SearchResult
 from core.puzzle import GOAL_STATE, _move_blank, scramble
 from core.randomness import RANDOMIZED_SOLVERS
@@ -62,6 +63,105 @@ _SOLVERS = (
     minimax, alpha_beta_pruning, expectimax,
 )
 SOLVER_FUNCTIONS = {fn.__name__: fn for fn in _SOLVERS}
+TRACE_METRIC_START = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 13, 14, 15, 12)
+TRACE_METRIC_ONE_MOVE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15)
+TRACE_METRIC_CASES = (
+    ("BFS", lambda: bfs(TRACE_METRIC_START, timeout=5, max_nodes=5_000), False),
+    ("DFS", lambda: dfs(TRACE_METRIC_ONE_MOVE, timeout=5, max_depth=5, max_nodes=5_000), False),
+    ("UCS", lambda: ucs(TRACE_METRIC_START, timeout=5, max_nodes=5_000), False),
+    ("IDS", lambda: ids(TRACE_METRIC_START, timeout=5, max_depth=5, max_nodes=5_000), False),
+    (
+        "Greedy Best-First",
+        lambda: greedy_best_first(
+            TRACE_METRIC_START,
+            timeout=5,
+            max_nodes=5_000,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "A*",
+        lambda: a_star(
+            TRACE_METRIC_START,
+            timeout=5,
+            max_nodes=5_000,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "IDA*",
+        lambda: ida_star(
+            TRACE_METRIC_START,
+            timeout=5,
+            max_nodes=5_000,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Simple Hill Climbing",
+        lambda: simple_hill_climbing(
+            TRACE_METRIC_START,
+            timeout=5,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Steepest-Ascent Hill Climbing",
+        lambda: steepest_ascent_hill_climbing(
+            TRACE_METRIC_START,
+            timeout=5,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Stochastic Hill Climbing",
+        lambda: stochastic_hill_climbing(
+            TRACE_METRIC_START,
+            timeout=5,
+            seed=42,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Random-Restart Hill Climbing",
+        lambda: random_restart_hill_climbing(
+            TRACE_METRIC_START,
+            timeout=5,
+            seed=42,
+            max_iterations=20,
+            max_restarts=1,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Local Beam Search",
+        lambda: local_beam_search(
+            TRACE_METRIC_START,
+            timeout=5,
+            beam_width=2,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+    (
+        "Simulated Annealing",
+        lambda: simulated_annealing(
+            TRACE_METRIC_START,
+            timeout=5,
+            max_iterations=20,
+            seed=42,
+            heuristic="Manhattan Distance",
+        ),
+        True,
+    ),
+)
 
 
 def _displayed_solver_cases() -> list[tuple[str, str]]:
@@ -118,6 +218,42 @@ def _assert_legal_recorded_path(result: SearchResult, start: tuple[int, ...]) ->
         assert current == recorded_state
     assert result.path_verified
     assert result.goal_reached is (result.path[-1] == result.goal_state)
+
+
+def _is_puzzle_state(value: object) -> bool:
+    return isinstance(value, tuple) and len(value) == 16 and set(value) == set(range(16))
+
+
+@pytest.mark.parametrize("algorithm_name,run_solver,uses_heuristic", TRACE_METRIC_CASES)
+def test_trace_metrics_match_the_state_the_row_displays(
+    algorithm_name: str,
+    run_solver,
+    uses_heuristic: bool,
+):
+    result = run_solver()
+
+    assert result.trace, algorithm_name
+    for step in result.trace[:80]:
+        if not _is_puzzle_state(step.state):
+            continue
+
+        if uses_heuristic and step.h is not None:
+            assert step.h == manhattan_distance(step.state, result.goal_state or GOAL_STATE)
+        if not uses_heuristic:
+            assert step.h is None
+            assert step.f is None
+
+        if algorithm_name in {"A*", "IDA*"} and step.f is not None:
+            assert step.g is not None
+            assert step.h is not None
+            assert step.f == step.g + step.h
+        if step.g is not None and step.depth:
+            assert step.g == step.depth
+
+        if _is_puzzle_state(step.node_state) and step.action:
+            expected = _move_blank(step.node_state, step.action)
+            if expected is not None:
+                assert expected == step.state
 
 
 def test_display_registry_and_taxonomy_stay_in_lockstep():

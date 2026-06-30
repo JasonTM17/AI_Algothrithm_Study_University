@@ -19,6 +19,11 @@ def test_belief_demo_callback_sets_rendered_widget_state_directly(monkeypatch):
 
     run_tab._apply_belief_success_demo("no_observation_search")
 
+    assert session_state["start_state"] == run_tab.BELIEF_SUCCESS_DEMO_START
+    assert session_state["goal_state"] == run_tab.GOAL_STATE
+    assert session_state["no_observation_search_known_matrix"] == (
+        "1 2 3 4\n5 6 8 15\n9 10 7 11\n13 14 12 0"
+    )
     assert session_state["no_observation_search_belief_size"] == 1
     assert "no_observation_search_belief_size_default" not in session_state
     assert session_state["run_forced_action_order"] == "DRUL"

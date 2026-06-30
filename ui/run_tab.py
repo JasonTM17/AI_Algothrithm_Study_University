@@ -55,10 +55,10 @@ RUN_TRACE_ROWS = 60
 RUN_DETAIL_ROWS = 30
 RUN_TREE_NODES = 24
 BELIEF_SUCCESS_DEMO_START = (
-    0, 2, 3, 4,
-    1, 6, 7, 8,
-    5, 10, 11, 12,
-    9, 13, 14, 15,
+    1, 2, 3, 4,
+    5, 6, 8, 15,
+    9, 10, 7, 11,
+    13, 14, 12, 0,
 )
 EXTENSION_MODEL_FUNCTIONS = {
     "and_or_search",

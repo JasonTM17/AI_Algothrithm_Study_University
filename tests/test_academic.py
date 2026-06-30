@@ -32,13 +32,21 @@ from core.syllabus_coverage import (
     TREE_GRAPH_SEARCH_ROWS,
 )
 from core.theory import THEORY
+from core.heuristics import manhattan_distance, misplace_count
+from core.metrics import TraceStep
 from core.puzzle import GOAL_STATE, is_solvable, scramble
 from core.solver_dispatch import CSP_FUNCTIONS, build_solver_kwargs
 from algorithms.informed import a_star, greedy_best_first, ida_star
 from algorithms.uninformed import bfs, dfs, ids, ucs
 from ui.localization import LOC
 from ui.academic_panels import EXAM_PATH_STEPS
-from ui.components import comparison_row_for_algorithm, render_clickable_board, render_image_board
+from ui.components import (
+    _trace_collection_total,
+    _trace_focus_state,
+    comparison_row_for_algorithm,
+    render_clickable_board,
+    render_image_board,
+)
 from ui.run_and_or_panel import run_algorithm_groups
 from ui.sample_images import SAMPLE_IMAGES
 from ui.styles import ALGORITHM_GROUPS, COMPARISON_TABLE, STYLES
@@ -76,6 +84,35 @@ def test_run_evaluation_table_uses_exact_display_algorithm_names():
         row = comparison_row_for_algorithm(algorithm)
         assert row is not None
         assert row["Algorithm"] == algorithm
+
+
+def test_trace_detail_focus_matches_displayed_metrics_not_parent_snapshot():
+    parent_before_action = (
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 0, 15,
+    )
+    candidate_after_action = GOAL_STATE
+    step = TraceStep(
+        step=5,
+        state=candidate_after_action,
+        action="R",
+        g=6,
+        h=0.0,
+        f=0.0,
+        node_state=parent_before_action,
+    )
+
+    assert misplace_count(parent_before_action) == 1
+    assert manhattan_distance(parent_before_action) == 1
+    assert _trace_focus_state(step) == candidate_after_action
+    assert manhattan_distance(_trace_focus_state(step)) == step.h == 0.0
+
+
+def test_trace_collection_total_marks_uncaptured_reached_set_as_unknown():
+    assert _trace_collection_total(0, [], empty_means_not_captured=True) is None
+    assert _trace_collection_total(0, []) == 0
 
 
 def test_priority_search_sources_match_academic_contracts():

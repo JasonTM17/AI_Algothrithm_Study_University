@@ -213,6 +213,15 @@ class TestHillClimbing:
         assert result.algorithm == "Simple Hill Climbing"
         assert hasattr(result, 'success')
 
+    def test_simple_reports_local_search_progress_metrics(self):
+        result = simple_hill_climbing(EASY_STATE, timeout=10)
+
+        assert result.path_verified
+        assert result.goal_reached
+        assert result.max_frontier_size > 0
+        assert result.reached_size == len(set(result.path))
+        assert result.reached_size > 0
+
     def test_steepest_ascent_returns_result(self):
         result = steepest_ascent_hill_climbing(EASY_STATE, timeout=10)
         assert result.algorithm == "Steepest-Ascent Hill Climbing"

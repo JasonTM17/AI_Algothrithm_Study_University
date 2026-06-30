@@ -75,6 +75,15 @@ def _evaluate_neighbors(neighbors, h_fn):
 
 def _local_result(goal: tuple[int, ...], **kwargs) -> SearchResult:
     """Build a local-search result with explicit selected-goal context."""
+    path = kwargs.get("path") or []
+    trace = kwargs.get("trace") or []
+    if path and not kwargs.get("reached_size"):
+        kwargs["reached_size"] = len(set(path))
+    if trace and not kwargs.get("max_frontier_size"):
+        kwargs["max_frontier_size"] = max(
+            (step.frontier_size or 0 for step in trace),
+            default=0,
+        )
     result = SearchResult(goal_state=goal, **kwargs)
     return result
 

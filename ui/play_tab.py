@@ -9,6 +9,7 @@ import streamlit as st
 
 from core.heuristics import HEURISTICS
 from core.puzzle import GOAL_STATE, is_solvable, _move_blank
+from core.randomness import activate_run_variation, apply_run_variation, make_run_variation
 from core.theory import THEORY
 from ui.academic_panels import render_exam_path
 from ui.components import (
@@ -47,6 +48,7 @@ from ui.group6_variant_labs import (
     render_group6_robustness_lab,
 )
 from ui.start_goal_state import apply_start_state
+from ui.start_goal_random import generate_scrambled_start
 from ui.styles import ALGORITHM_GROUPS, THEORY_KEY_MAP
 
 VICTORY_MESSAGE_KEYS = (
@@ -58,6 +60,19 @@ VICTORY_MESSAGE_KEYS = (
 )
 
 PLAY_RUN_SETTINGS = PathRunSettings()
+
+
+def _settings_with_variation(variation) -> PathRunSettings:
+    """Keep Play resource caps stable while varying path-order evidence per click."""
+    return PathRunSettings(
+        timeout=PLAY_RUN_SETTINGS.timeout,
+        max_nodes=PLAY_RUN_SETTINGS.max_nodes,
+        max_depth=PLAY_RUN_SETTINGS.max_depth,
+        heuristic=PLAY_RUN_SETTINGS.heuristic,
+        action_order=variation.action_order,
+        tie_breaker=variation.tie_breaker,
+        seed=variation.seed,
+    )
 
 
 def _clear_all_group6_state() -> None:
@@ -455,6 +470,10 @@ def _undo_play_step() -> None:
     _clear_victory_state()
 
 
+def _play_new_puzzle_depth() -> int:
+    return int(st.session_state.get("scramble_depth", 10))
+
+
 def _direction_label(t, action: str) -> str:
     dir_labels = {
         "L": t("dir_L").split(" ")[0],
@@ -675,7 +694,11 @@ def _render_play_status_controls(t, goal, solvable: bool) -> None:
 
     _render_victory_notice(t)
 
-    reset_col, undo_col = st.columns(2)
+    notice = st.session_state.pop("play_new_puzzle_notice", None)
+    if notice:
+        st.success(notice)
+
+    reset_col, undo_col, new_col = st.columns(3)
     with reset_col:
         if st.button(t("play_reset_board"), key="btn_play_reset", width="stretch"):
             _reset_play_board()
@@ -688,6 +711,28 @@ def _render_play_status_controls(t, goal, solvable: bool) -> None:
             width="stretch",
         ):
             _undo_play_step()
+            st.rerun()
+    with new_col:
+        if st.button(
+            t("play_new_puzzle"),
+            key="btn_play_new_puzzle",
+            help=t("play_new_puzzle_help"),
+            width="stretch",
+        ):
+            generation = generate_scrambled_start(
+                goal=goal,
+                depth=_play_new_puzzle_depth(),
+                previous_seed=st.session_state.get("last_play_board_scramble_seed"),
+            )
+            st.session_state["last_play_board_scramble_seed"] = generation.seed
+            st.session_state["last_play_board_scramble_action_order"] = generation.action_order
+            st.session_state["play_new_puzzle_notice"] = t(
+                "play_new_puzzle_done",
+                seed=generation.seed,
+                order=generation.action_order,
+                depth=_play_new_puzzle_depth(),
+            )
+            apply_start_state(generation.state)
             st.rerun()
 
 
@@ -1037,6 +1082,7 @@ def _render_ai_solver_panel(t, goal) -> None:
         unsafe_allow_html=True,
     )
     if supports_replay:
+        spec = PATH_ALGORITHM_BY_NAME[algorithm]
         _render_ai_academic_contract(t, algorithm)
     else:
         st.info(t("play_ai_non_linear_note", group=group, algorithm=display_name))
@@ -1075,12 +1121,23 @@ def _render_ai_solver_panel(t, goal) -> None:
         else:
             with st.spinner(t("play_ai_running_dynamic", algorithm=display_name)):
                 try:
-                    result = run_path_algorithm(
-                        algorithm,
-                        start=baseline,
-                        goal=tuple(goal),
-                        settings=PLAY_RUN_SETTINGS,
+                    variation = make_run_variation(
+                        spec.function_name,
+                        previous_seed=st.session_state.get("last_play_variation_seed"),
+                        previous_action_order=st.session_state.get("last_play_variation_action_order"),
+                        previous_tie_breaker=st.session_state.get("last_play_variation_tie_breaker"),
                     )
+                    with activate_run_variation(variation):
+                        result = run_path_algorithm(
+                            algorithm,
+                            start=baseline,
+                            goal=tuple(goal),
+                            settings=_settings_with_variation(variation),
+                        )
+                    apply_run_variation(result, variation)
+                    st.session_state["last_play_variation_seed"] = variation.seed
+                    st.session_state["last_play_variation_action_order"] = variation.action_order
+                    st.session_state["last_play_variation_tie_breaker"] = variation.tie_breaker
                 except Exception as exc:
                     st.error(t("play_ai_error", error=str(exc)))
                 else:
@@ -1141,6 +1198,16 @@ def _render_ai_solver_panel(t, goal) -> None:
     metric_cols = st.columns(2)
     metric_cols[0].metric(t("mc_max_f"), res.max_frontier_size)
     metric_cols[1].metric(t("mc_runtime"), f"{res.runtime:.6f}s")
+    if res.variation_action_order:
+        st.caption(
+            t(
+                "play_ai_variation_caption",
+                order=res.variation_action_order,
+                tie=res.variation_tie_breaker or "-",
+                seed=res.random_seed,
+                solver_seed=res.variation_solver_seed or "-",
+            )
+        )
 
     st.markdown(
         t(

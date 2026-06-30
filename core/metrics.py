@@ -10,9 +10,9 @@ class TraceStep:
     step: int
     state: tuple[int, ...]
     action: Optional[str] = None
-    g: Optional[int] = 0
-    h: Optional[float] = 0.0
-    f: Optional[float] = 0.0
+    g: Optional[int] = None
+    h: Optional[float] = None
+    f: Optional[float] = None
     frontier_size: int = 0
     reached_size: int = 0
     reason: str = ""

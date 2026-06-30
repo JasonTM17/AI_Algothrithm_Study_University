@@ -6,8 +6,9 @@ from html import escape
 
 import streamlit as st
 
-from core.puzzle import GOAL_STATE, parse_state, scramble
+from core.puzzle import GOAL_STATE, parse_state
 from ui.localization import VIETNAMESE, translate
+from ui.start_goal_random import generate_scrambled_start
 from ui.start_goal_state import (
     apply_goal_state,
     apply_start_state,
@@ -36,6 +37,18 @@ def _render_pending_notice(key_prefix: str) -> None:
         return
     level, message = notice
     getattr(st, level)(message)
+
+
+def _record_scramble_generation(key_prefix: str, generation) -> None:
+    st.session_state[f"{key_prefix}_last_scramble_seed"] = generation.seed
+    st.session_state[f"{key_prefix}_last_scramble_action_order"] = generation.action_order
+
+
+def _render_scramble_evidence(key_prefix: str) -> None:
+    seed = st.session_state.get(f"{key_prefix}_last_scramble_seed")
+    order = st.session_state.get(f"{key_prefix}_last_scramble_action_order")
+    if seed is not None and order:
+        st.caption(_t("sb_generated_seed_caption", seed=seed, order=order))
 
 
 def _state_matrix_preview_html(state: tuple[int, ...], role: str, title: str) -> str:
@@ -86,15 +99,23 @@ def render_start_goal_editor(
                     int(st.session_state.get(f"{key_prefix}_seed", 42)),
                     key=f"{key_prefix}_seed",
                 )
+            fresh_seed = st.checkbox(
+                _t("sb_fresh_seed"),
+                value=bool(st.session_state.get(f"{key_prefix}_fresh_seed", True)),
+                key=f"{key_prefix}_fresh_seed",
+                help=_t("sb_fresh_seed_help"),
+            )
             if st.button(_t("sb_generate"), key=f"{key_prefix}_generate_start", width="stretch"):
-                apply_start_state(
-                    scramble(
-                        goal=st.session_state.goal_state,
-                        depth=int(scramble_depth),
-                        seed=int(scramble_seed),
-                    )
+                generation = generate_scrambled_start(
+                    goal=st.session_state.goal_state,
+                    depth=int(scramble_depth),
+                    seed=None if fresh_seed else int(scramble_seed),
+                    previous_seed=st.session_state.get(f"{key_prefix}_last_scramble_seed"),
                 )
+                _record_scramble_generation(key_prefix, generation)
+                apply_start_state(generation.state)
                 _finish_state_change(key_prefix, _t("sb_parse_success"), rerun_on_change)
+            _render_scramble_evidence(key_prefix)
 
             start_input_key = f"{key_prefix}_start_manual_input"
             sync_state_input(start_input_key, st.session_state.start_state)
@@ -169,16 +190,24 @@ def render_sidebar_start_goal_controls(t) -> None:
                 scramble_depth = st.number_input(t("sb_depth"), 1, 50, 10, key="scramble_depth")
             with col_s2:
                 scramble_seed = st.number_input(t("sb_seed"), 0, 99999, 42, key="scramble_seed")
+            fresh_seed = st.checkbox(
+                t("sb_fresh_seed"),
+                value=st.session_state.get("sidebar_fresh_scramble_seed", True),
+                key="sidebar_fresh_scramble_seed",
+                help=t("sb_fresh_seed_help"),
+            )
 
             if st.button(t("sb_generate"), key="btn_random"):
-                apply_start_state(
-                    scramble(
-                        goal=st.session_state.goal_state,
-                        depth=int(scramble_depth),
-                        seed=int(scramble_seed),
-                    )
+                generation = generate_scrambled_start(
+                    goal=st.session_state.goal_state,
+                    depth=int(scramble_depth),
+                    seed=None if fresh_seed else int(scramble_seed),
+                    previous_seed=st.session_state.get("sidebar_last_scramble_seed"),
                 )
+                _record_scramble_generation("sidebar", generation)
+                apply_start_state(generation.state)
                 st.success(t("sb_parse_success"))
+            _render_scramble_evidence("sidebar")
 
         elif state_input_method == t("sb_manual"):
             sync_state_input("manual_input", st.session_state.start_state)

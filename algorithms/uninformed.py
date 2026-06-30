@@ -215,7 +215,7 @@ def dfs(
                 if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=node.g + cost, h=0, f=node.g + cost, depth=node.depth + 1,
+                        g=node.g + cost, h=None, f=None, depth=node.depth + 1,
                         event="reject_cycle", frontier_size=len(frontier),
                         reached_size=len(best_depth), node_state=node.state,
                         frontier_states=[n.state for n in frontier[:12]],
@@ -241,7 +241,7 @@ def dfs(
             if len(trace) < 200:
                 trace.append(TraceStep(
                     step=nodes_expanded, state=ns, action=action,
-                    g=child.g, h=0, f=child.g, depth=child.depth, event="generate",
+                    g=child.g, h=None, f=None, depth=child.depth, event="generate",
                     frontier_size=len(frontier), reached_size=len(best_depth),
                     node_state=node.state, frontier_states=[n.state for n in frontier[:12]], reached_states=list(best_depth.keys())[:12],
                     reason=f"Depth-first expand, action={action}",
@@ -316,7 +316,7 @@ def ucs(
                 if len(trace) < 200:
                     trace.append(TraceStep(
                         step=nodes_expanded, state=ns, action=action,
-                        g=new_g, h=0, f=new_g,
+                        g=new_g, h=None, f=None,
                         frontier_size=len(frontier), reached_size=len(best_g), depth=child.depth, event="generate",
                         node_state=node.state, frontier_states=[entry[-1].state for entry in frontier], reached_states=list(best_g.keys()),
                         reason=f"Expand node, g={new_g}",
@@ -430,9 +430,10 @@ def _dls(start, goal, depth_limit, action_order, t0_global, timeout, max_nodes,
             if len(global_trace) < 200:
                 global_trace.append(TraceStep(
                     step=nodes_expanded[0], state=node.state, action=node.action,
-                    g=node.g, h=0, f=node.g, depth_limit=depth_limit,
+                    g=node.g, h=None, f=None, depth=node.depth, depth_limit=depth_limit,
                     frontier_size=0, reached_size=0,
-                    node_state=node.state, frontier_states=[], reached_states=[],
+                    node_state=(node.parent.state if node.parent else None),
+                    frontier_states=[], reached_states=[],
                     reason=f"Goal found at depth {node.depth}",
                 ))
             result_holder[0] = SearchResult(
@@ -459,9 +460,10 @@ def _dls(start, goal, depth_limit, action_order, t0_global, timeout, max_nodes,
         if len(global_trace) < 200:
             global_trace.append(TraceStep(
                 step=nodes_expanded[0], state=node.state, action=node.action,
-                g=node.g, h=0, f=node.g, depth_limit=depth_limit,
+                g=node.g, h=None, f=None, depth=node.depth, depth_limit=depth_limit,
                 frontier_size=0, reached_size=0,
-                node_state=node.state, frontier_states=[], reached_states=[],
+                node_state=(node.parent.state if node.parent else None),
+                frontier_states=[], reached_states=[],
                 reason=f"IDS depth_limit={depth_limit}",
             ))
 

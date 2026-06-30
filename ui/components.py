@@ -947,6 +947,25 @@ def _state_to_grid_str(state: tuple) -> str:
     return "\n".join(lines)
 
 
+def _trace_focus_state(step) -> tuple | None:
+    """Return the state whose action/g/h/f metrics describe the current trace row."""
+    return getattr(step, "state", None) or getattr(step, "node_state", None)
+
+
+def _trace_collection_total(
+    total: int | None,
+    states: list,
+    *,
+    empty_means_not_captured: bool = False,
+) -> int | None:
+    """Avoid displaying a misleading zero when a trace did not capture a set."""
+    if states:
+        return total if total is not None else len(states)
+    if empty_means_not_captured and not total:
+        return None
+    return total
+
+
 def render_search_detail_table(
     trace: list,
     max_rows: int = 50,
@@ -1037,11 +1056,15 @@ def render_search_detail_table(
     st.markdown(detail_header)
 
     st.markdown(f"**{t('det_curr_node')}**")
-    current_state = step.node_state or step.state
+    current_state = _trace_focus_state(step)
     if current_state:
         render_puzzle_board(current_state, size="small")
     else:
         st.caption(t("no_state"))
+
+    parent_state = getattr(step, "node_state", None)
+    if parent_state and parent_state != current_state:
+        st.caption(f"{t('tc_parent')}: {_format_trace_state(parent_state, labels, details)}")
 
     def render_state_collection(title: str, total: int | None, states: list, empty_text: str) -> None:
         total_text = str(total) if total is not None else "-"
@@ -1060,14 +1083,18 @@ def render_search_detail_table(
     with col1:
         render_state_collection(
             t("tc_frontier"),
-            step.frontier_size,
+            _trace_collection_total(step.frontier_size, step.frontier_states or []),
             step.frontier_states or [],
             t("det_empty"),
         )
     with col2:
         render_state_collection(
             t("tc_reached"),
-            step.reached_size,
+            _trace_collection_total(
+                step.reached_size,
+                step.reached_states or [],
+                empty_means_not_captured=True,
+            ),
             step.reached_states or [],
             t("det_not_captured"),
         )
