@@ -1235,11 +1235,27 @@ def _on_play_experience_mode_change() -> None:
     st.session_state.group6_chance_auto = False
 
 
-def _render_play_workbench_content(t, goal, solvable: bool) -> None:
+def _play_workbench_needs_tick() -> bool:
+    """Return whether any Play workflow still needs timed fragment reruns."""
+    return bool(
+        st.session_state.get("play_auto_run", False)
+        or group6_lab_needs_tick()
+        or group6_policy_needs_tick()
+        or group6_variant_needs_tick()
+    )
+
+
+def _advance_play_workbench_tick() -> bool:
+    """Advance active workflows and report when the shared timer must stop."""
+    was_ticking = _play_workbench_needs_tick()
     _advance_auto_replay_one_step()
     advance_group6_lab_tick()
     advance_group6_policy_tick()
     advance_group6_variant_tick()
+    return was_ticking and not _play_workbench_needs_tick()
+
+
+def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     experience_mode = st.segmented_control(
         t("play_experience_mode"),
         options=("solver", "group6"),
@@ -1255,6 +1271,7 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
     )
     experience_mode = experience_mode or "solver"
 
+    group6_view = None
     if experience_mode == "group6":
         group6_view = st.segmented_control(
             t("group6_lab_title"),
@@ -1272,6 +1289,14 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
             key="group6_play_view",
             width="stretch",
         ) or "policy"
+
+    if _advance_play_workbench_tick():
+        # Recreate the fragment with run_every=None after the final timed tick.
+        # Render the mode widgets first so Streamlit keeps their keyed state
+        # across the full rerun instead of falling back to the default mode.
+        st.rerun()
+
+    if experience_mode == "group6":
         st.warning(t("group6_decision_guardrail"))
         if group6_view == "policy":
             render_group6_policy_comparison(
@@ -1340,12 +1365,7 @@ def _render_play_workbench_content(t, goal, solvable: bool) -> None:
 def _render_play_workbench(t, goal, solvable: bool) -> None:
     run_every = (
         st.session_state.get("play_replay_speed", 0.35)
-        if (
-            st.session_state.get("play_auto_run", False)
-            or group6_lab_needs_tick()
-            or group6_policy_needs_tick()
-            or group6_variant_needs_tick()
-        )
+        if _play_workbench_needs_tick()
         else None
     )
     st.fragment(run_every=run_every)(_render_play_workbench_content)(t, goal, solvable)

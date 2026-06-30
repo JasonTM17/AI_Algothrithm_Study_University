@@ -533,6 +533,11 @@ def test_play_group6_auto_advances_one_turn_per_fragment_tick():
     assert app.session_state.group6_policy_comparison.turn == 0
     app.button(key="btn_group6_policy_auto").click().run()
     assert app.session_state.group6_policy_comparison.turn == 1
+    assert app.session_state.group6_policy_comparison.complete
+    assert app.session_state.group6_policy_auto is False
+    assert app.session_state.play_experience_mode == "group6"
+    assert app.segmented_control(key="play_experience_mode").value == "group6"
+    assert app.segmented_control(key="group6_play_view").value == "policy"
     assert len(app.session_state.group6_policy_comparison.lane_a.history) <= 2
     assert len(app.session_state.group6_policy_comparison.lane_b.history) <= 2
     assert not app.exception
@@ -762,6 +767,9 @@ def test_play_auto_replay_advances_one_step_per_tick():
     assert app.session_state.play_solution_idx == 2
     assert app.session_state.play_state == app.session_state.play_solution_path[2]
     assert app.session_state.play_auto_run is False
+    success_values = [getattr(success, "value", "") for success in app.success]
+    assert "AI Auto-solving complete!" in success_values
+    assert "play_auto_done_pending" not in app.session_state
     assert not app.exception
 
 
@@ -812,6 +820,10 @@ def test_play_ai_search_detail_controls_advance_step():
     app.run()
 
     app.button(key="btn_ai_solve").click().run()
+    assert app.button(key="play_ai_detail_step_slider_prev").label == "−"
+    assert app.button(key="play_ai_detail_step_slider_next").label == "+"
+    assert app.button(key="play_ai_detail_step_slider_reset").label == "↺"
+
     app.button(key="play_ai_detail_step_slider_next").click().run()
 
     markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
@@ -820,6 +832,13 @@ def test_play_ai_search_detail_controls_advance_step():
     assert "Algorithm step:" in markdown_text
     assert app.session_state.play_solution_res.trace
     assert app.session_state.play_solution_res.search_tree_edges
+    assert not app.exception
+
+    app.button(key="play_ai_detail_step_slider_prev").click().run()
+
+    markdown_text = "\n".join(getattr(markdown, "value", "") for markdown in app.markdown)
+    assert app.session_state["play_ai_detail_step_slider"] == 0
+    assert "Trace row: 0/" in markdown_text
     assert not app.exception
 
 

@@ -974,47 +974,52 @@ def render_search_detail_table(
     else:
         if key not in st.session_state:
             st.session_state[key] = 0
-        key_exists = key in st.session_state
         current_step = int(st.session_state.get(key, 0))
         current_step = max(0, min(current_step, max_step_index))
-        if key_exists:
-            st.session_state[key] = current_step
+        st.session_state[key] = current_step
 
-        # Navigation buttons in their own row to prevent truncation in narrow containers
-        btn_cols = st.columns(3)
-        with btn_cols[0]:
+        # Compact trace scrubber: small buttons step one trace row at a time,
+        # while the slider still supports quick jumps across the trace window.
+        st.markdown(t("det_slider"))
+        step_cols = st.columns([0.7, 8, 0.7, 0.9])
+        with step_cols[0]:
             st.button(
-                t("anim_prev"),
+                "−",
                 key=f"{key}_prev",
+                help=t("anim_prev"),
                 disabled=(current_step == 0),
                 on_click=_set_slider_step,
                 args=(key, current_step - 1, max_step_index),
                 width="stretch",
             )
-        with btn_cols[1]:
+        with step_cols[1]:
+            step_idx = st.slider(
+                t("det_slider"),
+                0,
+                max_step_index,
+                key=key,
+                label_visibility="collapsed",
+            )
+        with step_cols[2]:
             st.button(
-                t("anim_next"),
+                "+",
                 key=f"{key}_next",
+                help=t("anim_next"),
                 disabled=(current_step >= max_step_index),
                 on_click=_set_slider_step,
                 args=(key, current_step + 1, max_step_index),
                 width="stretch",
             )
-        with btn_cols[2]:
+        with step_cols[3]:
             st.button(
-                t("anim_reset"),
+                "↺",
                 key=f"{key}_reset",
+                help=t("anim_reset"),
                 disabled=(current_step == 0),
                 on_click=_set_slider_step,
                 args=(key, 0, max_step_index),
                 width="stretch",
             )
-
-        # Trace rows are expansion events; several rows may share the same algorithm step.
-        if key_exists:
-            step_idx = st.slider(t("det_slider"), 0, max_step_index, key=key)
-        else:
-            step_idx = st.slider(t("det_slider"), 0, max_step_index, current_step, key=key)
 
     step = trace[step_idx]
     labels, details = _trace_state_catalog(trace[:max_rows])
