@@ -1,5 +1,20 @@
 """Structured runner for the Play page Group 6 decision lab."""
 
+# BẢN ĐỒ ĐỌC FILE
+# ----------------
+# File này là lớp điều phối chung giữa giao diện Group 6 và ba thuật toán lõi
+# trong ``algorithms/adversarial.py``. Nó KHÔNG cài đặt lại Minimax,
+# Alpha-Beta hay Expectimax. Trách nhiệm chính gồm:
+#
+# 1. Chuẩn hóa cùng một bộ tham số để các lần chạy có thể so sánh công bằng.
+# 2. Gọi đúng thuật toán thông qua ``_RUNNERS``.
+# 3. Chuyển ``SearchResult.trace`` thành các frame MAX/MIN/CHANCE dễ phát lại.
+# 4. Tổng hợp root value, số nhánh cắt, Manhattan cuối và branching proxy.
+# 5. Tạo fingerprint để chỉ so sánh các run có cùng Start/Goal/cấu hình.
+#
+# Lưu ý học thuật: kết quả ở đây là evidence của một quyết định depth-limited,
+# không phải chứng chỉ đường đi ngắn nhất cho bài toán 15-puzzle chuẩn.
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -13,18 +28,24 @@ from core.heuristics import get_heuristic
 from core.metrics import SearchResult, TraceStep
 
 
+# Registry công khai của Decision Lab. Tournament chấm điểm nằm ở module riêng,
+# nên danh sách này chỉ chứa ba mô hình ra quyết định được phát lại trên Play.
 GROUP6_LAB_ALGORITHMS = (
     "Minimax",
     "Alpha-Beta Pruning",
     "Expectimax",
 )
 
+# Ánh xạ tên trên UI sang hàm thuật toán lõi; giữ ánh xạ ở một nơi để các mode
+# Policy/Robustness/Chance cùng sử dụng một cách gọi và một kiểu kết quả.
 _RUNNERS: dict[str, Callable[..., SearchResult]] = {
     "Minimax": minimax,
     "Alpha-Beta Pruning": alpha_beta_pruning,
     "Expectimax": expectimax,
 }
 
+# Chỉ các event này đại diện cho một cạnh thực sự trên selected variation.
+# Các event đánh giá/generate/prune khác vẫn được giữ trong trace để thống kê.
 _ROLE_EVENTS = {"select_action", "worst_case", "chance_outcome"}
 
 
@@ -133,6 +154,8 @@ class Group6LabResult:
         }
 
 
+# Fingerprint không phải bảo mật. Nó là mã nhận diện cấu hình để UI tránh đặt
+# hai kết quả khác Start/Goal/depth cạnh nhau rồi kết luận sai.
 def _fingerprint(payload: dict[str, object]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()[:16]
@@ -164,6 +187,8 @@ def _root_value(trace: list[TraceStep]) -> float | None:
 
 
 def _role_frames(trace: list[TraceStep]) -> list[Group6RoleFrame]:
+    # Trace đầy đủ có nhiều loại event; replay chỉ lấy các bước có before-state,
+    # action và after-state rõ ràng. ``repeated_state`` giúp UI cảnh báo cycle.
     frames: list[Group6RoleFrame] = []
     seen: set[tuple[int, ...]] = set()
     for step in trace:
@@ -208,6 +233,8 @@ def run_group6_algorithm(
     settings = settings or Group6LabSettings()
     settings.validate()
 
+    # Tham số chung cho cả ba mô hình. Chỉ Expectimax cần thêm probability và
+    # seed vì Minimax/Alpha-Beta không có CHANCE node.
     kwargs = {
         "start": tuple(start),
         "goal": tuple(goal),
@@ -220,6 +247,7 @@ def run_group6_algorithm(
         kwargs["success_prob"] = float(settings.success_probability)
         kwargs["seed"] = int(settings.seed)
 
+    # Đây là điểm duy nhất trong module thực sự gọi thuật toán lõi.
     result = _RUNNERS[algorithm](**kwargs)
     frames = _role_frames(result.trace)
     baseline_payload = _baseline_payload(tuple(start), tuple(goal), settings)
@@ -235,6 +263,8 @@ def run_group6_algorithm(
     generated = max(1, int(result.nodes_generated))
     effective_depth = max(1, completed_depth or settings.depth)
 
+    # Gói SearchResult thô cùng evidence dẫn xuất để các UI mode không phải tự
+    # diễn giải lại trace và vô tình làm thay đổi ngữ nghĩa của thuật toán.
     return Group6LabResult(
         algorithm=algorithm,
         result=result,
@@ -268,6 +298,8 @@ def compare_minimax_alpha_beta(
     tolerance: float = 1e-9,
 ) -> bool | None:
     """Check the root-value invariant only for comparable completed runs."""
+    # Chỉ kết luận khi hai run có cùng baseline và đều hoàn tất. Nếu timeout hay
+    # khác cấu hình, ``None`` nghĩa là không đủ điều kiện so sánh, không phải sai.
     if minimax_result is None or alpha_beta_result is None:
         return None
     if minimax_result.baseline_fingerprint != alpha_beta_result.baseline_fingerprint:

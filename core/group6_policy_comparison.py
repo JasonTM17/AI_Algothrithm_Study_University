@@ -1,5 +1,22 @@
 """Two-lane receding-horizon comparison for the Group 6 decision policies."""
 
+# BẢN ĐỒ ĐỌC FILE — MODE 1: POLICY COMPARISON
+# ------------------------------------------------
+# Mode này tạo HAI BẢN SAO ĐỘC LẬP của cùng Start/Goal. Lane A không tác động
+# lên bàn của Lane B; vì vậy đây là so sánh policy, không phải hai AI đánh nhau.
+#
+# Mỗi lượt của một lane:
+#   state hiện tại -> chạy decision model -> lấy root action đầu tiên
+#   -> áp dụng đúng một legal move -> lưu metric -> lập kế hoạch lại ở lượt sau.
+#
+# Cách làm trên gọi là receding horizon: thuật toán có thể nhìn trước nhiều ply,
+# nhưng chỉ bước gốc được áp dụng lên bàn. Minimax/Alpha-Beta dùng MIN bên trong
+# cây để định giá worst-case; MIN không có lượt riêng trên bàn trong mode này.
+# Expectimax có thể ghi intended action khác realized action do CHANCE outcome.
+#
+# Kết quả là bằng chứng thực nghiệm theo depth/timeout/seed đã chọn, không phải
+# chứng minh thuật toán nào luôn tối ưu hoặc tạo shortest path cho 15-puzzle.
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, replace
@@ -17,6 +34,8 @@ from core.puzzle import _move_blank
 
 
 State = tuple[int, ...]
+# Một lane còn ``active`` cho tới khi status thuộc tập terminal này. Dừng vì
+# cycle/timeout/limit không đồng nghĩa puzzle vô nghiệm toàn cục.
 TERMINAL_STATUSES = {
     "goal",
     "cycle",
@@ -152,6 +171,8 @@ def _fingerprint(
     goal: State,
     settings: Group6PolicySettings,
 ) -> str:
+    # Fingerprint khóa baseline của cả hai lane. Thuật toán A/B không nằm trong
+    # payload để có thể đổi cặp thuật toán mà vẫn nhận ra cùng một đề so sánh.
     payload = {
         "start": list(start),
         "goal": list(goal),
@@ -180,6 +201,7 @@ def create_policy_comparison(
     start = tuple(start)
     goal = tuple(goal)
     initial_status = "goal" if start == goal else "ready"
+    # Mỗi lane nhận state/history riêng dù cùng bắt đầu từ một tuple Start.
     return Group6PolicyComparison(
         start=start,
         goal=goal,
@@ -206,6 +228,8 @@ def _lab_settings(
     settings: Group6PolicySettings,
     turn: int,
 ) -> Group6LabSettings:
+    # Seed thay đổi theo lượt nhưng giống lịch ``base_seed + turn`` đã công bố,
+    # nhờ đó trajectory Expectimax có thể tái lập khi cấu hình không đổi.
     return Group6LabSettings(
         depth=settings.depth,
         timeout=settings.per_decision_timeout,
@@ -223,12 +247,14 @@ def _advance_lane(
     settings: Group6PolicySettings,
     turn: int,
 ) -> None:
+    # Bước 1: bỏ qua lane đã kết thúc và bảo vệ giới hạn số lượt.
     if not lane.active:
         return
     if len(lane.turns) >= settings.max_turns:
         lane.status = "turn_limit"
         return
 
+    # Bước 2: xây cây quyết định depth-limited từ state HIỆN TẠI của lane.
     decision = run_group6_algorithm(
         lane.algorithm,
         start=lane.current_state,
@@ -248,6 +274,8 @@ def _advance_lane(
         lane.status = "no_action"
         return
 
+    # Bước 3: chỉ lấy action gốc. Với mô hình tất định, intended = realized;
+    # Expectimax có thể cung cấp realized action khác do outcome được lấy mẫu.
     intended = decision.result.actions[0]
     realized = intended
     probability: float | None = None
@@ -257,6 +285,8 @@ def _advance_lane(
         realized = frame.realized_action or frame.action or intended
         probability = frame.probability
 
+    # Bước 4: áp dụng đúng một bước rồi lưu evidence; phần còn lại của principal
+    # variation chỉ là nhìn trước và sẽ được tính lại ở lượt kế tiếp.
     next_state = _move_blank(lane.current_state, realized)
     if next_state is None:
         lane.status = "invalid_transition"
@@ -282,6 +312,7 @@ def _advance_lane(
             termination="applied",
         )
     )
+    # Bước 5: phân loại trạng thái sau bước đi để quyết định lane còn active.
     if next_state == goal:
         lane.status = "goal"
         lane.goal_turn = turn
@@ -292,6 +323,8 @@ def _advance_lane(
 
 
 def _update_winner(comparison: Group6PolicyComparison) -> None:
+    # Chỉ lane đã tới Goal mới là ứng viên thắng: ưu tiên ít lượt hơn, sau đó
+    # runtime tích lũy thấp hơn; label tạo tie-break cuối ổn định.
     candidates = [
         (lane.goal_turn, lane.cumulative_runtime, label)
         for label, lane in (("A", comparison.lane_a), ("B", comparison.lane_b))
@@ -314,6 +347,8 @@ def advance_policy_comparison(
         return comparison
 
     comparison.turn += 1
+    # Đảo thứ tự A/B theo lượt để giảm thiên lệch do lane nào luôn chạy trước,
+    # nhưng hai lane vẫn hoàn toàn độc lập về state và history.
     order = (
         (comparison.lane_a, comparison.lane_b)
         if comparison.turn % 2
@@ -327,6 +362,7 @@ def advance_policy_comparison(
             turn=comparison.turn,
         )
 
+    # Total budget là ngân sách chung của màn so sánh, không phải cost lời giải.
     total_runtime = (
         comparison.lane_a.cumulative_runtime
         + comparison.lane_b.cumulative_runtime
@@ -338,4 +374,3 @@ def advance_policy_comparison(
     _update_winner(comparison)
     comparison.running = comparison.running and not comparison.complete
     return comparison
-
