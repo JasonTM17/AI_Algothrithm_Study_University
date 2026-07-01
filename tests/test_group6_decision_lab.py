@@ -12,6 +12,7 @@ from core.group6_decision_lab import (
     run_group6_algorithm,
 )
 from core.group6_variant_labs import (
+    ROBUSTNESS_ALGORITHMS,
     Group6ChanceSettings,
     Group6RobustnessSettings,
     advance_chance_lab,
@@ -21,7 +22,7 @@ from core.group6_variant_labs import (
     create_robustness_game,
     run_chance_stability_sample,
 )
-from core.puzzle import GOAL_STATE, _move_blank, scramble
+from core.puzzle import DEFAULT_START_STATE, GOAL_STATE, _move_blank, scramble
 
 
 START = scramble(GOAL_STATE, 4, seed=9)
@@ -142,6 +143,25 @@ def test_robustness_game_alternates_max_min_and_uses_legal_moves():
         assert frame.mode == "robustness_game_variant"
     assert "image" not in json.dumps(game.export_summary()).lower()
     assert "base64" not in json.dumps(game.export_summary()).lower()
+
+
+def test_robustness_game_avoids_immediate_cycle_when_unvisited_move_exists():
+    for algorithm in ROBUSTNESS_ALGORITHMS:
+        game = create_robustness_game(
+            start=DEFAULT_START_STATE,
+            goal=GOAL_STATE,
+            settings=Group6RobustnessSettings(algorithm=algorithm),
+        )
+
+        advance_robustness_game(game)
+        advance_robustness_game(game)
+
+        assert len(game.frames) == 2
+        assert game.status == "running"
+        assert not game.frames[-1].repeated_state
+        assert game.frames[-1].intended_action == "R"
+        assert game.frames[-1].realized_action != "R"
+        assert len(game.history) == len(set(game.history))
 
 
 def test_robustness_game_rejects_expectimax():

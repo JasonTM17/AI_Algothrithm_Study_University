@@ -7,6 +7,19 @@ These helpers keep Minimax, Alpha-Beta and Expectimax out of the standard
 * Chance Outcome Lab: Expectimax decisions are sampled through a chance model.
 """
 
+# BẢN ĐỒ ĐỌC FILE — MODE 2 VÀ MODE 3
+# -----------------------------------
+# File này chứa state machine cho hai mô hình giáo dục chạy trên MỘT bàn cờ:
+#
+# * Robustness Game Variant (Mode 2): MAX và MIN luân phiên. MAX dùng
+#   Minimax/Alpha-Beta để tiến về Goal; MIN là môi trường worst-case giả lập,
+#   không phải đối thủ tự nhiên của 15-puzzle.
+# * Chance Outcome Lab (Mode 3): Expectimax chọn intended action, sau đó CHANCE
+#   lấy mẫu realized action theo success_probability và seed.
+#
+# Cả hai mode chỉ đánh giá decision/policy trong giới hạn depth, turn và runtime.
+# Chúng không thuộc contract solver đường đi ngắn nhất của 15-puzzle chuẩn.
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -21,6 +34,8 @@ from core.puzzle import _move_blank
 
 
 State = tuple[int, ...]
+# Robustness chỉ có MAX/MIN nên không nhận Expectimax; Chance Lab cố định dùng
+# Expectimax vì đây là mô hình duy nhất trong nhóm có CHANCE node.
 ROBUSTNESS_ALGORITHMS = ("Minimax", "Alpha-Beta Pruning")
 CHANCE_ALGORITHM = "Expectimax"
 GROUP6_VARIANT_TERMINAL_STATUSES = {
@@ -220,6 +235,8 @@ def _utility(
     penalty: float,
     terminal_reason: str | None = None,
 ) -> float:
+    # Utility dùng chung cho frame đã áp dụng: Goal nhận bonus lớn; cycle/timeout
+    # nhận penalty; state thường nhận giá trị âm của heuristic (gần Goal tốt hơn).
     if state == goal:
         return 1000.0
     if terminal_reason in {"cycle", "timeout", "total_budget"}:
@@ -233,6 +250,7 @@ def create_robustness_game(
     goal: State,
     settings: Group6RobustnessSettings | None = None,
 ) -> Group6RobustnessGame:
+    # Khởi tạo một bàn chung. Khác Policy Comparison, không có lane A/B độc lập.
     settings = settings or Group6RobustnessSettings()
     settings.validate()
     payload = {
@@ -267,6 +285,7 @@ def _max_action(
     goal: State,
     settings: Group6RobustnessSettings,
 ):
+    # MAX ủy quyền quyết định cho Minimax hoặc Alpha-Beta và lấy root action đầu.
     decision = run_group6_algorithm(
         settings.algorithm,
         start=state,
@@ -285,6 +304,8 @@ def _min_worst_case_action(
     goal: State,
     settings: Group6RobustnessSettings,
 ) -> str:
+    # MIN là môi trường xấu nhất: chọn legal move làm heuristic lớn nhất, tức là
+    # đẩy bàn xa Goal nhất; action_order được dùng để phá hòa ổn định.
     h_fn = get_heuristic(settings.heuristic, goal)
     candidates: list[tuple[float, str]] = []
     for action in _legal_actions(state, settings.action_order):
@@ -294,6 +315,42 @@ def _min_worst_case_action(
     if not candidates:
         return ""
     candidates.sort(key=lambda item: (-item[0], settings.action_order.index(item[1])))
+    return candidates[0][1]
+
+
+def _cycle_safe_action(
+    state: State,
+    intended_action: str,
+    history: list[State],
+    goal: State,
+    settings: Group6RobustnessSettings,
+    *,
+    role: str,
+) -> str:
+    """Prefer an unvisited legal move when the intended move repeats history."""
+    # Nếu action dự kiến quay lại state cũ, ưu tiên một legal state chưa thăm.
+    # MAX vẫn ưu tiên gần Goal, MIN vẫn ưu tiên xa Goal trong tập thay thế này.
+    intended_state = _move_blank(state, intended_action)
+    visited = set(history)
+    if intended_state is None or intended_state not in visited:
+        return intended_action
+
+    h_fn = get_heuristic(settings.heuristic, goal)
+    candidates: list[tuple[float, str]] = []
+    for action in _legal_actions(state, settings.action_order):
+        next_state = _move_blank(state, action)
+        if next_state is not None and next_state not in visited:
+            candidates.append((float(h_fn(next_state)), action))
+    if not candidates:
+        return intended_action
+
+    heuristic_direction = -1.0 if role == "MIN" else 1.0
+    candidates.sort(
+        key=lambda item: (
+            heuristic_direction * item[0],
+            settings.action_order.index(item[1]),
+        )
+    )
     return candidates[0][1]
 
 
@@ -308,6 +365,7 @@ def advance_robustness_game(game: Group6RobustnessGame) -> Group6RobustnessGame:
         game.running = False
         return game
 
+    # Frame chẵn bắt đầu bằng MAX, frame lẻ là MIN: cả hai tác động lên cùng bàn.
     role = "MAX" if len(game.frames) % 2 == 0 else "MIN"
     before = game.current_state
     root_value: float | None = None
@@ -315,6 +373,7 @@ def advance_robustness_game(game: Group6RobustnessGame) -> Group6RobustnessGame:
     expanded = generated = pruned = 0
     alpha = beta = None
 
+    # MAX dùng principal decision của thuật toán; MIN dùng legal worst-case move.
     if role == "MAX":
         decision, action, termination = _max_action(before, game.goal, game.settings)
         root_value = decision.root_value
@@ -340,6 +399,7 @@ def advance_robustness_game(game: Group6RobustnessGame) -> Group6RobustnessGame:
         action = _min_worst_case_action(before, game.goal, game.settings)
         termination = "applied" if action else "no_action"
 
+    # Metrics được cộng dồn theo từng lượt để UI so effort qua toàn phiên chạy.
     game.cumulative_runtime += runtime
     game.cumulative_expanded += expanded
     game.cumulative_generated += generated
@@ -353,12 +413,24 @@ def advance_robustness_game(game: Group6RobustnessGame) -> Group6RobustnessGame:
         game.running = False
         return game
 
+    # ``intended_action`` giữ quyết định ban đầu; ``action`` có thể được thay bằng
+    # bước cycle-safe và sẽ trở thành realized action trong frame evidence.
+    intended_action = action
+    action = _cycle_safe_action(
+        before,
+        intended_action,
+        game.history,
+        game.goal,
+        game.settings,
+        role=role,
+    )
     after = _move_blank(before, action)
     if after is None:
         game.status = "invalid_transition"
         game.running = False
         return game
 
+    # Goal/cycle là trạng thái kết thúc của variant, không phải optimal certificate.
     repeated = after in game.history
     status = "cycle" if repeated else ("goal" if after == game.goal else "running")
     frame = Group6TurnFrame(
@@ -368,7 +440,7 @@ def advance_robustness_game(game: Group6RobustnessGame) -> Group6RobustnessGame:
         algorithm=game.settings.algorithm,
         before_state=before,
         after_state=after,
-        intended_action=action,
+        intended_action=intended_action,
         realized_action=action,
         root_value=root_value,
         utility=_utility(
@@ -402,6 +474,7 @@ def create_chance_lab(
     goal: State,
     settings: Group6ChanceSettings | None = None,
 ) -> Group6ChanceLab:
+    # Chance Lab dùng một bàn; seed schedule được ghi vào fingerprint để replay.
     settings = settings or Group6ChanceSettings()
     settings.validate()
     payload = {
@@ -424,6 +497,7 @@ def create_chance_lab(
 
 
 def _lab_settings_from_chance(settings: Group6ChanceSettings, turn: int) -> Group6LabSettings:
+    # Mỗi lượt dùng seed kế tiếp nhằm vừa tái lập được, vừa không lặp cùng sample.
     return Group6LabSettings(
         depth=settings.depth,
         timeout=settings.per_turn_timeout,
@@ -446,6 +520,8 @@ def chance_outcome_distribution(
     Illegal deflections are omitted. If the intended action is the only legal
     move, its probability is normalized to 1.0.
     """
+    # Intended action nhận success_probability; phần xác suất còn lại được chia
+    # đều cho các legal deflection. Illegal deflection không có trong support.
     legal = _legal_actions(state, action_order)
     if intended_action not in legal:
         return []
@@ -475,6 +551,7 @@ def _sample_outcome(
     *,
     seed: int,
 ) -> tuple[str, State, float]:
+    # Lấy một mẫu bằng cumulative probability; Random(seed) giúp test/replay ổn định.
     threshold = random.Random(seed).random()
     cumulative = 0.0
     for action, state, probability in outcomes:
@@ -497,6 +574,7 @@ def advance_chance_lab(lab: Group6ChanceLab) -> Group6ChanceLab:
 
     turn = len(lab.frames) + 1
     before = lab.current_state
+    # Bước 1: Expectimax chọn intended root action theo expected utility.
     decision = run_group6_algorithm(
         CHANCE_ALGORITHM,
         start=before,
@@ -519,6 +597,7 @@ def advance_chance_lab(lab: Group6ChanceLab) -> Group6ChanceLab:
         lab.running = False
         return lab
 
+    # Bước 2: dựng toàn bộ outcome hợp lệ của action dự kiến.
     intended = decision.result.actions[0]
     outcomes = chance_outcome_distribution(
         before,
@@ -532,6 +611,7 @@ def advance_chance_lab(lab: Group6ChanceLab) -> Group6ChanceLab:
         return lab
 
     h_fn = get_heuristic(lab.settings.heuristic, lab.goal)
+    # Bước 3: tính kỳ vọng để hiển thị evidence, rồi lấy một outcome thực tế.
     expected_utility = sum(
         probability
         * _utility(
@@ -546,6 +626,7 @@ def advance_chance_lab(lab: Group6ChanceLab) -> Group6ChanceLab:
         outcomes,
         seed=lab.settings.seed + turn,
     )
+    # Bước 4: chỉ realized outcome được áp dụng lên bàn và ghi thành một frame.
     repeated = after in lab.history
     status = "cycle" if repeated else ("goal" if after == lab.goal else "running")
     lab.current_state = after
@@ -594,6 +675,7 @@ def run_chance_stability_sample(
     settings: Group6ChanceSettings,
 ) -> dict[str, object]:
     """Run multiple deterministic seeds and summarize final heuristic/runtime."""
+    # Chạy nhiều seed để tránh kết luận từ một trajectory may/rủi duy nhất.
     settings.validate()
     rows: list[dict[str, object]] = []
     h_fn = get_heuristic(settings.heuristic, goal)
